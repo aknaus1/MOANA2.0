@@ -39,7 +39,7 @@ const int buttonPin = 6; // the number of the pushbutton pin
 const int ledPin = 13; // the number of the LED pin
 void calibrate();
 
-void CANsend();
+void CANsend(int ID);
 
 // variables will change:
 int buttonState = 0;         // variable for reading the pushbutton status
@@ -61,16 +61,16 @@ void setup() {
   canInit(500000); // Initialise CAN port. must be before Serial.begin
   Serial.begin(1000000); // start serial port
 
-  Msg.pt_data = & Buffer[0]; // reference message data to transmit buffer  
-  
+  Msg.pt_data = & Buffer[0]; // reference message data to transmit buffer
+
   // Initialise CAN packet.
   // All of these will be overwritten by a received packet
-  
+
   Msg.ctrl.ide = MESSAGE_PROTOCOL; // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
   Msg.id.ext = MESSAGE_ID;         // Set message ID
   Msg.dlc = MESSAGE_LENGTH;        // Data length: 8 bytes
-  Msg.ctrl.rtr = MESSAGE_RTR;      // Set rtr bit  
-  
+  Msg.ctrl.rtr = MESSAGE_RTR;      // Set rtr bit
+
   //Initializes the PWM Pin
   pinMode(stepPin, OUTPUT);
   //Initializes the direction Pin
@@ -81,7 +81,7 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin, INPUT);
-  // IMU Code  
+  // IMU Code
   Serial.println("Orientation Sensor Test"); Serial.println("");  /* Initialise the sensor */
   if (!bno.begin()) {
     /* There was a problem detecting the BNO055 ... check your connections */
@@ -96,34 +96,34 @@ void setup() {
 
 void loop() {
 
-  
 
 
 
-/*
-  //SEND TO CAN HERE (1/2)
-  convert();
-  Serial.println("sending to CAN");
-  CANsend();
-*/
 
-  
+  /*
+    //SEND TO CAN HERE (1/2)
+    convert();
+    Serial.println("sending to CAN");
+    CANsend();
+  */
+
+
   Serial.println("before");
   xInput = CANin();
   Serial.println("after");
-  
+
   Serial.println(xInput);
 
-  if (xInput == 100){
-    CANsend();
+  if (xInput == 100) {
+    CANsend(6);
   }
   else {
     if (xInput > -12 && xInput < 12) {
       //xInput = Serial.parseFloat();
       Serial.print("I recieved the input: ");
-      Serial.println(xInput); 
-      //this is the only print, so for some reason pitch angle gets reupdated to be 0 every time I input a number    
-      xInput = (totalMass/sliderMass)* separation * tan(xInput*3.1415926/180) + 24;
+      Serial.println(xInput);
+      //this is the only print, so for some reason pitch angle gets reupdated to be 0 every time I input a number
+      xInput = (totalMass / sliderMass) * separation * tan(xInput * 3.1415926 / 180) + 24;
       Serial.println(xInput);
       stepsToX = xInput / 0.00125 - currentLocation;
       if (stepsToX / abs(stepsToX) >= 0) {
@@ -144,11 +144,12 @@ void loop() {
           Serial.println("GETTING SENSOR YDATA:");
           //sensors_event_t event;
           //bno.getEvent( & event);
-          //ypos = event.orientation.y; 
-          
+          //ypos = event.orientation.y;
+
           //SEND ypos TO CAN HERE (2/2)
           //convert();
-          CANsend();
+          CANsend(3);
+          CANsend(6);
           Serial.println(ypos);
         }
         delay(1);
@@ -164,7 +165,7 @@ void loop() {
   }
 
 
-  
+
 }
 
 void calibrate() {
@@ -200,15 +201,15 @@ void feedback() {
 }
 
 int CANin() {
-  
+
   // Clear the message buffer
   clearBuffer( & Buffer[0]); // Send command to the CAN port controller
   Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
   while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
   while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
-  // Data is now available in the message object  
-  
+  // Data is now available in the message object
+
   int dir = 0, angle = 0, id = 0;
   id = Msg.pt_data[0];
   if (id == 5) {
@@ -217,7 +218,7 @@ int CANin() {
     if (dir == 1) {
       angle = angle * -1;
     }
-    else if (dir == 3){
+    else if (dir == 3) {
       angle = 100;
     }
     return angle;
@@ -242,46 +243,57 @@ void convert() {
   fraction = fraction - (whole * 100);
   yposArray[2] = fraction;
   /*
-  Serial.println(testVal);
-  Serial.println(yposArray[0]);
-  Serial.println(yposArray[1]);
-  Serial.println(yposArray[2]);
+    Serial.println(testVal);
+    Serial.println(yposArray[0]);
+    Serial.println(yposArray[1]);
+    Serial.println(yposArray[2]);
   */
 }
 
-void sliderDone(){
+void sliderDone() {
 
-  for(int i = 0; i<20; i++){
-    CANsend();
+  for (int i = 0; i < 20; i++) {
+    CANsend(6);
     delay(500);
   }
 }
 
-void CANsend() {
-  
+void CANsend(int ID) {
+
   Serial.println("GETTING SENSOR YDATA:");
   sensors_event_t event;
   bno.getEvent( & event);
   ypos = event.orientation.z;
   Serial.println("Outside ypos : ");
   Serial.println(ypos);
-  
+
   convert();
   clearBuffer(&Buffer[0]);
   Msg.id.ext = MESSAGE_ID;         // Set message ID
-  Buffer[0] = 6;
-  for (int i = 0; i < 7; i++) {
-    if (i < 4) {
-      Buffer[i + 1] = yposArray[i];
-    } else {
-      Buffer[i + 1];
+  Buffer[0] = ID;
+  if (ID == 6) {
+    for (int i = 0; i < 7; i++) {
+      if (i < 4) {
+        Buffer[i + 1] = yposArray[i];
+      } else {
+        Buffer[i + 1];
+      }
     }
-  } 
-  
-  // Send command to the CAN port controller
-  Msg.cmd = CMD_TX_DATA; // send message
-  // Wait for the command to be accepted by the controller
-  while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
-  // Wait for command to finish executing
-  while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
+  }
+  else if (ID == 3)
+  {
+    Buffer[1] = (yposArray[1] / 9);
+    Buffer[2] = yposArray[0];
+    for(int i = 3; i<8; i++)
+    {
+      Buffer[i]=0;
+    }
+  }
+
+// Send command to the CAN port controller
+Msg.cmd = CMD_TX_DATA; // send message
+// Wait for the command to be accepted by the controller
+while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
+// Wait for command to finish executing
+while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
 }
