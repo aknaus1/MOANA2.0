@@ -5,8 +5,6 @@ import csv
 import time
 import os
 
-#TODO: figure out what pitch value needs to be given to maintain depth
-MAINTAIN_DEPTH = -5
 
 bus = smbus.SMBus(0)
 

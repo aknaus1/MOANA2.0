@@ -16,6 +16,8 @@
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
 
+#define MAINTAIN_DEPTH 10
+
 float xpos = 0;
 float ypos = 0;
 float zpos = 0;
@@ -35,14 +37,16 @@ uint8_t Buffer[8] = {};
 char inputBuffer[5];
 int number = 0; // constants won't change. They're used here to set pin numbers:
 
-const int buttonPin = 6; // the number of the pushbutton pin
+const int buttonPin1 = 6; // the number of the pushbutton pins
+const int buttonPin2 = 7;
 const int ledPin = 13; // the number of the LED pin
 void calibrate();
 
 void CANsend(int ID);
 
 // variables will change:
-int buttonState = 0;         // variable for reading the pushbutton status
+int buttonState1 = 0; 
+int buttonState2 = 0;        // variable for reading the pushbutton status
 int velocity = 100;
 int x = 1;
 float stepsToX = 0;
@@ -166,8 +170,9 @@ void loop() {
 void calibrate() {
   Serial.println("Running Calibration. Please wait.");
   while (true) {
-    buttonState = digitalRead(buttonPin); // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-    if (buttonState == HIGH) {
+    buttonState1 = digitalRead(buttonPin1); // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
+    buttonState2 = digitalRead(buttonPin2);
+    if ((buttonState1 == HIGH) || (buttonState2 == HIGH)) {
       // turn LED on:
       digitalWrite(ledPin, HIGH);
       Serial.println("Calibration Complete");
@@ -253,39 +258,40 @@ void sliderDone() {
   }
 }
 
-void getDepth(){}
+int getDepth(){}
   //reads the depth sensor and returns 
-  return readDepthSensor();
 }
 
-void sendPitch(pitch):
+int sendPitch(pitch):
 {
-  //sends pitch command to can network
-  // Build CAN command
-  // Write yaw ID
-  writeNumber(3);
-  //Write yaw angle
-  writeNumber(pitch);
-  // fill in 4 empty bytes
-  for i in range(6);
-      writeNumber(-1)
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(400);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(400);
 }
 
 
-void changeDepth(change):
-    //This function will change depth based on parameter passed into function. Since it utilizes multiple subsystems, it will be implemented in the Jetson
-    if change != 0:
-        newDepth = getDepth() - change;
-        newPitch = MAINTAIN_DEPTH#calc new pitch here;
-        newThrust = 75#calc new thrust here;
-        sendPitch(newPitch);
-        sendThrust(newThrust);
-        while(getDepth() > newDepth + 2)#satisfies requirement: depth control will be within +-2M accuracy;
-          time.sleep(500); //satisfies 2*/sec refresh rate requirement;
-        sendThrust(0);
-        sendPitch(MAINTAIN_DEPTH);  
-    else:
-        return
+void changeDepth(int change){
+  //This function will change depth based on parameter passed into function. Since it utilizes multiple subsystems, it will be implemented in the Jetson
+  int newDepth;
+  if (change != 0){
+    newDepth = getDepth() - change;
+    if(change > 0)
+      newPitch = change * 2;//pitch down
+      if(newPitch > 20)
+        newPitch = 20;
+    else
+      newPitch = change * 2
+      if(newPitch < -20)
+        newPitch = -20
+    sendPitch(newPitch);
+    while(getDepth() > newDepth + 2)//satisfies requirement: depth control will be within +-2M accuracy;
+      time.sleep(500); //satisfies 2*/sec refresh rate requirement;
+    sendPitch(MAINTAIN_DEPTH);  
+  }
+  else
+    return;
+}
 
 void setDepth(int depth){
   changeDepth(depth - getDepth());
@@ -313,16 +319,7 @@ void CANsend(int ID) {
       }
     }
   }
-  /*else if (ID == 3)
-  {
-    Buffer[1] = (yposArray[1] / 9);
-    Buffer[2] = yposArray[0];
-    for(int i = 3; i<8; i++)
-    {
-      Buffer[i]=0;
-    }
-  }
-*/
+
 // Send command to the CAN port controller
 Msg.cmd = CMD_TX_DATA; // send message
 // Wait for the command to be accepted by the controller
