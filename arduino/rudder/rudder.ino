@@ -1,3 +1,4 @@
+
 /*
  * CAN port receiver example
  * Receives data on the CAN buss and prints to the serial port
@@ -5,6 +6,10 @@
 
 #include <ASTCanLib.h>    
 #include <Servo.h>
+#include <Wire.h>
+
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
 
 Servo rudder;
 
@@ -12,6 +17,16 @@ Servo rudder;
 #define MESSAGE_PROTOCOL  1       // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
 #define MESSAGE_LENGTH    8       // Data length: 8 bytes
 #define MESSAGE_RTR       0       // rtr bit
+
+#define BNO055_SAMPLERATE_DELAY_MS 10
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
+#define dirPin 8
+#define stepPin 7
+
+float xpos = 0;
+float ypos = 0;
+float zpos = 0;
+int counter = 100;
 
 // Function prototypes
 void serialPrintData(st_cmd_t *msg);
@@ -36,9 +51,30 @@ void setup() {
   Msg.id.ext   = MESSAGE_ID;        // Set message ID
   Msg.dlc      = MESSAGE_LENGTH;    // Data length: 8 bytes
   Msg.ctrl.rtr = MESSAGE_RTR;       // Set rtr bit
+
+  // IMU Code
+  Serial.println("Orientation Sensor Test"); Serial.println("");  /* Initialise the sensor */
+  if (!bno.begin()) {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while (1);
+  }
+  delay(1000);
+  bno.setExtCrystalUse(true);
 }
 
 void loop() {
+  Serial.println("GETTING SENSOR YDATA:");
+  sensors_event_t event;
+  bno.getEvent( & event);
+  ypos = event.orientation.z;
+  xpos = event.orientation.x;
+  Serial.println("Outside ypos : ");
+  Serial.println(ypos);
+  Serial.println("Orientation: ");
+  Serial.println(xpos);
+
+/*
   // Clear the message buffer
   clearBuffer(&Buffer[0]);
  
@@ -55,15 +91,24 @@ void loop() {
 
   int temp, id;
   id = Msg.pt_data[0];
+
+*/
+  int temp;
+  if(xpos < 180)
+    temp = xpos /9 * -1;
+  else
+    temp = xpos /9;
+/*
   if(id == 3){
-//     Serial.print("accepted message\n");
+    //     Serial.print("accepted message\n");
 //     Serial.print("Moving servo to position: ");
 //     Serial.print(Msg.pt_data[1]);
 //     Serial.print("\n");
     temp = Msg.pt_data[1];
+  }*/
     rudder.write(temp);
-  }
 }
+
 
 
 

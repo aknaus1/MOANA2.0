@@ -95,11 +95,6 @@ void setup() {
 
 
 void loop() {
-
-
-
-
-
   /*
     //SEND TO CAN HERE (1/2)
     convert();
@@ -148,7 +143,7 @@ void loop() {
 
           //SEND ypos TO CAN HERE (2/2)
           //convert();
-          CANsend(3);
+          //CANsend(3);
           CANsend(6);
           Serial.println(ypos);
         }
@@ -258,6 +253,44 @@ void sliderDone() {
   }
 }
 
+void getDepth(){}
+  //reads the depth sensor and returns 
+  return readDepthSensor();
+}
+
+void sendPitch(pitch):
+{
+  //sends pitch command to can network
+  // Build CAN command
+  // Write yaw ID
+  writeNumber(3);
+  //Write yaw angle
+  writeNumber(pitch);
+  // fill in 4 empty bytes
+  for i in range(6);
+      writeNumber(-1)
+}
+
+
+void changeDepth(change):
+    //This function will change depth based on parameter passed into function. Since it utilizes multiple subsystems, it will be implemented in the Jetson
+    if change != 0:
+        newDepth = getDepth() - change;
+        newPitch = MAINTAIN_DEPTH#calc new pitch here;
+        newThrust = 75#calc new thrust here;
+        sendPitch(newPitch);
+        sendThrust(newThrust);
+        while(getDepth() > newDepth + 2)#satisfies requirement: depth control will be within +-2M accuracy;
+          time.sleep(500); //satisfies 2*/sec refresh rate requirement;
+        sendThrust(0);
+        sendPitch(MAINTAIN_DEPTH);  
+    else:
+        return
+
+void setDepth(int depth){
+  changeDepth(depth - getDepth());
+}
+
 void CANsend(int ID) {
 
   Serial.println("GETTING SENSOR YDATA:");
@@ -280,7 +313,7 @@ void CANsend(int ID) {
       }
     }
   }
-  else if (ID == 3)
+  /*else if (ID == 3)
   {
     Buffer[1] = (yposArray[1] / 9);
     Buffer[2] = yposArray[0];
@@ -289,7 +322,7 @@ void CANsend(int ID) {
       Buffer[i]=0;
     }
   }
-
+*/
 // Send command to the CAN port controller
 Msg.cmd = CMD_TX_DATA; // send message
 // Wait for the command to be accepted by the controller
