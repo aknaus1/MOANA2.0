@@ -49,7 +49,12 @@ int buttonState1 = 0;
 int buttonState2 = 0;        // variable for reading the pushbutton status
 int velocity = 100;
 int x = 1;
-float stepsToX = 0;
+float [
+  
+  
+  
+  
+stepsToX = 0;
 float xInput = 0; //input angle for pitch
 float currentLocation = 0;
 int currentDirection = 1; //direction slider is moving 0 = towards stepper, 1 is away from stepper
@@ -281,9 +286,9 @@ void changeDepth(int change){
       if(newPitch > 20)
         newPitch = 20;
     else
-      newPitch = change * 2
+      newPitch = change * 2;
       if(newPitch < -20)
-        newPitch = -20
+        newPitch = -20;
     sendPitch(newPitch);
     while(getDepth() > newDepth + 2)//satisfies requirement: depth control will be within +-2M accuracy;
       time.sleep(500); //satisfies 2*/sec refresh rate requirement;
