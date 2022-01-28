@@ -14,6 +14,10 @@
 #define MESSAGE_RTR 0 // rtr bit
 #include <Wire.h>
 
+#define MESSAGE_TYPE 1
+#define MESSAGE_VALUE 2
+#define MESSAGE_OPTION 3
+
 #define BNO055_SAMPLERATE_DELAY_MS 10
 
 #define MAINTAIN_DEPTH 10
@@ -22,6 +26,7 @@ float xpos = 0;
 float ypos = 0;
 float zpos = 0;
 int counter = 100;
+int type = 0;
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 
@@ -41,6 +46,7 @@ const int buttonPin1 = 6; // the number of the pushbutton pins
 const int buttonPin2 = 7;
 const int ledPin = 13; // the number of the LED pin
 void calibrate();
+void pitchControl();
 
 void CANsend(int ID);
 
@@ -49,12 +55,9 @@ int buttonState1 = 0;
 int buttonState2 = 0;        // variable for reading the pushbutton status
 int velocity = 100;
 int x = 1;
-float [
   
-  
-  
-  
-stepsToX = 0;
+float stepsToX = 0;
+int depth = 0;
 float xInput = 0; //input angle for pitch
 float currentLocation = 0;
 int currentDirection = 1; //direction slider is moving 0 = towards stepper, 1 is away from stepper
@@ -110,66 +113,62 @@ void loop() {
     Serial.println("sending to CAN");
     CANsend();
   */
-
-
-  Serial.println("before");
   xInput = CANin();
-  Serial.println("after");
-
-  Serial.println(xInput);
-
   if (xInput == 100) {
     CANsend(6);
   }
-  else {
-    if (xInput > -12 && xInput < 12) {
-      //xInput = Serial.parseFloat();
-      Serial.print("I recieved the input: ");
-      Serial.println(xInput);
-      //this is the only print, so for some reason pitch angle gets reupdated to be 0 every time I input a number
-      xInput = (totalMass / sliderMass) * separation * tan(xInput * 3.1415926 / 180) + 24;
-      Serial.println(xInput);
-      stepsToX = xInput / 0.00125 - currentLocation;
-      if (stepsToX / abs(stepsToX) >= 0) {
-        digitalWrite(dirPin, HIGH);
-      } else {
-        digitalWrite(dirPin, LOW);
-      }
-      Serial.print("Steps To X: ");
-      Serial.println(stepsToX);
-      for (int i = 0; i < abs(stepsToX); i++) {
-        currentLocation = currentLocation + stepsToX / abs(stepsToX);
-        digitalWrite(stepPin, HIGH);
-        delayMicroseconds(300);
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(300);
-        if (counter % 100 == 0) {
-          counter = 1;
-          Serial.println("GETTING SENSOR YDATA:");
-          //sensors_event_t event;
-          //bno.getEvent( & event);
-          //ypos = event.orientation.y;
-
-          //SEND ypos TO CAN HERE (2/2)
-          //convert();
-          //CANsend(3);
-          CANsend(6);
-          Serial.println(ypos);
-        }
-        delay(1);
-        counter++;
-        if (Serial.available() > 0) {
-          break;
-          Serial.println(currentLocation);
-        }
-      }
-      Serial.println(currentLocation);
-    }
-    sliderDone();
+  if(type == 0)
+  {
+    setPitch(xInput);
   }
+  else if(type == 1)
+    setDepth(depth);
 
+}
 
+void setPitch(float pitch)
+{
+  Serial.println(xInput);
 
+  
+  if (xInput > -12 && xInput < 12) {
+    //xInput = Serial.parseFloat();
+    Serial.print("I received the input: ");
+    Serial.println(pitch);
+    //this is the only print, so for some reason pitch angle gets reupdated to be 0 every time I input a number
+    pitch = (totalMass / sliderMass) * separation * tan(xInput * 3.1415926 / 180) + 24;
+    Serial.println(pitch);
+    stepsToX = pitch / 0.00125 - currentLocation;
+    if (stepsToX / abs(stepsToX) >= 0) {
+      digitalWrite(dirPin, HIGH);
+    } else {
+      digitalWrite(dirPin, LOW);
+    }
+    Serial.print("Steps To X: ");
+    Serial.println(stepsToX);
+    for (int i = 0; i < abs(stepsToX); i++) {
+      currentLocation = currentLocation + stepsToX / abs(stepsToX);
+      digitalWrite(stepPin, HIGH);
+      delayMicroseconds(300);
+      digitalWrite(stepPin, LOW);
+      delayMicroseconds(300);
+      if (counter % 100 == 0) {
+        counter = 1;
+        Serial.println("GETTING SENSOR YDATA:");
+
+        CANsend(6);
+        Serial.println(ypos);
+      }
+      delay(1);
+      counter++;
+      if (Serial.available() > 0) {
+        break;
+        Serial.println(currentLocation);
+      }
+    }
+    Serial.println(currentLocation);
+  }
+  sliderDone();
 }
 
 void calibrate() {
@@ -217,9 +216,12 @@ int CANin() {
 
   int dir = 0, angle = 0, id = 0;
   id = Msg.pt_data[0];
-  if (id == 5) {
-    dir = Msg.pt_data[1]; // 1 is pitch forward, 2 is is pitch back
-    angle = Msg.pt_data[2]; //between 0 and 20 currently
+  type = Msg.pt_data[MESSAGE_TYPE];//determines whether message indicates a change in pitch or change in depth
+
+
+  if (type == 0) {
+    dir = Msg.pt_data[MESSAGE_VALUE]; // 1 is pitch forward, 2 is is pitch back
+    angle = Msg.pt_data[MESSAGE_OPTION]; //between 0 and 20 currently
     if (dir == 1) {
       angle = angle * -1;
     }
@@ -227,6 +229,10 @@ int CANin() {
       angle = 100;
     }
     return angle;
+  }
+  else if(type == 1)
+  {
+    depth = Msg.pt_data[MESSAGE_VALUE];
   }
   return 50;
 }
@@ -267,29 +273,24 @@ int getDepth(){}
   //reads the depth sensor and returns 
 }
 
-int sendPitch(pitch):
-{
-    digitalWrite(stepPin, HIGH);
-    delayMicroseconds(400);
-    digitalWrite(stepPin, LOW);
-    delayMicroseconds(400);
-}
+
 
 
 void changeDepth(int change){
   //This function will change depth based on parameter passed into function. Since it utilizes multiple subsystems, it will be implemented in the Jetson
   int newDepth;
+  float newPitch;
   if (change != 0){
     newDepth = getDepth() - change;
     if(change > 0)
       newPitch = change * 2;//pitch down
-      if(newPitch > 20)
-        newPitch = 20;
+      if(newPitch > 12)
+        newPitch = 12;
     else
       newPitch = change * 2;
-      if(newPitch < -20)
-        newPitch = -20;
-    sendPitch(newPitch);
+      if(newPitch < -12)
+        newPitch = -12;
+    setPitch(newPitch);
     while(getDepth() > newDepth + 2)//satisfies requirement: depth control will be within +-2M accuracy;
       time.sleep(500); //satisfies 2*/sec refresh rate requirement;
     sendPitch(MAINTAIN_DEPTH);  
@@ -298,8 +299,8 @@ void changeDepth(int change){
     return;
 }
 
-void setDepth(int depth){
-  changeDepth(depth - getDepth());
+void setDepth(int d){
+  changeDepth(d - getDepth());
 }
 
 void CANsend(int ID) {
