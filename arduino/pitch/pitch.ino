@@ -7,12 +7,13 @@
 #include <Adafruit_BNO055.h>
 
 #include <utility/imumaths.h>
+#include <Wire.h>
 
 #define MESSAGE_ID 5 // Message ID
 #define MESSAGE_PROTOCOL 1 // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
 #define MESSAGE_LENGTH 8 // Data length: 8 bytes
 #define MESSAGE_RTR 0 // rtr bit
-#include <Wire.h>
+
 
 #define MESSAGE_TYPE 1
 #define MESSAGE_VALUE 2
@@ -20,7 +21,11 @@
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
 
-#define MAINTAIN_DEPTH 10
+#define MAINTAIN_DEPTH 3
+#define MAX_ANGLE 12
+#define DEPTH_KP 2.00
+#define PITCH_KP 1.5
+
 
 float xpos = 0;
 float ypos = 0;
@@ -56,7 +61,8 @@ int buttonState2 = 0;        // variable for reading the pushbutton status
 int velocity = 100;
 int x = 1;
   
-float stepsToX = 0;
+float stepsToX = 0; //centimeters
+float distance = 0; //meters
 int depth = 0;
 float xInput = 0; //input angle for pitch
 float currentLocation = 0;
@@ -113,62 +119,101 @@ void loop() {
     Serial.println("sending to CAN");
     CANsend();
   */
-  xInput = CANin();
-  if (xInput == 100) {
-    CANsend(6);
-  }
-  if(type == 0)
-  {
+   // Clear the message buffer
+  clearBuffer( & Buffer[0]); // Send command to the CAN port controller
+  Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
+  if((can_cmd( & Msg) == CAN_CMD_ACCEPTED)&&(can_get_status( & Msg) != CAN_STATUS_NOT_COMPLETED))
+    xInput = CANin();
+  CANsend(6);//data to data logger
+  if(type == 0) {
     setPitch(xInput);
   }
-  else if(type == 1)
+  else if(type == 1) {
     setDepth(depth);
+  }
+  else if (type == 2) {
+    setSliderPosition(distance);
+  }
+  delay(500);
 
+}
+
+void setSliderPosition(float dist)
+{ /*
+  stepsToX = dist / 0.00125 - currentLocation;
+  Serial.print("Steps To X: ");
+  Serial.println(s);
+  for (int i = 0; i < abs(s); i++) {
+    currentLocation = currentLocation + s / abs(s);
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(300);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(300);
+    delay(1);
+    counter++;
+    if (Serial.available() > 0) {
+      break;
+      Serial.println(currentLocation);
+    }
+  }
+  Serial.println(currentLocation);
+  sliderDone();
+  */
+
+  stepsToX = dist / 0.00125 - currentLocation;
+  
+  if (stepsToX <= 0){//sets direction of stepper motor
+      digitalWrite(dirPin, HIGH);
+  } else {
+      digitalWrite(dirPin, LOW);
+  }
+  
+  Serial.print("Steps To X: ");
+  Serial.println(stepsToX);
+  
+  for (int i = 0; i < abs(stepsToX); i++) {
+    currentLocation = currentLocation + stepsToX / abs(stepsToX);
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(300);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(300);
+    delay(1);
+  }
+  
+  Serial.println(currentLocation);
+  sliderDone();
 }
 
 void setPitch(float pitch)
 {
-  Serial.println(xInput);
+  float newPos;
+  int sign = 1;
+  newPos = (pitch - getPitch()) * PITCH_KP;
+  if(pitch < 0)
+    sign = -1;
+  if(abs(pitch) > MAX_ANGLE)
+    newPos = MAX_ANGLE * sign;
+  setSliderPosition(newPos);
+}
 
-  
-  if (xInput > -12 && xInput < 12) {
-    //xInput = Serial.parseFloat();
-    Serial.print("I received the input: ");
-    Serial.println(pitch);
-    //this is the only print, so for some reason pitch angle gets reupdated to be 0 every time I input a number
-    pitch = (totalMass / sliderMass) * separation * tan(xInput * 3.1415926 / 180) + 24;
-    Serial.println(pitch);
-    stepsToX = pitch / 0.00125 - currentLocation;
-    if (stepsToX / abs(stepsToX) >= 0) {
-      digitalWrite(dirPin, HIGH);
-    } else {
-      digitalWrite(dirPin, LOW);
-    }
-    Serial.print("Steps To X: ");
-    Serial.println(stepsToX);
-    for (int i = 0; i < abs(stepsToX); i++) {
-      currentLocation = currentLocation + stepsToX / abs(stepsToX);
-      digitalWrite(stepPin, HIGH);
-      delayMicroseconds(300);
-      digitalWrite(stepPin, LOW);
-      delayMicroseconds(300);
-      if (counter % 100 == 0) {
-        counter = 1;
-        Serial.println("GETTING SENSOR YDATA:");
-
-        CANsend(6);
-        Serial.println(ypos);
-      }
-      delay(1);
-      counter++;
-      if (Serial.available() > 0) {
-        break;
-        Serial.println(currentLocation);
-      }
-    }
-    Serial.println(currentLocation);
+void setDepth(int d){
+  //This function will change depth based on parameter passed into function.
+  if(d > 30){
+    Serial.println("Command exceeds depth limit of 30M");
+    return;
   }
-  sliderDone();
+  float newPitch;
+  newPitch = (d - getDepth()) * DEPTH_KP + MAINTAIN_DEPTH;
+  setPitch(newPitch);
+}
+
+float getPitch()
+[
+  //reads pitch from sensor
+]
+
+int getDepth(){}
+  //reads the depth sensor and returns 
 }
 
 void calibrate() {
@@ -184,7 +229,7 @@ void calibrate() {
       xInput = 0;
       break;
     } else {
-      // turn LED off:
+      
       digitalWrite(ledPin, LOW);
       digitalWrite(stepPin, HIGH);
       delayMicroseconds(400);
@@ -207,13 +252,13 @@ void feedback() {
 int CANin() {
 
   // Clear the message buffer
-  clearBuffer( & Buffer[0]); // Send command to the CAN port controller
-  Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
-  while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
+  //clearBuffer( & Buffer[0]); // Send command to the CAN port controller
+  //Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
+  //while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
-  while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
+  //while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
+  
   // Data is now available in the message object
-
   int dir = 0, angle = 0, id = 0;
   id = Msg.pt_data[0];
   type = Msg.pt_data[MESSAGE_TYPE];//determines whether message indicates a change in pitch or change in depth
@@ -234,8 +279,13 @@ int CANin() {
   {
     depth = Msg.pt_data[MESSAGE_VALUE];
   }
+  else if(type == 2)
+  {
+    distance = Msg.pt_data[MESSAGE_VALUE];
+  }
   return 50;
 }
+
 
 void convert() {
   float testVal = ypos;
@@ -261,6 +311,7 @@ void convert() {
   */
 }
 
+
 void sliderDone() {
 
   for (int i = 0; i < 20; i++) {
@@ -269,39 +320,6 @@ void sliderDone() {
   }
 }
 
-int getDepth(){}
-  //reads the depth sensor and returns 
-}
-
-
-
-
-void changeDepth(int change){
-  //This function will change depth based on parameter passed into function. Since it utilizes multiple subsystems, it will be implemented in the Jetson
-  int newDepth;
-  float newPitch;
-  if (change != 0){
-    newDepth = getDepth() - change;
-    if(change > 0)
-      newPitch = change * 2;//pitch down
-      if(newPitch > 12)
-        newPitch = 12;
-    else
-      newPitch = change * 2;
-      if(newPitch < -12)
-        newPitch = -12;
-    setPitch(newPitch);
-    while(getDepth() > newDepth + 2)//satisfies requirement: depth control will be within +-2M accuracy;
-      time.sleep(500); //satisfies 2*/sec refresh rate requirement;
-    sendPitch(MAINTAIN_DEPTH);  
-  }
-  else
-    return;
-}
-
-void setDepth(int d){
-  changeDepth(d - getDepth());
-}
 
 void CANsend(int ID) {
 
