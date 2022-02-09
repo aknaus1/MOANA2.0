@@ -24,7 +24,6 @@
 #define PITCH_KP 1.5
 
 float xpos = 0;
-float ypos = 0;
 float zpos = 0;
 int counter = 100;
 int type = 0;
@@ -69,6 +68,14 @@ float totalMass = 728.125 - addedSliderMass; //[Newtons]
 float separation = 1;                        //[inches]
 float Kp = .1;
 int yposArray[3];
+
+enum sensorSend {
+  DEPTH, PITCH, YAW, STEP_POS
+};
+
+enum IDs {
+  THRUST = 2, RUDDER, PITCH=5, DATA, MISSION
+};
 
 void setup()
 {
@@ -123,8 +130,11 @@ void loop()
   clearBuffer(&Buffer[0]); // Send command to the CAN port controller
   Msg.cmd = CMD_RX_DATA;   // Wait for the command to be accepted by the controller
   if ((can_cmd(&Msg) == CAN_CMD_ACCEPTED) && (can_get_status(&Msg) != CAN_STATUS_NOT_COMPLETED))
-    xInput = CANin();
-  CANsend(6); // data to data logger
+    CANin();
+
+  CANsend(DATA, PITCH); // data to data logger
+  CANsend(DATA, DEPTH);
+
   if (type == 0)
   {
     setPitch(xInput);
@@ -144,12 +154,10 @@ void setSliderPosition(float dist)
 {
   stepsToX = dist / 0.00125 - currentLocation;
 
-  if (stepsToX <= 0)
-  { // sets direction of stepper motor
+  if (stepsToX <= 0){ // sets direction of stepper motor
     digitalWrite(dirPin, HIGH);
   }
-  else
-  {
+  else{
     digitalWrite(dirPin, LOW);
   }
 
@@ -198,11 +206,15 @@ void setDepth(int d)
 
 float getPitch() // reads pitch from sensor
 {
-
+  Serial.println("GETTING SENSOR YDATA:");
+  sensors_event_t event;
+  bno.getEvent( & event);
+  float ypos = event.orientation.z;
+  Serial.println("Outside ypos : ");
+  Serial.println(ypos);
+  return ypos;
 }
        
-
-
 int getDepth()// reads the depth sensor and returns depth in Meters
 }
 
@@ -251,7 +263,7 @@ void feedback()
   }
 }
 
-int CANin()
+void CANin()
 {
 
   // Clear the message buffer
@@ -266,26 +278,23 @@ int CANin()
   id = Msg.pt_data[0];
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
 
-  if (id == MESSAGE_ID)
-  {
-    switch (type)
-    {
-      case 0: // set pitch
-        return Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2];
-      case 1: // set depth
-        depth = Msg.pt_data[MESSAGE_TYPE + 1];
-        break;
-      case 2: // set stepper position
-        distance = Msg.pt_data[MESSAGE_TYPE + 1];
-        break;
-    }
+  if (id != MESSAGE_ID) return;
+  switch (type) {
+    case 0: // set pitch
+      xInput = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2];
+      break;
+    case 1: // set depth
+      depth = Msg.pt_data[MESSAGE_TYPE + 1];
+      break;
+    case 2: // set stepper position
+      distance = Msg.pt_data[MESSAGE_TYPE + 1];
+      break;
   }
-  return 0;
+  
 }
 
-void convert()
+void convert(float testValue)
 {
-  float testVal = ypos;
   int whole, fraction;
   if (testVal < 0.0)
   {
@@ -322,41 +331,32 @@ void sliderDone()
   }
 }
 
-void CANsend(int ID)
+void CANsend(int ID, int sensor)
 {
-
-  Serial.println("GETTING SENSOR YDATA:");
-  sensors_event_t event;
-  bno.getEvent(&event);
-  ypos = event.orientation.z;
-  Serial.println("Outside ypos : ");
-  Serial.println(ypos);
-
-  convert();
   clearBuffer(&Buffer[0]);
   Msg.id.ext = MESSAGE_ID; // Set message ID
   Buffer[0] = ID;
-  if (ID == 6)
-  {
-    for (int i = 0; i < 7; i++)
-    {
-      if (i < 4)
-      {
+
+  if (sensor == PITCH) {//sending pitch
+    convert(getPitch());
+    for (int i = 0; i < 7; i++) {
+      if (i < 4){
         Buffer[i + 1] = yposArray[i];
       }
-      else
-      {
+      else{
         Buffer[i + 1];
       }
     }
+  } else if(sensor == DEPTH){//sending depth
+    Buffer[1] = getDepth();
+    for(int i = 2; i <= 7; i++)
+      Buffer[i] = 0;
   }
-
+  
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
   // Wait for the command to be accepted by the controller
-  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED)
-    ;
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
-  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED)
-    ;
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
 }
