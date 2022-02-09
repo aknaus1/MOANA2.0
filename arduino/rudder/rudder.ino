@@ -18,6 +18,10 @@ Servo rudder;
 #define MESSAGE_LENGTH    8       // Data length: 8 bytes
 #define MESSAGE_RTR       0       // rtr bit
 
+#define MESSAGE_TYPE 2
+#define HEADING_KP        1/9
+#define MAX_RUDDER_ANGLE 20
+
 #define BNO055_SAMPLERATE_DELAY_MS 10
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 #define dirPin 8
@@ -27,6 +31,8 @@ float xpos = 0;
 float ypos = 0;
 float zpos = 0;
 int counter = 100;
+int type = 0
+int input = 0;
 
 // Function prototypes
 void serialPrintData(st_cmd_t *msg);
@@ -64,16 +70,22 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("GETTING SENSOR YDATA:");
-  sensors_event_t event;
-  bno.getEvent( & event);
-  ypos = event.orientation.z;
-  xpos = event.orientation.x;
-  Serial.println("Outside ypos : ");
-  Serial.println(ypos);
-  Serial.println("Orientation: ");
-  Serial.println(xpos);
+  clearBuffer( & Buffer[0]); // Send command to the CAN port controller
+  Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
+  if((can_cmd( & Msg) == CAN_CMD_ACCEPTED)&&(can_get_status( & Msg) != CAN_STATUS_NOT_COMPLETED))
+    input = CANin();
+  CANsend(6);//data to data logger
 
+  if(type == 0) {
+    if(abs(input) <= MAX_RUDDER_ANGLE)
+      rudder.write(input);
+    else
+      Serial.println("Input angle cannot be higher than %d degrees", MAX_RUDDER_ANGLE);
+  }
+  else if(type == 1) {
+    setHeading(input);
+  }
+  delay(500);
 /*
   // Clear the message buffer
   clearBuffer(&Buffer[0]);
@@ -93,11 +105,6 @@ void loop() {
   id = Msg.pt_data[0];
 
 */
-  int temp;
-  if(xpos < 180)
-    temp = xpos /9 * -1;
-  else
-    temp = xpos /9;
 /*
   if(id == 3){
     //     Serial.print("accepted message\n");
@@ -106,11 +113,42 @@ void loop() {
 //     Serial.print("\n");
     temp = Msg.pt_data[1];
   }*/
-    rudder.write(temp);
+}
+
+float getHeading() {
+  Serial.println("GETTING SENSOR YDATA:");
+  sensors_event_t event;
+  bno.getEvent( & event);
+  ypos = event.orientation.z;
+  xpos = event.orientation.x;
+  Serial.println("Outside ypos : ");
+  Serial.println(ypos);
+  Serial.println("Orientation: ");
+  Serial.println(xpos);
+  return xpos;
 }
 
 
+void setHeading(float h) {
+  float newAngle = (h - getHeading()) * HEADING_KP;//new angle will now be from 0 - some float angle that should be maxed to 40
+  if(newAngle > MAX_RUDDER_ANGLE * 2)
+    newAngle = MAX_RUDDER_ANGLE * 2;
+  newAngle -= MAX_RUDDER_ANGLE;
+  rudder.write(newAngle);
+}
 
+int CANIn(){
+  int dir = 0, angle = 0, id = 0;
+  id = Msg.pt_data[0];
+  type = Msg.pt_data[MESSAGE_TYPE];//determines whether message indicates a direct rudder write or a heading command
+
+  if(type == 0) {
+    return Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2];//return rudder angle
+  }
+  else if(type == 1) {
+    return Msg.pt_data[MESSAGE_TYPE + 1] * Msg.pt_data[MESSAGE_TYPE + 2];//return heading in degrees
+  }
+}
 
 void serialPrintData(st_cmd_t *msg){
   char textBuffer[50] = {0};
@@ -142,3 +180,4 @@ void serialPrintData(st_cmd_t *msg){
   }
   Serial.print("\r\n");
 }
+
