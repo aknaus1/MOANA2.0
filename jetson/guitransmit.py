@@ -67,11 +67,11 @@ class MYSSH:
     def closeWorkingTerminal(self):
         self.sendCommand(self, "exit()")
 
-    # set yaw (angle)
-    # angle: min max +- 20
+    # set yaw (yaw)
+    # yaw: min max +- 20
     def setYaw(self, yaw):
         if abs(yaw) <= self.YAW_MIN_MAX:
-            command = "systemControl.setYaw(" + str(yaw) + ")"
+            command = "systemControl.setYaw(" + yaw + ")"
             self.sendCommand(self, command)
         else:
             print("yaw is out of range: +-" + self.YAW_MIN_MAX)
@@ -80,7 +80,7 @@ class MYSSH:
     # heading range: 0-360 degrees relative to North
     def setHeading(self, heading):
         if heading >= self.HEADING_MIN and heading <= self.HEADING_MAX:
-            command = "systemControl.setHeading(" + str(heading) + ")"
+            command = "systemControl.setHeading(" + heading + ")"
             self.sendCommand(self, command)
         else:
             print("heading is out of range: " + self.HEADING_MIN + " <= heading <= " + self.HEADING_MAX)
@@ -90,7 +90,7 @@ class MYSSH:
     # SHOULD NOT BE USED
     def holdHeading(self, heading, time):
         if heading >= self.HEADING_MIN and heading <= self.HEADING_MAX:
-            command = "systemControl.holdHeading(" + str(heading) + ", " + str(time) + ")"
+            command = "systemControl.holdHeading(" + heading + ", " + time + ")"
             self.sendCommand(self, command)
         else:
             print("heading is out of range: " + self.HEADING_MIN + " <= heading <= " + self.HEADING_MAX)
@@ -100,7 +100,7 @@ class MYSSH:
     # position: min max +- 16.5 cm
     def setStepper(self, position):
         if abs(position) <= self.STEPPER_MIN_MAX:
-            command = "systemControl.setStepper(" + str(position) + ")"
+            command = "systemControl.setStepper(" + position + ")"
             self.sendCommand(self, command)
         else:
             print("position is out of range: +-" + self.STEPPER_MIN_MAX)
@@ -109,7 +109,7 @@ class MYSSH:
     # angle: min max +- 12 degrees
     def setPitch(self, angle):
         if abs(angle) <= self.PITCH_MIN_MAX:
-            command = "systemControl.setPitch(" + str(angle) + ")"
+            command = "systemControl.setPitch(" + angle + ")"
             self.sendCommand(self, command)
         else:
             print("pitch is out of range: +-" + self.PITCH_MIN_MAX)
@@ -118,7 +118,7 @@ class MYSSH:
     # depth: range 0 - 30 m
     def setDepth(self, depth):
         if depth >= self.DEPTH_MIN and depth <= self.DEPTH_MAX:
-            command = "systemControl.setDepth(" + str(depth) + ")"
+            command = "systemControl.setDepth(" + depth + ")"
             self.sendCommand(self, command)
         else:
             print("depth is out of range: " + self.DEPTH_MIN + " <= depth <= " + self.DEPTH_MAX)
@@ -128,7 +128,7 @@ class MYSSH:
     # SHOULD NOT BE USED
     def holdDepth(self, depth, time):
         if depth >= self.DEPTH_MIN and depth <= self.DEPTH_MAX:
-            command = "systemControl.holdDepth(" + str(depth) + ", " + str(time) + ")"
+            command = "systemControl.holdDepth(" + depth + ", " + time + ")"
             self.sendCommand(self, command)
         else:
             print("depth is out of range: " + self.DEPTH_MIN + " <= depth <= " + self.DEPTH_MAX)
@@ -137,17 +137,17 @@ class MYSSH:
     # thrust: range speed 0-100
     def setThrust(self, thrust):
         if thrust >= self.THRUST_MIN and thrust <= self.THRUST_MAX:
-            command = "systemControl.setThrust(" + str(thrust) + ")"
+            command = "systemControl.setThrust(" + thrust + ")"
             self.sendCommand(self, command)
         else:
             print("thrust is out of range: " + self.THRUST_MIN + " <= thrust <= " + self.THRUST_MAX)
     
-    # set thrust (thrust, time)
+    # hold thrust (thrust, time)
     # thrust: range speed 0-100
     # SHOULD NOT BE USED
     def holdThrust(self, thrust, time):
         if thrust >= self.THRUST_MIN and thrust <= self.THRUST_MAX:
-            command = "systemControl.holdThrust(" + str(thrust) + ", " + str(time) + ")"
+            command = "systemControl.holdThrust(" + thrust + ", " + time + ")"
             self.sendCommand(self, command)
         else:
             print("thrust is out of range: " + self.THRUST_MIN + " <= thrust <= " + self.THRUST_MAX)
