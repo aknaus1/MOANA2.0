@@ -134,18 +134,18 @@ void loop()
 
   CANsend(DATA, PITCH); // data to data logger
   CANsend(DATA, DEPTH);
-
-  if (type == 0)
-  {
-    setPitch(xInput);
-  }
-  else if (type == 1)
-  {
-    setDepth(depth);
-  }
-  else if (type == 2)
-  {
-    setSliderPosition(distance);
+  switch (type) {
+    case 0:
+      setPitch(xInput);
+      break;
+    case 1:
+      setDepth(depth);
+      break;
+    case 2:
+      setSliderPosition(distance);
+      break;
+    default:
+      break;
   }
   delay(500);
 }
@@ -288,6 +288,8 @@ void CANin()
       break;
     case 2: // set stepper position
       distance = Msg.pt_data[MESSAGE_TYPE + 1];
+      break;
+    default:
       break;
   }
   
