@@ -5,7 +5,7 @@
 #include <Adafruit_Sensor.h>
 
 #include <Adafruit_BNO055.h>
-
+#include "MS5837.h"
 #include <utility/imumaths.h>
 #include <Wire.h>
 
@@ -14,14 +14,18 @@
 #define MESSAGE_LENGTH 8   // Data length: 8 bytes
 #define MESSAGE_RTR 0      // rtr bit
 
+#define FRESHWATER 997
+#define SALTWATER 1029
+
 #define MESSAGE_TYPE 1
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
 
 #define MAINTAIN_DEPTH 3
 #define MAX_ANGLE 12
-#define DEPTH_KP 2.00
-#define PITCH_KP 1.5
+#define DEPTH_KP 5.7296
+#define PITCH_KP .0024543
+#define STEP_KP .00125
 
 float xpos = 0;
 float zpos = 0;
@@ -29,6 +33,9 @@ int counter = 100;
 int type = 0;
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
+MS5837 depthSensor;
+
+void initSensors();
 
 // CAN message object
 st_cmd_t Msg;
@@ -69,12 +76,22 @@ float separation = 1;                        //[inches]
 float Kp = .1;
 int yposArray[3];
 
-enum sensorSend {
-  DEPTH, PITCH, YAW, STEP_POS
+enum sensorSend
+{
+  DEPTH,
+  PITCH,
+  YAW,
+  STEP_POS,
+  TEMP
 };
 
-enum IDs {
-  THRUST = 2, RUDDER, PITCH=5, DATA, MISSION
+enum IDs
+{
+  THRUST = 2,
+  RUDDER,
+  PITCH = 5,
+  DATA,
+  MISSION
 };
 
 void setup()
@@ -103,29 +120,13 @@ void setup()
   pinMode(ledPin, OUTPUT);
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin, INPUT);
-  // IMU Code
-  Serial.println("Orientation Sensor Test");
-  Serial.println(""); /* Initialise the sensor */
-  if (!bno.begin())
-  {
-    /* There was a problem detecting the BNO055 ... check your connections */
-    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while (1)
-      ;
-  }
-  delay(1000);
-  bno.setExtCrystalUse(true);
+
+  initSensors();
   calibrate(); // runs calibration
 }
 
 void loop()
 {
-  /*
-    //SEND TO CAN HERE (1/2)
-    convert();
-    Serial.println("sending to CAN");
-    CANsend();
-  */
   // Clear the message buffer
   clearBuffer(&Buffer[0]); // Send command to the CAN port controller
   Msg.cmd = CMD_RX_DATA;   // Wait for the command to be accepted by the controller
@@ -134,7 +135,8 @@ void loop()
 
   CANsend(DATA, PITCH); // data to data logger
   CANsend(DATA, DEPTH);
-  switch (type) {
+  CANsend(DATA, TEMP);
+  switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
     case 0:
       setPitch(xInput);
       break;
@@ -150,16 +152,39 @@ void loop()
   delay(500);
 }
 
+void initSensors()
+{ // depth Sensor code
+  while (!depthSensor.init()){
+    Serial.println("Init failed!");
+    Serial.println("Are SDA/SCL connected correctly?");
+    Serial.println("Blue Robotics Bar30: White=SDA, Green=SCL");
+    Serial.println("\n\n\n");
+    delay(5000);
+  }
+
+  depthSensor.setModel(MS5837::MS5837_30BA);
+  depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
+
+  // IMU Code
+  Serial.println("Orientation Sensor Test");
+  Serial.println(""); /* Initialise the sensor */
+  if (!bno.begin())
+  {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while (1)
+      ;
+  }
+  delay(1000);
+  bno.setExtCrystalUse(true);
+}
+
 void setSliderPosition(float dist)
 {
-  stepsToX = dist / 0.00125 - currentLocation;
+  stepsToX = dist / STEP_KP - currentLocation;
 
-  if (stepsToX <= 0){ // sets direction of stepper motor
-    digitalWrite(dirPin, HIGH);
-  }
-  else{
-    digitalWrite(dirPin, LOW);
-  }
+  //set direction of stepper motor
+  stepsToX <= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
 
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
@@ -194,13 +219,13 @@ void setPitch(float pitch)
 void setDepth(int d)
 {
   // This function will change depth based on parameter passed into function.
-  if (d > 30)
-  {
+  if (d > 30) {
     Serial.println("Command exceeds depth limit of 30M");
     return;
   }
+
   float newPitch;
-  newPitch = (d - getDepth()) * DEPTH_KP + MAINTAIN_DEPTH;
+  newPitch = (d - round(getDepth())) * DEPTH_KP + MAINTAIN_DEPTH;
   setPitch(newPitch);
 }
 
@@ -208,16 +233,21 @@ float getPitch() // reads pitch from sensor
 {
   Serial.println("GETTING SENSOR YDATA:");
   sensors_event_t event;
-  bno.getEvent( & event);
+  bno.getEvent(&event);
   float ypos = event.orientation.z;
   Serial.println("Outside ypos : ");
   Serial.println(ypos);
   return ypos;
 }
-       
-int getDepth()// reads the depth sensor and returns depth in Meters
+
+double getDepth() // reads the depth sensor and returns depth in Meters
+{
+  return depthSensor.depth();
 }
 
+double getTemp()
+{
+  return depthSensor.temperature();
 }
 
 void calibrate()
@@ -232,7 +262,7 @@ void calibrate()
       // turn LED on:
       digitalWrite(ledPin, HIGH);
       Serial.println("Calibration Complete");
-      currentLocation = 33 / 0.00125;
+      currentLocation = 16.5 / STEP_KP;
       xInput = 0;
       break;
     }
@@ -281,21 +311,22 @@ void CANin()
   if (id != MESSAGE_ID) return;
   switch (type) {
     case 0: // set pitch
-      xInput = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2];
+      xInput = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2];// sends negative of input if direction byte is 0
       break;
     case 1: // set depth
       depth = Msg.pt_data[MESSAGE_TYPE + 1];
       break;
     case 2: // set stepper position
-      distance = Msg.pt_data[MESSAGE_TYPE + 1];
+      distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+      ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+      : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
       break;
     default:
       break;
   }
-  
 }
 
-void convert(float testValue)
+void convert(float testValue) // converts a flaot or double into an array that can be sent over the CAN bus
 {
   int whole, fraction;
   if (testVal < 0.0)
@@ -338,27 +369,35 @@ void CANsend(int ID, int sensor)
   clearBuffer(&Buffer[0]);
   Msg.id.ext = MESSAGE_ID; // Set message ID
   Buffer[0] = ID;
-
-  if (sensor == PITCH) {//sending pitch
+  Buffer[1] = sensor;
+  switch (sensor)
+  {
+  case PITCH:
     convert(getPitch());
-    for (int i = 0; i < 7; i++) {
-      if (i < 4){
-        Buffer[i + 1] = yposArray[i];
-      }
-      else{
-        Buffer[i + 1];
-      }
-    }
-  } else if(sensor == DEPTH){//sending depth
-    Buffer[1] = getDepth();
-    for(int i = 2; i <= 7; i++)
+    for (int i = 0; i < 7; i++)
+      Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+    break;
+  case DEPTH:
+    convert(getDepth());
+    Buffer[2] = yposArray[1];
+    Buffer[3] = yposArray[2];
+    for (int i = 4; i <= 7; i++)
       Buffer[i] = 0;
+    break;
+  case TEMP:
+    convert(getTemp());
+    for (int i = 0; i < 7; i++)
+      Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+    break;
+  default:
+    break;
   }
-  
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
   // Wait for the command to be accepted by the controller
-  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED)
+    ;
   // Wait for command to finish executing
-  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED)
+    ;
 }
