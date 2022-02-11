@@ -34,7 +34,7 @@ int counter = 100;
 int type = 0; 
 int input = 0;
 
-enum d{LEFT, RIGHT};
+enum d{LEFT=1, RIGHT};
 
 int direction;
 // Function prototypes
@@ -93,7 +93,7 @@ void loop()
   }
   else if (type == 1)
   {
-    if (input = 180)
+    if (direction)//if auv is turning around, need to specify which direction to turn. 
       turn(direction);
     setHeading(input);
   }
@@ -141,11 +141,11 @@ float getHeading()
   return xpos;
 }
 
-void turn(int dir, int heading)
+void turn(int dir, int heading)//this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
 {
   if (dir == LEFT)
     rudder.write(20);
-  else
+  else//dir == RIGHT
     rudder.write(-20);
   delay(4000);
   input = 179;
