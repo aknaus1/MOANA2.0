@@ -1,7 +1,10 @@
 import sys
 from PySide6.QtWidgets import *
+from guitransmit import MYSSH
 
 class Window(QWidget):
+    ssh = MYSSH
+
     def __init__(self):
         super().__init__()
 
@@ -206,6 +209,7 @@ class Window(QWidget):
         print(self.mission_fields[2].text())
         print(self.mission_fields[3].text())
         print(self.mission_fields[4].text())
+        self.ssh.mission(self.mission_fields[0], self.mission_fields[1], self.mission_fields[2], self.mission_fields[3], self.mission_fields[4])
 
     # send pitch control command
     def pc_command(self):
@@ -213,12 +217,14 @@ class Window(QWidget):
         print(self.pc_field1.text())
         print(self.pc_field2.text())
         print(self.pc_field3.text())
+        self.ssh.setPitch(self.pc_field1)
 
     # send heading control command
     def hc_command(self):
         print('heading control')
         print(self.hc_field1.text())
         print(self.hc_field2.text())
+        self.ssh.setHeading(self.hc_field1)
     
     # send depth control command
     def dc_command(self):
@@ -226,31 +232,37 @@ class Window(QWidget):
         print(self.dc_field1.text())
         print(self.dc_field2.text())
         print(self.dc_field3.text())
+        self.ssh.setDepth(self.dc_field1)
 
     # send speed control command
     def sc_command(self):
         print('speed control')
         print(self.sc_field1.text())
+        self.ssh.setThrust(self.sc_field1)
 
     # send mass slider control command
     def mc_command(self):
         print('mass slider control')
         print(self.mc_field1.text())
+        self.ssh.setStepper(self.mc_field1)
 
     # send rudder control command
     def rc_command(self):
         print('rudder control')
         print(self.rc_field1.text())
+        self.ssh.setYaw(self.rc_field1)
     
     # send thrust control command
     def tc_command(self):
         print('thrust control')
         print(self.tc_field1.text())
+        self.ssh.setThrust(self.tc_field1)
 
     # send data collection command
     def ac_command(self):
         print('data collection')
         print(self.ac_field1.text())
+        self.ssh.startDataCollection(self.ac_field1)
 
 
 if __name__ == '__main__':

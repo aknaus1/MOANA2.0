@@ -1,5 +1,5 @@
-from turtle import pos
 import paramiko
+from validator import *
 
 class MYSSH:
     ssh = paramiko.SSHClient()
@@ -8,17 +8,6 @@ class MYSSH:
     MOANA_PASS = "root"
 
     JETSON_PATH = "~/MOANA/jetson/"
-
-    YAW_MIN_MAX = 20
-    HEADING_MIN = 0
-    HEADING_MAX = 360
-    STEPPER_MIN_MAX = 16.5
-    PITCH_MIN_MAX = 12
-    DEPTH_MIN = 0
-    DEPTH_MAX = 30
-    THRUST_MIN = 0
-    THRUST_MAX = 100
-
 
     def __init__(self):
         self.ssh.load_system_host_keys()
@@ -44,8 +33,10 @@ class MYSSH:
     # recursively calls until successful
     def sendCommand(self, command):
         try:
+            print("Sending command: " + command + "...")
             return self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
-        except:
+        except Exception as error_message:
+            print("Unable to send command: " + error_message)
             self.connect(self)
             return self.sendCommand(self, command)
 
@@ -58,7 +49,7 @@ class MYSSH:
         print(ssh_stdout.readlines()) # print output
         ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, "python3") # start python3 shell
         print(ssh_stdout.readlines()) # print output
-        ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, "import systemControl.py") # import SystemControl class
+        ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, "from systemControl import SystemControl") # import SystemControl class
         print(ssh_stdout.readlines()) # print output
         ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, "systemControl = new SystemControl") # initialize systemControl
         print(ssh_stdout.readlines()) # print output
@@ -67,87 +58,81 @@ class MYSSH:
     def closeWorkingTerminal(self):
         self.sendCommand(self, "exit()")
 
+    # start mission(bearing, pathLength, pathWidth, pathCount, layerCount)
+    # bearing: initial heading
+    # pathLength: length in time of path
+    # pathWidth: turning radius
+    # pathCount: number of paths at each depth
+    # layerCount: list of depths
+    def mission(self, bearing, pathLength, pathWidth, pathCount, layerCount):
+        args = bearing + "," + pathLength + "," + pathWidth + "," + pathCount + "," + layerCount
+        command = "systemControl.mission(" + args + ")"
+        self.sendCommand(self, command)
+
+    # start data collection (time)
+    # time: length to run (default: 0 = run until told to stop)
+    # stop scientific payload collection
+    def startDataCollection(self, time = 0):
+        command = "systemControl.startDataCollection()"
+        self.sendCommand(self, command)
+
+    # stop data collection ()
+    # stop scientific payload collection
+    def stopDataCollection(self):
+        command = "systemControl.stopDataCollection()"
+        self.sendCommand(self, command)
+
     # set yaw (yaw)
     # yaw: min max +- 20
     def setYaw(self, yaw):
-        if abs(yaw) <= self.YAW_MIN_MAX:
+        if yawIsValid(yaw):
             command = "systemControl.setYaw(" + yaw + ")"
             self.sendCommand(self, command)
         else:
-            print("yaw is out of range: +-" + self.YAW_MIN_MAX)
+            yawErrMsg()
     
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
     def setHeading(self, heading):
-        if heading >= self.HEADING_MIN and heading <= self.HEADING_MAX:
+        if headingIsValid(heading):
             command = "systemControl.setHeading(" + heading + ")"
             self.sendCommand(self, command)
         else:
-            print("heading is out of range: " + self.HEADING_MIN + " <= heading <= " + self.HEADING_MAX)
-
-    # hold heading (direction, duration)
-    # heading range: 0-360 degrees relative to North
-    # SHOULD NOT BE USED
-    def holdHeading(self, heading, time):
-        if heading >= self.HEADING_MIN and heading <= self.HEADING_MAX:
-            command = "systemControl.holdHeading(" + heading + ", " + time + ")"
-            self.sendCommand(self, command)
-        else:
-            print("heading is out of range: " + self.HEADING_MIN + " <= heading <= " + self.HEADING_MAX)
+            headingErrMsg()
 
     # set stepper (position)
     # position is distance from center, 
     # position: min max +- 16.5 cm
     def setStepper(self, position):
-        if abs(position) <= self.STEPPER_MIN_MAX:
+        if stepperIsValid(position):
             command = "systemControl.setStepper(" + position + ")"
             self.sendCommand(self, command)
         else:
-            print("position is out of range: +-" + self.STEPPER_MIN_MAX)
+            stepperErrMsg()
 
     # set pitch (angle)
     # angle: min max +- 12 degrees
     def setPitch(self, angle):
-        if abs(angle) <= self.PITCH_MIN_MAX:
+        if pitchIsValid(angle):
             command = "systemControl.setPitch(" + angle + ")"
             self.sendCommand(self, command)
         else:
-            print("pitch is out of range: +-" + self.PITCH_MIN_MAX)
+            pitchErrMsg()
 
     # set depth (depth)
     # depth: range 0 - 30 m
     def setDepth(self, depth):
-        if depth >= self.DEPTH_MIN and depth <= self.DEPTH_MAX:
+        if depthIsValid(depth):
             command = "systemControl.setDepth(" + depth + ")"
             self.sendCommand(self, command)
         else:
-            print("depth is out of range: " + self.DEPTH_MIN + " <= depth <= " + self.DEPTH_MAX)
-    
-    # hold depth (depth, time)
-    # depth: range 0 - 30 m
-    # SHOULD NOT BE USED
-    def holdDepth(self, depth, time):
-        if depth >= self.DEPTH_MIN and depth <= self.DEPTH_MAX:
-            command = "systemControl.holdDepth(" + depth + ", " + time + ")"
-            self.sendCommand(self, command)
-        else:
-            print("depth is out of range: " + self.DEPTH_MIN + " <= depth <= " + self.DEPTH_MAX)
+            depthErrMsg()
 
     # set thrust (thrust)
     # thrust: range speed 0-100
     def setThrust(self, thrust):
-        if thrust >= self.THRUST_MIN and thrust <= self.THRUST_MAX:
+        if thrustIsValid(thrust):
             command = "systemControl.setThrust(" + thrust + ")"
             self.sendCommand(self, command)
         else:
-            print("thrust is out of range: " + self.THRUST_MIN + " <= thrust <= " + self.THRUST_MAX)
-    
-    # hold thrust (thrust, time)
-    # thrust: range speed 0-100
-    # SHOULD NOT BE USED
-    def holdThrust(self, thrust, time):
-        if thrust >= self.THRUST_MIN and thrust <= self.THRUST_MAX:
-            command = "systemControl.holdThrust(" + thrust + ", " + time + ")"
-            self.sendCommand(self, command)
-        else:
-            print("thrust is out of range: " + self.THRUST_MIN + " <= thrust <= " + self.THRUST_MAX)
+            thrustErrMsg()
