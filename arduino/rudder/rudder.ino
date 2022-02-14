@@ -26,15 +26,21 @@ Servo rudder;
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 #define dirPin 8
 #define stepPin 7
+#define IDLE 69
 
+int sensorRequest = 0;
 float xpos = 0;
 float ypos = 0;
 float zpos = 0;
 int counter = 100;
 int type = 0; 
 int input = 0;
+int sent = 0;
 
 enum d{LEFT=1, RIGHT};
+
+#define HEADING_SENSOR 2
+#define JETSON 1
 
 int direction;
 // Function prototypes
@@ -43,8 +49,11 @@ void serialPrintData(st_cmd_t *msg);
 // CAN message object
 st_cmd_t Msg;
 
+void CANsend(int ID, int sensor);
+
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
+int yposArray[3];
 
 void setup()
 {
@@ -84,18 +93,28 @@ void loop()
     input = CANin();
   CANsend(6); // data to data logger
 
-  if (type == 0)
+  switch(type)
   {
-    if (abs(input) <= MAX_RUDDER_ANGLE)
-      rudder.write(input);
-    else
-      Serial.println("Input angle cannot be higher than %d degrees", MAX_RUDDER_ANGLE);
-  }
-  else if (type == 1)
-  {
-    if (direction)//if auv is turning around, need to specify which direction to turn. 
-      turn(direction);
-    setHeading(input);
+    case 0:
+      if (abs(input) <= MAX_RUDDER_ANGLE)
+        rudder.write(input);
+      else
+        Serial.println("Input angle cannot be higher than %d degrees", MAX_RUDDER_ANGLE);
+    case 1:
+      if (direction)//if auv is turning around, need to specify which direction to turn. 
+        turn(direction);
+      setHeading(input);
+      break;
+    case 3:
+      if(sent == 0){
+         CANsend(JETSON, sensorRequest);
+         sent = 1;
+      }
+      break;
+    case IDLE:
+      break;
+    default:
+      break;
   }
   delay(500);
   /*
@@ -144,11 +163,11 @@ float getHeading()
 void turn(int dir, int heading)//this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
 {
   if (dir == LEFT)
-    rudder.write(20);
+    rudder.write(MAX_RUDDER_ANGLE);
   else//dir == RIGHT
-    rudder.write(-20);
+    rudder.write(-MAX_RUDDER_ANGLE);
   delay(4000);
-  input = 179;
+  direction = 0;
 }
 
 void setHeading(float h)
@@ -162,19 +181,78 @@ void setHeading(float h)
 
 int CANIn()
 {
-  int dir = 0, angle = 0, id = 0;
+  int id = 0;
   id = Msg.pt_data[0];
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
-  if (type == 0)
-  {
-    return Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
+  switch(type) {
+    case 0:
+      return Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
+      break;
+    case 1:
+      direction = Msg.pt_data[4];
+      return (Msg.pt_data[MESSAGE_TYPE + 1] * 10) + Msg.pt_data[MESSAGE_TYPE + 2]; // return heading in degrees
+      break;
+    case 3:
+      sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
+      break;
+    default:
+      Serial.println("Not a valid type!");
+      break;
+
   }
-  else if (type == 1)
+}
+
+void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
+{
+  int whole, fraction;
+  if (testValue < 0.0)
   {
-    direction = Msg.pt_data[4];
-    return (Msg.pt_data[MESSAGE_TYPE + 1] * 10) + Msg.pt_data[MESSAGE_TYPE + 2]; // return heading in degrees
+    yposArray[0] = 1; // 1 is a negative value
+    testValue = testValue * -1;
   }
+  else if (testValue > 0.0)
+  {
+    yposArray[0] = 2; // 2 is positive
+  }
+  else if (testValue == 0)
+  {
+    yposArray[0] = 0;
+  }
+  whole = round(testValue);
+  yposArray[1] = whole;
+  fraction = testVal * 100;
+  fraction = fraction - (whole * 100);
+  yposArray[2] = fraction;
+  /*
+    Serial.println(testVal);
+    Serial.println(yposArray[0]);
+    Serial.println(yposArray[1]);
+    Serial.println(yposArray[2]);
+  */
+}
+
+void CANsend(int ID, int sensor)
+{
+  clearBuffer(&Buffer[0]);
+  Msg.id.ext = MESSAGE_ID; // Set message ID
+  Buffer[0] = ID;
+  Buffer[1] = sensor;
+  switch (sensor) {
+    case HEADING_SENSOR:
+      convert(getHeading());
+      for (int i = 0; i < 7; i++)
+        Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+      break;
+    default:
+      break;
+  }
+  // Send command to the CAN port controller
+  Msg.cmd = CMD_TX_DATA; // send message
+  // Wait for the command to be accepted by the controller
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
+  // Wait for command to finish executing
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
 }
 
 void serialPrintData(st_cmd_t *msg)

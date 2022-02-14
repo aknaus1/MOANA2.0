@@ -26,6 +26,7 @@
 #define DEPTH_KP 5.7296
 #define PITCH_KP .0024543
 #define STEP_KP .00125
+#define IDLE 69
 
 float xpos = 0;
 float zpos = 0;
@@ -55,13 +56,14 @@ const int ledPin = 13; // the number of the LED pin
 void calibrate();
 void pitchControl();
 
-void CANsend(int ID);
+void CANsend(int ID, int sensor);
 
 // variables will change:
 int buttonState1 = 0;
 int buttonState2 = 0; // variable for reading the pushbutton status
 int velocity = 100;
 int x = 1;
+int sensorRequest = 0;
 
 float stepsToX = 0; // centimeters
 float distance = 0; // meters
@@ -82,12 +84,14 @@ enum sensorSend
   PITCH,
   YAW,
   STEP_POS,
-  TEMP
+  TEMP,
+  SLIDER
 };
 
 enum IDs
 {
-  THRUST = 2,
+  JETSON,
+  THRUST,
   RUDDER,
   PITCH = 5,
   DATA,
@@ -136,6 +140,7 @@ void loop()
   CANsend(DATA, PITCH); // data to data logger
   CANsend(DATA, DEPTH);
   CANsend(DATA, TEMP);
+
   switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
     case 0:
       setPitch(xInput);
@@ -145,6 +150,11 @@ void loop()
       break;
     case 2:
       setSliderPosition(distance);
+      break;
+    case 3:
+      CANsend(JETSON, sensorRequest);
+      break;
+    case IDLE:
       break;
     default:
       break;
@@ -321,30 +331,33 @@ void CANin()
       ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
       : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
       break;
+    case 3:
+      sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
+      break; 
     default:
       break;
   }
 }
 
-void convert(float testValue) // converts a flaot or double into an array that can be sent over the CAN bus
+void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
 {
   int whole, fraction;
-  if (testVal < 0.0)
+  if (testValue < 0.0)
   {
     yposArray[0] = 1; // 1 is a negative value
-    testVal = testVal * -1;
+    testValue = testValue * -1;
   }
-  else if (testVal > 0.0)
+  else if (testValue > 0.0)
   {
     yposArray[0] = 2; // 2 is positive
   }
-  else if (testVal == 0)
+  else if (testValue == 0)
   {
     yposArray[0] = 0;
   }
-  whole = round(testVal);
+  whole = round(testValue);
   yposArray[1] = whole;
-  fraction = testVal * 100;
+  fraction = testValue * 100;
   fraction = fraction - (whole * 100);
   yposArray[2] = fraction;
   /*
@@ -359,7 +372,7 @@ void sliderDone()
 {
   for (int i = 0; i < 20; i++)
   {
-    CANsend(6);
+    CANsend(DATA, SLIDER);
     delay(500);
   }
 }
@@ -370,34 +383,40 @@ void CANsend(int ID, int sensor)
   Msg.id.ext = MESSAGE_ID; // Set message ID
   Buffer[0] = ID;
   Buffer[1] = sensor;
-  switch (sensor)
-  {
-  case PITCH:
-    convert(getPitch());
-    for (int i = 0; i < 7; i++)
-      Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
-    break;
-  case DEPTH:
-    convert(getDepth());
-    Buffer[2] = yposArray[1];
-    Buffer[3] = yposArray[2];
-    for (int i = 4; i <= 7; i++)
-      Buffer[i] = 0;
-    break;
-  case TEMP:
-    convert(getTemp());
-    for (int i = 0; i < 7; i++)
-      Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
-    break;
-  default:
-    break;
+  switch (sensor) {
+    case PITCH:
+      convert(getPitch());
+      for (int i = 0; i < 6; i++)
+        Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+      break;
+    case DEPTH:
+      convert(getDepth());
+      Buffer[2] = yposArray[1];
+      Buffer[3] = yposArray[2];
+      for (int i = 4; i <= 7; i++)
+        Buffer[i] = 0;
+      break;
+    case TEMP:
+      convert(getTemp());
+      for (int i = 0; i < 6; i++)
+        Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+      break;
+    case SLIDER:
+      convert(currentLocation);
+      //fills out the message array with a 3 byte representation of currentLocation, followed by a 3 byte representation of stepsToX since they are both floats
+      for(int i = MESSAGE_TYPE + 1; i<8;i++) {
+        if(i == 5) convert(stepsToX); //on 5th bit of array switch to stepsToX
+        Buffer[i] = yposArray[(i + 1) % 3];// (i+1)%3 = 0 1 2, 0 1 2 when running    
+      }
+      break;
+    default:
+      Serial.print("Please pick a valid sensor to send!");
+      break;
   }
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
   // Wait for the command to be accepted by the controller
-  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED)
-    ;
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
-  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED)
-    ;
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
 }
