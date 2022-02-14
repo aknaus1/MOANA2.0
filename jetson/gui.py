@@ -33,18 +33,18 @@ class Window(QWidget):
     def create_mission_tab(self):
         self._mission_tab = QWidget()
 
-        label_values = ['Bearing', 'Path Length', 'Path Width', 'Path Count', 'Layer Count']
+        mission_label_values = ['Bearing', 'Path Length', 'Path Width', 'Path Count', 'Initial Depth', 'Layer Count', 'Layer Spacing', 'Type of Water', 'Data Parameter']
         mission_labels = []
         self.mission_fields = []
 
-        for i in label_values:
+        for i in mission_label_values:
             mission_labels.append(QLabel(i))
 
-        for i in range(len(label_values)):
+        for i in range(len(mission_label_values)):
             self.mission_fields.append(QLineEdit())
 
         sub_layout = QGridLayout()
-        for i in range(len(label_values)):
+        for i in range(len(mission_label_values)):
             sub_layout.addWidget(mission_labels[i], i, 0)
             sub_layout.addWidget(self.mission_fields[i], i, 1)
 
@@ -62,69 +62,94 @@ class Window(QWidget):
     def create_high_testing_tab(self):
         self._high_testing_tab = QWidget()
 
+        # pitch control
         pc_title = QLabel('Pitch Control')
         self.pc_button = QPushButton('Send')
-        pc_lab1 = QLabel('Pitch angle command')
-        self.pc_field1 = QLineEdit()
-        pc_lab2 = QLabel('KPp')
-        self.pc_field2 = QLineEdit()
-        pc_lab3 = QLabel('Thrust command')
-        self.pc_field3 = QLineEdit()
 
         pc_layout = QGridLayout()
         pc_layout.addWidget(pc_title, 0, 0)
         pc_layout.addWidget(self.pc_button, 0, 1)
-        pc_layout.addWidget(pc_lab1, 1, 0)
-        pc_layout.addWidget(self.pc_field1, 1, 1)
-        pc_layout.addWidget(pc_lab2, 2, 0)
-        pc_layout.addWidget(self.pc_field2, 2, 1)
-        pc_layout.addWidget(pc_lab3, 3, 0)
-        pc_layout.addWidget(self.pc_field3, 3, 1)
         
+        pc_label_values = ['Pitch angle command', 'KPp', 'Thrust command']
+        pc_labels = []
+        self.pc_fields = []
+
+        for i in pc_label_values:
+            pc_labels.append(QLabel(i))
+            
+        for _ in range(len(pc_label_values)):
+            self.pc_fields.append(QLineEdit())
+
+        for i in range(len(pc_label_values)):
+            pc_layout.addWidget(pc_labels[i], i + 1, 0)
+            pc_layout.addWidget(self.pc_fields[i], i + 1, 1)
+
+        # heading control
         hc_title = QLabel('Heading Control')
         self.hc_button = QPushButton('Send')
-        hc_lab1 = QLabel('Heading command')
-        self.hc_field1 = QLineEdit()
-        hc_lab2 = QLabel('KPh')
-        self.hc_field2 = QLineEdit()
 
         hc_layout = QGridLayout()
         hc_layout.addWidget(hc_title, 0, 0)
         hc_layout.addWidget(self.hc_button, 0, 1)
-        hc_layout.addWidget(hc_lab1, 1, 0)
-        hc_layout.addWidget(self.hc_field1, 1, 1)
-        hc_layout.addWidget(hc_lab2, 2, 0)
-        hc_layout.addWidget(self.hc_field2, 2, 1)
         
-        dc_title = QLabel('Depth Control')
+        hc_label_values = ['Heading command', 'KPh']
+        hc_labels = []
+        self.hc_fields = []
+
+        for i in hc_label_values:
+            hc_labels.append(QLabel(i))
+            
+        for _ in range(len(hc_label_values)):
+            self.hc_fields.append(QLineEdit())
+
+        for i in range(len(hc_label_values)):
+            hc_layout.addWidget(hc_labels[i], i + 1, 0)
+            hc_layout.addWidget(self.hc_fields[i], i + 1, 1)
+        
+        # depth control
+        dc_title = QLabel('Heading Control')
         self.dc_button = QPushButton('Send')
-        dc_lab1 = QLabel('Depth command')
-        self.dc_field1 = QLineEdit()
-        dc_lab2 = QLabel('KPp')
-        self.dc_field2 = QLineEdit()
-        dc_lab3 = QLabel('KPd')
-        self.dc_field3 = QLineEdit()
 
         dc_layout = QGridLayout()
         dc_layout.addWidget(dc_title, 0, 0)
         dc_layout.addWidget(self.dc_button, 0, 1)
-        dc_layout.addWidget(dc_lab1, 1, 0)
-        dc_layout.addWidget(self.dc_field1, 1, 1)
-        dc_layout.addWidget(dc_lab2, 2, 0)
-        dc_layout.addWidget(self.dc_field2, 2, 1)
-        dc_layout.addWidget(dc_lab3, 3, 0)
-        dc_layout.addWidget(self.dc_field3, 3, 1)
+        
+        dc_label_values = ['Depth command', 'KPp', 'KPd']
+        dc_labels = []
+        self.dc_fields = []
 
-        sc_title = QLabel('Speed Control')
+        for i in dc_label_values:
+            dc_labels.append(QLabel(i))
+            
+        for _ in range(len(dc_label_values)):
+            self.dc_fields.append(QLineEdit())
+
+        for i in range(len(dc_label_values)):
+            dc_layout.addWidget(dc_labels[i], i + 1, 0)
+            dc_layout.addWidget(self.dc_fields[i], i + 1, 1)
+
+        # speed control
+        sc_title = QLabel('Heading Control')
         self.sc_button = QPushButton('Send')
-        sc_lab1 = QLabel('Speed command')
-        self.sc_field1 = QLineEdit()
 
         sc_layout = QGridLayout()
         sc_layout.addWidget(sc_title, 0, 0)
         sc_layout.addWidget(self.sc_button, 0, 1)
-        sc_layout.addWidget(sc_lab1, 1, 0)
-        sc_layout.addWidget(self.sc_field1, 1, 1)
+        
+        sc_label_values = ['Speed command']
+        sc_labels = []
+        self.sc_fields = []
+
+        for i in sc_label_values:
+            sc_labels.append(QLabel(i))
+            
+        for _ in range(len(sc_label_values)):
+            self.sc_fields.append(QLineEdit())
+
+        for i in range(len(sc_label_values)):
+            sc_layout.addWidget(sc_labels[i], i + 1, 0)
+            sc_layout.addWidget(self.sc_fields[i], i + 1, 1)
+
 
         layout = QVBoxLayout()
         layout.addLayout(pc_layout)
@@ -143,6 +168,7 @@ class Window(QWidget):
     def create_low_testing_tab(self):
         self._low_testing_tab = QWidget()
 
+        # mass slider control
         mc_title = QLabel('Mass Slider Control')
         self.mc_button = QPushButton('Send')
         mc_lab1 = QLabel('Mass slider position command')
@@ -154,6 +180,7 @@ class Window(QWidget):
         mc_layout.addWidget(mc_lab1, 1, 0)
         mc_layout.addWidget(self.mc_field1, 1, 1)
         
+        # rudder control
         rc_title = QLabel('Rudder Control')
         self.rc_button = QPushButton('Send')
         rc_lab1 = QLabel('Rudder angle command')
@@ -165,6 +192,7 @@ class Window(QWidget):
         rc_layout.addWidget(rc_lab1, 1, 0)
         rc_layout.addWidget(self.rc_field1, 1, 1)
         
+        # thruster control
         tc_title = QLabel('Thruster Control')
         self.tc_button = QPushButton('Send')
         tc_lab1 = QLabel('Thrust force')
@@ -176,6 +204,7 @@ class Window(QWidget):
         tc_layout.addWidget(tc_lab1, 1, 0)
         tc_layout.addWidget(self.tc_field1, 1, 1)
 
+        # data collection
         ac_title = QLabel('Data collection')
         self.ac_button = QPushButton('Send')
         ac_lab1 = QLabel('Length of time')
@@ -204,65 +233,57 @@ class Window(QWidget):
     # send mission command
     def start_mission(self):
         print('start mission')
-        print(self.mission_fields[0].text())
-        print(self.mission_fields[1].text())
-        print(self.mission_fields[2].text())
-        print(self.mission_fields[3].text())
-        print(self.mission_fields[4].text())
+        for i in self.mission_fields:
+            print(i.text())
         self.ssh.mission(self.mission_fields[0], self.mission_fields[1], self.mission_fields[2], self.mission_fields[3], self.mission_fields[4])
 
     # send pitch control command
     def pc_command(self):
         print('pitch control')
-        print(self.pc_field1.text())
-        print(self.pc_field2.text())
-        print(self.pc_field3.text())
-        self.ssh.setPitch(self.pc_field1)
+        for i in self.pc_fields:
+            print(i.text())
+        self.ssh.setPitch(self.pc_fields[0])
 
     # send heading control command
     def hc_command(self):
         print('heading control')
-        print(self.hc_field1.text())
-        print(self.hc_field2.text())
-        self.ssh.setHeading(self.hc_field1)
+        for i in self.hc_fields:
+            print(i.text())
+        self.ssh.setHeading(self.hc_fields[0])
     
     # send depth control command
     def dc_command(self):
         print('depth control')
-        print(self.dc_field1.text())
-        print(self.dc_field2.text())
-        print(self.dc_field3.text())
-        self.ssh.setDepth(self.dc_field1)
+        for i in self.dc_fields:
+            print(i.text())
+        self.ssh.setDepth(self.dc_fields[0])
 
     # send speed control command
     def sc_command(self):
         print('speed control')
-        print(self.sc_field1.text())
-        self.ssh.setThrust(self.sc_field1)
+        for i in self.sc_fields:
+            print(i.text())
+        self.ssh.setThrust(self.sc_fields[0])
 
     # send mass slider control command
     def mc_command(self):
         print('mass slider control')
         print(self.mc_field1.text())
-        self.ssh.setStepper(self.mc_field1)
 
     # send rudder control command
     def rc_command(self):
         print('rudder control')
         print(self.rc_field1.text())
-        self.ssh.setYaw(self.rc_field1)
     
     # send thrust control command
     def tc_command(self):
         print('thrust control')
         print(self.tc_field1.text())
-        self.ssh.setThrust(self.tc_field1)
 
     # send data collection command
     def ac_command(self):
         print('data collection')
         print(self.ac_field1.text())
-        self.ssh.startDataCollection(self.ac_field1)
 
 
 if __name__ == '__main__':
