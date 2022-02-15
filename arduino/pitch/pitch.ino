@@ -64,6 +64,7 @@ int buttonState2 = 0; // variable for reading the pushbutton status
 int velocity = 100;
 int x = 1;
 int sensorRequest = 0;
+int water;
 
 float stepsToX = 0; // centimeters
 float distance = 0; // meters
@@ -173,7 +174,10 @@ void initSensors()
   }
 
   depthSensor.setModel(MS5837::MS5837_30BA);
-  depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
+  if(water == 0)
+    depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
+  else
+    depthSensor.setFluidDensity(SALTWATER);
 
   // IMU Code
   Serial.println("Orientation Sensor Test");
@@ -333,7 +337,10 @@ void CANin()
       break;
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
-      break; 
+      break;
+    case 4: 
+      water = Msg.pt_data[2];
+      break;
     default:
       break;
   }
