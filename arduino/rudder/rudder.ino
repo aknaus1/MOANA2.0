@@ -36,6 +36,7 @@ int counter = 100;
 int type = 0; 
 int input = 0;
 int sent = 0;
+float heading_kp = HEADING_KP;
 
 enum d{LEFT=1, RIGHT};
 
@@ -111,6 +112,8 @@ void loop()
          sent = 1;
       }
       break;
+    case 5://set heading_kp in  CANin
+      break;
     case IDLE:
       break;
     default:
@@ -172,7 +175,7 @@ void turn(int dir, int heading)//this solution is kind of janky but basically tu
 
 void setHeading(float h)
 {
-  float newAngle = (h - getHeading()) * HEADING_KP; // new angle will now be from 0 - some float angle that should be maxed to 40
+  float newAngle = (h - getHeading()) * heading_kp; // new angle will now be from 0 - some float angle that should be maxed to 40
   if (newAngle > MAX_RUDDER_ANGLE * 2)
     newAngle = MAX_RUDDER_ANGLE * 2;
   newAngle -= MAX_RUDDER_ANGLE;
@@ -195,6 +198,9 @@ int CANIn()
       break;
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
+      break;
+    case 5:
+      heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + (Msg.pt_data[MESSAGE_TYPE + 2] / 100)
       break;
     default:
       Serial.println("Not a valid type!");
