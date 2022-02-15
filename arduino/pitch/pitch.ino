@@ -24,7 +24,7 @@
 #define MAINTAIN_DEPTH 3
 #define MAX_ANGLE 12
 #define DEPTH_KP 5.7296
-#define PITCH_KP .0024543
+#define PITCH_KP .24543
 #define STEP_KP .00125
 #define IDLE 69
 
@@ -32,6 +32,7 @@ float xpos = 0;
 float zpos = 0;
 int counter = 100;
 int type = 0;
+float kp[3] = {DEPTH_KP, PITCH_KP, STEP_KP};//array of constants that willl be used in depth, slider and pitch control loops
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 MS5837 depthSensor;
@@ -126,7 +127,7 @@ void setup()
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin, INPUT);
 
-  initSensors();
+  initSensors();//prepares sensors to read data
   calibrate(); // runs calibration
 }
 
@@ -152,8 +153,16 @@ void loop()
     case 2:
       setSliderPosition(distance);
       break;
-    case 3:
+    case 3://sensor request
       CANsend(JETSON, sensorRequest);
+      break;
+    case 4://water density
+      if(water == 0)
+       depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
+      else
+       depthSensor.setFluidDensity(SALTWATER);
+      break;
+    case 5://KPs
       break;
     case IDLE:
       break;
@@ -174,10 +183,6 @@ void initSensors()
   }
 
   depthSensor.setModel(MS5837::MS5837_30BA);
-  if(water == 0)
-    depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
-  else
-    depthSensor.setFluidDensity(SALTWATER);
 
   // IMU Code
   Serial.println("Orientation Sensor Test");
@@ -195,7 +200,7 @@ void initSensors()
 
 void setSliderPosition(float dist)
 {
-  stepsToX = dist / STEP_KP - currentLocation;
+  stepsToX = dist / kp[2] - currentLocation;
 
   //set direction of stepper motor
   stepsToX <= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
@@ -225,7 +230,7 @@ void setPitch(float pitch)
     sign = -1;
   if (abs(pitch) > MAX_ANGLE)
     pitch = MAX_ANGLE * sign;
-  newPos = (pitch - getPitch()) * PITCH_KP;
+  newPos = (pitch - getPitch()) * kp[1];
 
   setSliderPosition(newPos);
 }
@@ -239,7 +244,7 @@ void setDepth(int d)
   }
 
   float newPitch;
-  newPitch = (d - round(getDepth())) * DEPTH_KP + MAINTAIN_DEPTH;
+  newPitch = (d - round(getDepth())) * kp[0] + MAINTAIN_DEPTH;
   setPitch(newPitch);
 }
 
@@ -335,11 +340,17 @@ void CANin()
       ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
       : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
       break;
-    case 3:
+    case 3://sensor request
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
       break;
-    case 4: 
+    case 4: //water density
       water = Msg.pt_data[2];
+      break;
+    case 5://kp set
+      for(int i = 0; i < 3; i ++)
+      //forms array of kps for depth control, pitch control and slider control, converting 2 byte floats sent by jetson
+        kp[i] = Msg.pt_data[(MESSAGE_TYPE + 1) + 2*i] //value of left side of dot: XXXX.xxxx
+        + (Msg.pt_data[(MESSAGE_TYPE + 2) + 2*i] / 100 );//value of right side of dot xxxx.XXXX
       break;
     default:
       break;
