@@ -186,8 +186,8 @@ int CANIn()
 {
   int id = 0;
   id = Msg.pt_data[0];
+  if (id != MESSAGE_ID) return;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
-
   switch(type) {
     case 0:
       return Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
