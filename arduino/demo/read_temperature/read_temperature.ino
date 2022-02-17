@@ -22,7 +22,7 @@
 #define MESSAGE_PROTOCOL 1 // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
 #define MESSAGE_LENGTH 8 // Data length: 8 bytes
 #define MESSAGE_RTR 0 // rtr bit
-
+#define MESSAGE_TYPE 1//dictates whether to start or stop
 
 
 // Connect pin 1 (on the left) of the sensor to +5V
@@ -44,6 +44,8 @@ uint8_t txBuffer[8] = {};
 // CAN message object
 st_cmd_t txMsg;
 int yposArray[3];
+int type = 1, interval = 1000;
+
 
 void setup() {
   canInit(500000);                  // Initialise CAN port. must be before Serial.begin
@@ -85,35 +87,30 @@ void convert() {
 
 void loop() {
   // Wait a few seconds between measurements.
-  delay(1000);
-  temperature = dht.readTemperature();
-    // Check if any reads failed and exit early (to try again).
-  if (isnan(temperature)) {
-    Serial.println(F("Failed to read from DHT sensor!"));
-    return;
-  } 
-  convert();
-  Serial.print(F("%  Temperature: "));
-  Serial.print(temperature);
-
-  CANsend();
-  //float h = dht.readHumidity();
-  // Read temperature as Celsius (the default)
-  
-  // Read temperature as Fahrenheit (isFahrenheit = true)
-  //float f = dht.readTemperature(true);
-
-
-  
-
-  // Compute heat index in Fahrenheit (the default)
-  //float hif = dht.computeHeatIndex(f, h);
-  // Compute heat index in Celsius (isFahreheit = false)
-  //float hic = dht.computeHeatIndex(t, h, false);
+  // Clear the message buffer
+  clearBuffer(&Buffer[0]); // Send command to the CAN port controller
+  Msg.cmd = CMD_RX_DATA;   // Wait for the command to be accepted by the controller
+  if ((can_cmd(&Msg) == CAN_CMD_ACCEPTED) && (can_get_status(&Msg) != CAN_STATUS_NOT_COMPLETED))
+    CANin();
+  if(type == 0) {
+    temperature = dht.readTemperature();
+      // Check if any reads failed and exit early (to try again).
+    if (isnan(temperature)) {
+      Serial.println(F("Failed to read from DHT sensor!"));
+      return;
+    } 
+    convert();
+    Serial.print(F("%  Temperature: "));
+    Serial.print(temperature);
+    
+    CANsend(6);
+    CANsend(1);
+  }
+  delay(interval);//default 1000 ms
 
 }
 
-void CANsend() {
+void CANsend(int ID) {
   Serial.println("Temperature:");
   Serial.println(temperature);
   
@@ -121,7 +118,7 @@ void CANsend() {
   clearBuffer(&txBuffer[0]);
 
   txMsg.id.ext = MESSAGE_ID;         // Set message ID
-  txBuffer[0] = 6;
+  txBuffer[0] = ID;
 
   for (int i = 0; i < 7; i++) {
     if (i < 4) {
@@ -143,4 +140,22 @@ void CANsend() {
   while (can_cmd(&txMsg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
   while (can_get_status(&txMsg) == CAN_STATUS_NOT_COMPLETED);
+}
+
+void CANin()
+{
+
+  // Clear the message buffer
+  // clearBuffer( & Buffer[0]); // Send command to the CAN port controller
+  // Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
+  // while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
+  // Wait for command to finish executing
+  // while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
+
+  // Data is now available in the message object
+  int id = 0;
+  id = Msg.pt_data[0];
+  if (id != MESSAGE_ID) return;
+  type = Msg.pt_data[MESSAGE_TYPE]; // determines whether to start or stop recording
+  interval = Msg.pt_data[MESSAGE_TYPE + 1]
 }
