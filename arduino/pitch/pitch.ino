@@ -32,7 +32,7 @@ float xpos = 0;
 float zpos = 0;
 int counter = 100;
 int type = 0;
-float kp[3] = {DEPTH_KP, PITCH_KP, STEP_KP};//array of constants that willl be used in depth, slider and pitch control loops
+float kp[3] = {PITCH_KP, DEPTH_KP, STEP_KP};//array of constants that willl be used in depth, slider and pitch control loops
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 MS5837 depthSensor;
@@ -230,7 +230,7 @@ void setPitch(float pitch)
     sign = -1;
   if (abs(pitch) > MAX_ANGLE)
     pitch = MAX_ANGLE * sign;
-  newPos = (pitch - getPitch()) * kp[1];
+  newPos = (pitch - getPitch()) * kp[0];
 
   setSliderPosition(newPos);
 }
@@ -244,7 +244,7 @@ void setDepth(int d)
   }
 
   float newPitch;
-  newPitch = (d - round(getDepth())) * kp[0] + MAINTAIN_DEPTH;
+  newPitch = (d - round(getDepth())) * kp[1] + MAINTAIN_DEPTH;
   setPitch(newPitch);
 }
 
@@ -325,9 +325,10 @@ void CANin()
   // Data is now available in the message object
   int dir = 0, angle = 0, id = 0;
   id = Msg.pt_data[0];
+  
+  if (id != MESSAGE_ID) return;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
 
-  if (id != MESSAGE_ID) return;
   switch (type) {
     case 0: // set pitch
       xInput = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2];// sends negative of input if direction byte is 0
@@ -347,10 +348,8 @@ void CANin()
       water = Msg.pt_data[2];
       break;
     case 5://kp set
-      for(int i = 0; i < 3; i ++)
       //forms array of kps for depth control, pitch control and slider control, converting 2 byte floats sent by jetson
-        kp[i] = Msg.pt_data[(MESSAGE_TYPE + 1) + 2*i] //value of left side of dot: XXXX.xxxx
-        + (Msg.pt_data[(MESSAGE_TYPE + 2) + 2*i] / 100 );//value of right side of dot xxxx.XXXX
+        kp[MESSAGE_TYPE + 1] = Msg.pt_data[(MESSAGE_TYPE + 2)] + (Msg.pt_data[(MESSAGE_TYPE + 3)] / 100 );//value of right side of dot xxxx.XXXX
       break;
     default:
       break;
