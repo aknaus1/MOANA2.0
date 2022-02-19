@@ -9,6 +9,12 @@ DEPTH_MAX = 30
 THRUST_MIN = 0
 THRUST_MAX = 100
 
+def thrustIsValid(thrust):
+    return thrust >= THRUST_MIN and thrust <= THRUST_MAX
+
+def thrustErrMsg():
+    print("thrust is out of range: " + str(THRUST_MIN) + " <= thrust <= " + str(THRUST_MAX))
+
 def yawIsValid(yaw):
     return abs(yaw) <= YAW_MIN_MAX
 
@@ -38,9 +44,3 @@ def depthIsValid(depth):
 
 def depthErrMsg():
     print("depth is out of range: " + str(DEPTH_MIN) + " <= depth <= " + str(DEPTH_MAX))
-
-def thrustIsValid(thrust):
-    return thrust >= THRUST_MIN and thrust <= THRUST_MAX
-
-def thrustErrMsg():
-    print("thrust is out of range: " + str(THRUST_MIN) + " <= thrust <= " + str(THRUST_MAX))

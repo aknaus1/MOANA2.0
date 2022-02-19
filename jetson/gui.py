@@ -107,7 +107,7 @@ class Window(QWidget):
             hc_layout.addWidget(self.hc_fields[i], i + 1, 1)
         
         # depth control
-        dc_title = QLabel('Heading Control')
+        dc_title = QLabel('Depth Control')
         self.dc_button = QPushButton('Send')
 
         dc_layout = QGridLayout()
@@ -129,7 +129,7 @@ class Window(QWidget):
             dc_layout.addWidget(self.dc_fields[i], i + 1, 1)
 
         # speed control
-        sc_title = QLabel('Heading Control')
+        sc_title = QLabel('Speed Control')
         self.sc_button = QPushButton('Send')
 
         sc_layout = QGridLayout()
@@ -235,55 +235,59 @@ class Window(QWidget):
         print('start mission')
         for i in self.mission_fields:
             print(i.text())
-        self.ssh.mission(self.mission_fields[0], self.mission_fields[1], self.mission_fields[2], self.mission_fields[3], self.mission_fields[4])
+        self.ssh.mission(self.mission_fields[0].text(), self.mission_fields[1].text(), self.mission_fields[2].text(), self.mission_fields[3].text(), self.mission_fields[4].text(), self.mission_fields[5].text(), self.mission_fields[6].text(), self.mission_fields[7].text(), self.mission_fields[8].text())
 
     # send pitch control command
     def pc_command(self):
         print('pitch control')
         for i in self.pc_fields:
             print(i.text())
-        self.ssh.setPitch(self.pc_fields[0])
+        self.ssh.setPitch(self.pc_fields[0].text(), self.pc_fields[1].text())
 
     # send heading control command
     def hc_command(self):
         print('heading control')
         for i in self.hc_fields:
             print(i.text())
-        self.ssh.setHeading(self.hc_fields[0])
+        self.ssh.setHeading(self.pc_fields[0].text(), self.pc_fields[1].text())
     
     # send depth control command
     def dc_command(self):
         print('depth control')
         for i in self.dc_fields:
             print(i.text())
-        self.ssh.setDepth(self.dc_fields[0])
+        self.ssh.setDepth(self.pc_fields[0].text(), self.pc_fields[1].text(), self.pc_fields[2].text())
 
     # send speed control command
     def sc_command(self):
         print('speed control')
         for i in self.sc_fields:
             print(i.text())
-        self.ssh.setThrust(self.sc_fields[0])
+        self.ssh.setThrust(self.sc_fields[0].text())
 
     # send mass slider control command
     def mc_command(self):
         print('mass slider control')
         print(self.mc_field1.text())
+        self.ssh.setStepper(self.mc_field1.text())
 
     # send rudder control command
     def rc_command(self):
         print('rudder control')
         print(self.rc_field1.text())
+        self.ssh.setRudder(self.rc_field1.text())
     
     # send thrust control command
     def tc_command(self):
         print('thrust control')
         print(self.tc_field1.text())
+        self.ssh.setThrust(self.tc_field1.text())
 
     # send data collection command
     def ac_command(self):
         print('data collection')
         print(self.ac_field1.text())
+        self.ssh.startDataCollection(self.ac_field1.text())
 
 
 if __name__ == '__main__':
