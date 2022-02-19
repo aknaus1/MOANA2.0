@@ -1,8 +1,10 @@
 import paramiko
+import ftplib
 from validator import *
 
 class MYSSH:
     ssh = paramiko.SSHClient()
+    ftp = ftplib.FTP()
     MOANA_IP = ""
     MOANA_USER = ""
     MOANA_PASS = ""
@@ -21,17 +23,37 @@ class MYSSH:
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         # connect to moana
-        self.connect(self)
+        self.sshConnect(self)
+
+        self.ftp = ftplib.FTP(self.MOANA_IP)
+        self.ftp.login()
 
     # establish ssh connection, move into working directory, and start python3 shell
     # recursively calls until successful
-    def connect(self):
+    def ftpConnect(self):
+        try: # try to connect
+            print("Attempting to connect...")
+            self.ftp.login(username=self.MOANA_USER, password=self.MOANA_PASS)
+        except Exception as error_message: # if fails to connect
+            print("error connecting to ftp server: " + error_message)
+        else: # if succeeds in connecting
+            self.startWorkingTerminal(self)
+
+    def ftpRequestFile(self, dir, fname):
+        try:
+            self.ftp.cwd(dir)
+            self.ftp.retrbinary("RETR " + fname, open(fname, 'wb').write)
+        except Exception as error_message:
+            print("error fetching file: " + error_message)
+
+    # establish ssh connection, move into working directory, and start python3 shell
+    # recursively calls until successful
+    def sshConnect(self):
         try: # try to connect
             print("Attempting to connect...")
             self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False)
         except Exception as error_message: # if fails to connect
-            print("Unable to connect: " + error_message)
-            self.connect(self)
+            print("error connecting to ssh server: " + error_message)
         else: # if succeeds in connecting
             self.startWorkingTerminal(self)
 
@@ -44,8 +66,7 @@ class MYSSH:
             print("Sending command: " + command + "...")
             return self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
         except Exception as error_message:
-            print("Unable to send command: " + error_message)
-            self.connect(self)
+            print("error sending ssh command: " + error_message)
             return self.sendCommand(self, command)
 
     # cd into working directory
