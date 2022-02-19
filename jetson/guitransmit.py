@@ -75,14 +75,16 @@ class MYSSH:
     def mission(self, bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
         args = bearing + ", " + pathLength  + ", " +  pathWidth  + ", " +  pathCount  + ", " +  initialDepth  + ", " +  layerCount  + ", " +  layerSpacing  + ", " +  waterType  + ", " +  dataParameter
         command = "systemControl.mission(" + args + ")"
-        self.sendCommand(self, command)
+        ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+        print(ssh_stdout.readlines()) # print output
 
     # set thrust (thrust)
     # thrust: range speed 0-100
     def setThrust(self, thrust):
         if thrustIsValid(thrust):
             command = "systemControl.setThrust(" + thrust + ")"
-            self.sendCommand(self, command)
+            ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+            print(ssh_stdout.readlines()) # print output
         else:
             thrustErrMsg()
 
@@ -91,7 +93,8 @@ class MYSSH:
     def setRudder(self, angle):
         if yawIsValid(angle):
             command = "systemControl.setRudder(" + angle + ")"
-            self.sendCommand(self, command)
+            ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+            print(ssh_stdout.readlines()) # print output
         else:
             yawErrMsg()
     
@@ -101,9 +104,21 @@ class MYSSH:
         if headingIsValid(heading):
             args = heading + ", " + kp
             command = "systemControl.setHeading(" + args + ")"
-            self.sendCommand(self, command)
+            ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+            print(ssh_stdout.readlines()) # print output
         else:
             headingErrMsg()
+
+    # rudder sensor request (sensor type)
+    # sensor type: IMU(2)
+    def rudderSensorRequest(self, sensor_type):
+        if sensor_type != 2:
+            print("sensor type is not valid")
+            return
+        
+        command = "systemControl.rudderSensorRequest(" + sensor_type + ")"
+        ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+        print(ssh_stdout.readlines()) # print output
 
     # set pitch (angle)
     # angle: min max +- 12 degrees
@@ -111,7 +126,8 @@ class MYSSH:
         if pitchIsValid(angle):
             args = angle + ", " + kp
             command = "systemControl.setPitch(" + args + ")"
-            self.sendCommand(self, command)
+            ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+            print(ssh_stdout.readlines()) # print output
         else:
             pitchErrMsg()
 
@@ -121,7 +137,8 @@ class MYSSH:
         if depthIsValid(depth):
             args = depth + ", " + kpp + ", " + kpd
             command = "systemControl.setDepth(" + args + ")"
-            self.sendCommand(self, command)
+            ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+            print(ssh_stdout.readlines()) # print output
         else:
             depthErrMsg()
 
@@ -131,9 +148,21 @@ class MYSSH:
     def setStepper(self, position):
         if stepperIsValid(position):
             command = "systemControl.setStepper(" + position + ")"
-            self.sendCommand(self, command)
+            ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+            print(ssh_stdout.readlines()) # print output
         else:
             stepperErrMsg()
+
+    # pitch sensor request (sensor type)
+    # sensor type: Depth(0), IMU(1), Temperature(4), Slider(5)
+    def pitchSensorRequest(self, sensor_type):
+        if sensor_type != 0 and sensor_type != 1 and sensor_type != 4 and sensor_type != 5:
+            print("sensor type is not valid")
+            return
+
+        command = "systemControl.pitchSensorRequest(" + sensor_type + ")"
+        ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+        print(ssh_stdout.readlines()) # print output
 
     # start data collection (time)
     # time: length to run (default: 0 = run until told to stop)
@@ -141,10 +170,14 @@ class MYSSH:
     def startDataCollection(self, interval, time = 0):
         args = interval + ", " + time
         command = "systemControl.startDataCollection(" + args + ")"
-        self.sendCommand(self, command)
+        ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+        print(ssh_stdout.readlines()) # print output
 
     # stop data collection ()
     # stop scientific payload collection
     def stopDataCollection(self):
         command = "systemControl.stopDataCollection()"
-        self.sendCommand(self, command)
+        ssh_stdin, ssh_stdout, ssh_stderr = self.sendCommand(self, command)
+        print(ssh_stdout.readlines()) # print output
+
+    

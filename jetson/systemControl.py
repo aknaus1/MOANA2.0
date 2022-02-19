@@ -104,48 +104,6 @@ class SystemControl:
         self.setDepth(0)
         self.stopDataCollection()
 
-    # start mission(bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter)
-    # bearing: initial heading
-    # pathLength: length of path, pathWidth: turning radius, pathCount: number of paths
-    # initialDepth: intial depth, layerCount: number of layers, layerSpacing: distance between layers
-    # water type: type of water fresh(0) or salt(1)
-    # data parameter: interval of sensor readings
-    def missionTest(self, bearing, pathCount, initialDepth, layerCount, layerSpacing, waterType):
-        print(" water type: " + str(self.FRESH_WATER) if waterType == 0 else str(self.SALT_WATER))
-
-        nancy = True # if hasnt gone to initial depth
-        
-        bearingOpposite = bearing + 180 if bearing < 180 else bearing - 180 # get opposite degree of bearing
-        bob = True # if should turn right
-
-        print("thrust: 100")
-        print("start data collection")
-
-        for i in range(layerCount):
-            if nancy:
-                currentDepth = initialDepth
-                nancy = False # has gone to initial depth and initial heading
-            else:
-                currentDepth = currentDepth + layerSpacing
-
-            print("depth: " + str(currentDepth))
-
-            for j in range(pathCount):
-                if bob:
-                    bob = False # next turn left
-                    print("turn: right, heading: " + str(bearing))
-                else:
-                    bob = True # next turn right
-                    print("turn: left, heading: " + str(bearingOpposite))
-
-                print("sleep for length of path")
-
-            bob = not bob # turn same as last
-
-        print("rudder: 0")
-        print("depth: 0")
-        print("stop data collection")
-
     # set idle (systemId)
     # systemId: rudder = 3, pitch = 5
     def setIdle(self, systemId):
@@ -253,8 +211,8 @@ class SystemControl:
 
         self.readFromBus()
 
-    # set heading constant(kp1, kp2)
-    # kp1: first byte, kp2: second byte
+    # set heading constant(kp)
+    # kp: constant
     def setHeadingConstant(self, kp):
         kp1, kp2 = int(kp / 10), kp % 10
 
