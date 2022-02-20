@@ -155,6 +155,7 @@ void loop()
       break;
     case 3://sensor request
       CANsend(JETSON, sensorRequest);
+      //go back to previous state
       break;
     case 4://water density
       if(water == 0)
