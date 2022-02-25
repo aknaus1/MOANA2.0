@@ -57,10 +57,17 @@ class SystemControl:
             return block
 
     # Write to bus (data)
-    # data: 8 bytes
+    # data: max len = 8
     def writeToBus(self, data):
+        self.fillBytes(data)
+        print(data)
         with SMBus(1) as bus:
             bus.write_i2c_block_data(self.address, 0, data)
+
+    # fill bytes (data)
+    def fillBytes(self, data):
+        for i in range(len(data), 8):
+            data.append(0)
 
     # start mission(bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter)
     # bearing: initial heading
@@ -71,34 +78,35 @@ class SystemControl:
     def mission(self, bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
         self.setWaterType(self.FRESH_WATER if waterType == 0 else self.SALT_WATER)
 
-        nancy = True # if hasnt gone to initial depth
+        initDepth = True # hasnt gone to initial depth
         
         bearingOpposite = bearing + 180 if bearing < 180 else bearing - 180 # get opposite degree of bearing
-        bob = True # if should turn right
+        turnRight = True # next turn should be right
 
         self.setThrust(100)
-        self.startDataCollection()
+        self.startDataCollection(dataParameter)
 
         for _ in range(layerCount):
-            if nancy:
+            if initDepth:
                 currentDepth = initialDepth
                 self.setDepth(currentDepth)
-                nancy = False # has gone to initial depth
+                initDepth = False # has gone to initial depth
             else:
                 currentDepth = currentDepth + layerSpacing
                 self.setDepth(currentDepth)
 
             for dummy in range(pathCount):
-                if bob:
+                if turnRight:
                     self.turnToHeading(bearing, self.RIGHT, pathWidth)
-                    bob = False # next turn left
+                    turnRight = False # next turn should be left
                 else:
                     self.turnToHeading(bearingOpposite, self.LEFT, pathWidth)
-                    bob = True # next turn right
+                    turnRight = True # next turn should be right
 
                 sleep(pathLength)
 
-            bob = not bob # turn same as last
+            turnRight = not turnRight # turn same as last
+            bearing, bearingOpposite = bearingOpposite, bearing
 
         self.setRudder(0)
         self.setDepth(0)
@@ -114,8 +122,6 @@ class SystemControl:
         data = []
         data.append(systemId)
         data.append(self.IDLE_COMMAND)
-        for i in range(6):
-            data.append(0)
         self.writeToBus(data)
 
     # set thrust (thrust)
@@ -127,9 +133,6 @@ class SystemControl:
             data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
             data.append(abs(thrust))  # Write thruster speed
             data.append(time)  # Write time to run (0 - run until stop)
-            # fill in empty bytes
-            for i in range(4):
-                data.append(0)
             self.writeToBus(data)
         else:
             thrustErrMsg()
@@ -143,18 +146,15 @@ class SystemControl:
             data.append(self.RUDDER_COMMAND)  # Write yaw command
             data.append(self.NEGATIVE if angle < 0 else self.POSITIVE)
             data.append(abs(angle))  # Write yaw
-            # fill in empty bytes
-            for i in range(4):
-                data.append(0)
             self.writeToBus(data)
         else:
             yawErrMsg()
 
     # turn to heading (heading, direction, radius)
     # heading range: 0-360 degrees relative to North
-    # direction: left(0) or right(1)
+    # direction: left(1) or right(2)
     # radius: turn radius
-    def turnToHeading(self, heading, direction, radius):
+    def turnToHeading(self, heading, direction, radius=0):
         if direction != self.LEFT and direction != self.RIGHT:
             print("direction is not valid")
         elif headingIsValid(heading):
@@ -164,11 +164,7 @@ class SystemControl:
             data.append(self.HEADING_COMMAND)  # Write heading command
             data.append(b1)  # Write first byte of heading
             data.append(b2)  # Write second byte of heading
-            # Write turn direction
-            data.append(self.LEFT if direction == 0 else self.RIGHT)
-            # fill in empty bytes
-            for i in range(3):
-                data.append(0)
+            data.append(direction) # Write turn direction
             self.writeToBus(data)
         else:
             headingErrMsg()
@@ -186,9 +182,6 @@ class SystemControl:
             data.append(self.HEADING_COMMAND)  # Write heading command
             data.append(b1)  # Write first byte of heading
             data.append(b2)  # Write second byte of heading
-            # fill in empty bytes
-            for i in range(4):
-                data.append(0)
             self.writeToBus(data)
         else:
             headingErrMsg()
@@ -204,9 +197,6 @@ class SystemControl:
         data.append(self.RUDDER_ID)  # Write yaw ID
         data.append(self.SENSOR_REQUEST)  # Write yaw command
         data.append(sensor_type)
-        # fill in empty bytes
-        for i in range(5):
-            data.append(0)
         self.writeToBus(data)
 
         self.readFromBus()
@@ -221,9 +211,6 @@ class SystemControl:
         data.append(self.KP_COMMAND)  # Write heading command
         data.append(kp1)  # Write first byte of heading
         data.append(kp2)  # Write second byte of heading
-        # fill in empty bytes
-        for i in range(4):
-            data.append(0)
         self.writeToBus(data)
 
     # set pitch (angle)
@@ -238,9 +225,6 @@ class SystemControl:
             data.append(self.PITCH_COMMAND)  # Write pitch command
             data.append(self.NEGATIVE if angle < 0 else self.POSITIVE)
             data.append(angle)  # Write angle
-            # fill in empty bytes
-            for i in range(4):
-                data.append(0)
             self.writeToBus(data)
         else:
             pitchErrMsg()
@@ -258,9 +242,6 @@ class SystemControl:
             data.append(self.DEPTH_COMMAND)  # Write depth command
             data.append(depth)  # Write depth
             data.append(0)  # Write default duration (0 - run until stop)
-            # fill in empty bytes
-            for i in range(4):
-                data.append(0)
             self.writeToBus(data)
         else:
             depthErrMsg()
@@ -275,9 +256,6 @@ class SystemControl:
             data.append(self.STEPPER_COMMAND)  # Write stepper command
             data.append(self.NEGATIVE if position < 0 else self.POSITIVE)
             data.append(abs(position))  # Write position
-            # fill in empty bytes
-            for i in range(4):
-                data.append(0)
             self.writeToBus(data)
         else:
             stepperErrMsg()
@@ -293,9 +271,6 @@ class SystemControl:
         data.append(self.PITCH_ID)  # Write yaw ID
         data.append(self.SENSOR_REQUEST)  # Write yaw command
         data.append(sensor_type)
-        # fill in empty bytes
-        for i in range(5):
-            data.append(0)
         self.writeToBus(data)
 
         self.readFromBus()
@@ -309,9 +284,6 @@ class SystemControl:
             data.append(self.PITCH_ID)  # Write yaw ID
             data.append(self.WATER_TYPE_COMMAND)  # Write yaw command
             data.append(type)
-            # fill in empty bytes
-            for i in range(5):
-                data.append(0)
             self.writeToBus(data)
         else:
             print("Invalid water type")
@@ -329,9 +301,6 @@ class SystemControl:
                     0 else self.DEPTH_COMMAND if kind == 1 else self.STEPPER_COMMAND)
         data.append(kp1)  # Write first byte of heading
         data.append(kp2)  # Write second byte of heading
-        # fill in empty bytes
-        for i in range(4):
-            data.append(0)
         self.writeToBus(data)
 
     # start data collection (interval, time)
@@ -340,12 +309,9 @@ class SystemControl:
     def startDataCollection(self, interval, time=0):
         data = []
         data.append(self.SENSOR_ID)
-        data.append(1)
+        data.append(1) # start
         data.append(interval)
         data.append(time)
-        # fill in empty bytes
-        for i in range(4):
-            data.append(0)
         self.writeToBus(data)
 
     # stop data collection ()
@@ -353,8 +319,5 @@ class SystemControl:
     def stopDataCollection(self):
         data = []
         data.append(self.SENSOR_ID)
-        data.append(0)
-        # fill in empty bytes
-        for i in range(6):
-            data.append(0)
+        data.append(0) # stop
         self.writeToBus(data)

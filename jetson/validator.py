@@ -6,7 +6,7 @@ STEPPER_MIN_MAX = 16.5
 PITCH_MIN_MAX = 12
 DEPTH_MIN = 0
 DEPTH_MAX = 30
-THRUST_MIN = 0
+THRUST_MIN = -100
 THRUST_MAX = 100
 
 def thrustIsValid(thrust):
@@ -25,7 +25,7 @@ def headingIsValid(heading):
     return heading >= HEADING_MIN and heading <= HEADING_MAX
 
 def headingErrMsg():
-    print("heading is out of range: +-" + str(YAW_MIN_MAX))
+    print("heading is out of range: " + str(HEADING_MIN) + " <= depth <= " + str(HEADING_MAX))
 
 def stepperIsValid(position):
     return abs(position) <= STEPPER_MIN_MAX
