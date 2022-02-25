@@ -23,8 +23,8 @@
 
 #define MAINTAIN_DEPTH 3
 #define MAX_ANGLE 12
-#define DEPTH_KP 5.7296
-#define PITCH_KP .24543
+#define DEPTH_KP 3
+#define PITCH_KP .1
 #define STEP_KP .00125
 #define IDLE 69
 
@@ -32,6 +32,7 @@ float xpos = 0;
 float zpos = 0;
 int counter = 100;
 int type = 0;
+int previousState = IDLE;
 float kp[3] = {PITCH_KP, DEPTH_KP, STEP_KP};//array of constants that willl be used in depth, slider and pitch control loops
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
@@ -58,6 +59,7 @@ void calibrate();
 void pitchControl();
 
 void CANsend(int ID, int sensor);
+void saveType();
 
 // variables will change:
 int buttonState1 = 0;
@@ -155,15 +157,18 @@ void loop()
       break;
     case 3://sensor request
       CANsend(JETSON, sensorRequest);
-      //go back to previous state
+      type = previousState;
       break;
     case 4://water density
+
       if(water == 0)
        depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
       else
        depthSensor.setFluidDensity(SALTWATER);
+      type = previousState;
       break;
     case 5://KPs
+      type = previousState;
       break;
     case IDLE:
       break;
@@ -171,6 +176,11 @@ void loop()
       break;
   }
   delay(500);
+}
+
+void saveType() {//if the current state is one that should be reverted to once the new state has finished, then save the current state 
+  if(type < 3)
+    previousState = type;
 }
 
 void initSensors()
@@ -328,6 +338,7 @@ void CANin()
   id = Msg.pt_data[0];
   
   if (id != MESSAGE_ID) return;
+  saveType();//saves the last type that was of a state that should leave once executed
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
 
   switch (type) {
