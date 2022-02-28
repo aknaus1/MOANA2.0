@@ -3,7 +3,7 @@ from PySide6.QtWidgets import *
 from guitransmit import MYSSH
 
 class Window(QWidget):
-    ssh = MYSSH
+    ssh = MYSSH()
 
     def __init__(self):
         super().__init__()

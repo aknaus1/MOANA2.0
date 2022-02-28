@@ -17,7 +17,6 @@ class SystemControl:
     # Command Types
     SENSOR_REQUEST = 3
     KP_COMMAND = 5
-    IDLE_COMMAND = 69
     # yaw v heading command
     RUDDER_COMMAND = 0
     HEADING_COMMAND = 1
@@ -59,6 +58,10 @@ class SystemControl:
     # Write to bus (data)
     # data: max len = 8
     def writeToBus(self, data):
+        if len(data) > 8:
+            print("Invalid can bus input")
+            return
+
         self.fillBytes(data)
         print(data)
         with SMBus(1) as bus:
@@ -76,6 +79,25 @@ class SystemControl:
     # water type: type of water fresh(0) or salt(1)
     # data parameter: interval of sensor readings
     def mission(self, bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
+        if not headingIsValid(bearing):
+            headingErrMsg()
+            return
+        if pathLength <= 0:
+            print("Invlaid path length")
+            return
+        if pathCount <= 0:
+            print("Invalid path count")
+            return
+        if not depthIsValid(initDepth) or not depthIsValid(initDepth + (layerCount * layerSpacing)):
+            depthErrMsg()
+            return
+        if waterType is not self.FRESH_WATER and waterType is not self.SALT_WATER:
+            print("Water type is invalid")
+            return
+        if dataParameter <= 0:
+            print("Data parameter is invalid")
+            return
+
         self.setWaterType(self.FRESH_WATER if waterType == 0 else self.SALT_WATER)
 
         initDepth = True # hasnt gone to initial depth
@@ -124,10 +146,13 @@ class SystemControl:
         data.append(self.IDLE_COMMAND)
         self.writeToBus(data)
 
-    # set thrust (thrust)
+    # set thrust (thrust, time)
     # thrust: range speed 0-100
+    # time: (optional) time > 0
     def setThrust(self, thrust, time = 0):
-        if thrustIsValid(thrust):
+        if time < 0:
+            print("Invalid time parameter")
+        elif thrustIsValid(thrust):
             data = []
             data.append(self.THRUST_ID)  # Write thruster ID
             data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
@@ -201,14 +226,20 @@ class SystemControl:
 
         self.readFromBus()
 
-    # set heading constant(kp)
+    # set heading constant(kpOrkd, kp)
+    # kpOrkd: input is kp(0) or kd(1)
     # kp: constant
-    def setHeadingConstant(self, kp):
+    def setHeadingConstant(self, kpOrkd, kp):
+        if kpOrkd is not 0 and kpOrkd is not 1:
+            print("Invalid input")
+            return
+
         kp1, kp2 = int(kp / 10), kp % 10
 
         data = []
         data.append(self.RUDDER_ID)  # Write yaw ID
         data.append(self.KP_COMMAND)  # Write heading command
+        data.append(kpOrkd)
         data.append(kp1)  # Write first byte of heading
         data.append(kp2)  # Write second byte of heading
         self.writeToBus(data)

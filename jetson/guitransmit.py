@@ -32,23 +32,24 @@ class MYSSH:
     def ftpConnect(self):
         try: # try to connect
             print("Attempting to connect ftp...")
-            self.ftp.login(username=self.MOANA_USER, password=self.MOANA_PASS)
+            # self.ftp.login(username=self.MOANA_USER, password=self.MOANA_PASS)
         except Exception as error_message: # if fails to connect
             print("error connecting to ftp server: " + error_message)
 
     def ftpRequestFile(self, dir, fname):
-        try:
-            self.ftp.cwd(dir)
-            self.ftp.retrbinary("RETR " + fname, open(fname, 'wb').write)
-        except Exception as error_message:
-            print("error fetching file: " + error_message)
+        # try:
+        #     self.ftp.cwd(dir)
+        #     self.ftp.retrbinary("RETR " + fname, open(fname, 'wb').write)
+        # except Exception as error_message:
+        #     print("error fetching file: " + error_message)
+        return
 
     # establish ssh connection, move into working directory, and start python3 shell
     # recursively calls until successful
     def sshConnect(self):
         try: # try to connect
             print("Attempting to connect ssh...")
-            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False)
+            # self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False)
         except Exception as error_message: # if fails to connect
             print("error connecting to ssh server: " + error_message)
         else: # if succeeds in connecting
@@ -61,8 +62,8 @@ class MYSSH:
     def sendCommand(self, command):
         try:
             print("Sending command: " + command + "...")
-            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
-            print(ssh_stdout.readlines()) # print output
+            # ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
+            # print(ssh_stdout.readlines()) # print output
         except Exception as error_message:
             print("error sending ssh command: " + error_message)
 
