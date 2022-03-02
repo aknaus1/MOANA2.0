@@ -33,7 +33,7 @@ class Window(QWidget):
     def create_mission_tab(self):
         self._mission_tab = QWidget()
 
-        mission_label_values = ['Bearing', 'Path Length', 'Path Width', 'Path Count', 'Initial Depth', 'Layer Count', 'Layer Spacing', 'Type of Water', 'Data Parameter']
+        mission_label_values = ['Bearing [degrees]', 'Path Length [m]', 'Path Width', 'Path Count', 'Initial Depth [m]', 'Layer Count', 'Layer Spacing [m]', 'Type of Water [0/1 : fresh/salt]', 'Data Parameter']
         mission_labels = []
         self.mission_fields = []
 
@@ -70,7 +70,7 @@ class Window(QWidget):
         pc_layout.addWidget(pc_title, 0, 0)
         pc_layout.addWidget(self.pc_button, 0, 1)
         
-        pc_label_values = ['Pitch angle command', 'KPp', 'Thrust command']
+        pc_label_values = ['Pitch angle command', 'KPp']
         pc_labels = []
         self.pc_fields = []
 
@@ -92,7 +92,7 @@ class Window(QWidget):
         hc_layout.addWidget(hc_title, 0, 0)
         hc_layout.addWidget(self.hc_button, 0, 1)
         
-        hc_label_values = ['Heading command', 'KPh']
+        hc_label_values = ['Heading command', 'KPh', 'KDh']
         hc_labels = []
         self.hc_fields = []
 
@@ -128,39 +128,39 @@ class Window(QWidget):
             dc_layout.addWidget(dc_labels[i], i + 1, 0)
             dc_layout.addWidget(self.dc_fields[i], i + 1, 1)
 
-        # speed control
-        sc_title = QLabel('Speed Control')
-        self.sc_button = QPushButton('Send')
+        # # speed control
+        # sc_title = QLabel('Speed Control')
+        # self.sc_button = QPushButton('Send')
 
-        sc_layout = QGridLayout()
-        sc_layout.addWidget(sc_title, 0, 0)
-        sc_layout.addWidget(self.sc_button, 0, 1)
+        # sc_layout = QGridLayout()
+        # sc_layout.addWidget(sc_title, 0, 0)
+        # sc_layout.addWidget(self.sc_button, 0, 1)
         
-        sc_label_values = ['Speed command']
-        sc_labels = []
-        self.sc_fields = []
+        # sc_label_values = ['Speed command']
+        # sc_labels = []
+        # self.sc_fields = []
 
-        for i in sc_label_values:
-            sc_labels.append(QLabel(i))
+        # for i in sc_label_values:
+        #     sc_labels.append(QLabel(i))
             
-        for _ in range(len(sc_label_values)):
-            self.sc_fields.append(QLineEdit())
+        # for _ in range(len(sc_label_values)):
+        #     self.sc_fields.append(QLineEdit())
 
-        for i in range(len(sc_label_values)):
-            sc_layout.addWidget(sc_labels[i], i + 1, 0)
-            sc_layout.addWidget(self.sc_fields[i], i + 1, 1)
+        # for i in range(len(sc_label_values)):
+        #     sc_layout.addWidget(sc_labels[i], i + 1, 0)
+        #     sc_layout.addWidget(self.sc_fields[i], i + 1, 1)
 
 
         layout = QVBoxLayout()
         layout.addLayout(pc_layout)
         layout.addLayout(hc_layout)
         layout.addLayout(dc_layout)
-        layout.addLayout(sc_layout)
+        # layout.addLayout(sc_layout)
 
         self.pc_button.clicked.connect(self.pc_command)
         self.hc_button.clicked.connect(self.hc_command)
         self.dc_button.clicked.connect(self.dc_command)
-        self.sc_button.clicked.connect(self.sc_command)
+        # self.sc_button.clicked.connect(self.sc_command)
 
         self._high_testing_layout = layout
         self._high_testing_tab.setLayout(self._high_testing_layout)
