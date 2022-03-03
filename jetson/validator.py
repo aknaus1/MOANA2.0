@@ -10,37 +10,37 @@ THRUST_MIN = -100
 THRUST_MAX = 100
 
 def thrustIsValid(thrust):
-    return int(thrust) >= THRUST_MIN and int(thrust) <= THRUST_MAX
+    return thrust != "" and int(thrust) >= THRUST_MIN and int(thrust) <= THRUST_MAX
 
 def thrustErrMsg():
     print("thrust is out of range: " + str(THRUST_MIN) + " <= thrust <= " + str(THRUST_MAX))
 
 def yawIsValid(yaw):
-    return abs(int(yaw)) <= YAW_MIN_MAX
+    return yaw != "" and abs(int(yaw)) <= YAW_MIN_MAX
 
 def yawErrMsg():
     print("yaw is out of range: +-" + str(YAW_MIN_MAX))
 
 def headingIsValid(heading):
-    return int(heading) >= HEADING_MIN and int(heading) <= HEADING_MAX
+    return heading != "" and int(heading) >= HEADING_MIN and int(heading) <= HEADING_MAX
 
 def headingErrMsg():
     print("heading is out of range: " + str(HEADING_MIN) + " <= depth <= " + str(HEADING_MAX))
 
 def stepperIsValid(position):
-    return abs(int(position)) <= STEPPER_MIN_MAX
+    return position != "" and abs(int(position)) <= STEPPER_MIN_MAX
 
 def stepperErrMsg():
     print("position is out of range: +-" + str(STEPPER_MIN_MAX))
 
 def pitchIsValid(angle):
-    return abs(int(angle)) <= PITCH_MIN_MAX
+    return angle != "" and abs(int(angle)) <= PITCH_MIN_MAX
 
 def pitchErrMsg():
     print("pitch is out of range: +-" + str(PITCH_MIN_MAX))
 
 def depthIsValid(depth):
-    return int(depth) >= DEPTH_MIN and int(depth) <= DEPTH_MAX
+    return depth != "" and int(depth) >= DEPTH_MIN and int(depth) <= DEPTH_MAX
 
 def depthErrMsg():
     print("depth is out of range: " + str(DEPTH_MIN) + " <= depth <= " + str(DEPTH_MAX))
