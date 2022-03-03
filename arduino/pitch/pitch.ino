@@ -60,6 +60,7 @@ void pitchControl();
 
 void CANsend(int ID, int sensor);
 void saveType();
+void stateManager();//will manage states at the end of each loop in order to make sure the correct state is executed based off the current state and future/previous states
 
 // variables will change:
 int buttonState1 = 0;
@@ -97,7 +98,7 @@ enum IDs
   JETSON,
   THRUST,
   RUDDER,
-  PITCH = 5,
+  DEPTH_PITCH = 5,
   DATA,
   MISSION
 };
@@ -127,13 +128,14 @@ void setup()
   // initialize the LED pin as an output:
   pinMode(ledPin, OUTPUT);
   // initialize the pushbutton pin as an input:
-  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin1, INPUT);
+  pinMode(buttonPin2, INPUT);
 
   initSensors();//prepares sensors to read data
   calibrate(); // runs calibration
 }
 
-void loop()
+void loop()//main loop, refreshes every 
 {
   // Clear the message buffer
   clearBuffer(&Buffer[0]); // Send command to the CAN port controller
@@ -157,30 +159,31 @@ void loop()
       break;
     case 3://sensor request
       CANsend(JETSON, sensorRequest);
-      type = previousState;
       break;
     case 4://water density
-
       if(water == 0)
        depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
       else
        depthSensor.setFluidDensity(SALTWATER);
-      type = previousState;
       break;
     case 5://KPs
-      type = previousState;
       break;
     case IDLE:
       break;
     default:
       break;
   }
+  stateManager();
   delay(500);
 }
 
 void saveType() {//if the current state is one that should be reverted to once the new state has finished, then save the current state 
-  if(type < 3)
-    previousState = type;
+  previousState = type;
+}
+
+void stateManager() {//will manage states at the end of each loop in order to make sure the correct state is executed based off the current state and future/previous states
+
+
 }
 
 void initSensors()
