@@ -51,7 +51,7 @@ class MYSSH:
             print("Attempting to connect ssh...")
             self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False)
         except Exception as error_message: # if fails to connect
-            print("error connecting to ssh server: " + error_message)
+            print("error connecting to ssh server: " + str(error_message))
         else: # if succeeds in connecting
             self.startWorkingTerminal()
 
