@@ -1,3 +1,4 @@
+from time import time
 import paramiko
 import ftplib
 from validator import *
@@ -21,11 +22,11 @@ class MYSSH:
         # fill out ssh keys and connect
         self.ssh.load_system_host_keys()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.sshConnect()
+        # self.sshConnect()
 
-        # init ftp and connect
-        self.ftp = ftplib.FTP(self.MOANA_IP)
-        self.ftpConnect()
+        # # init ftp and connect
+        # self.ftp = ftplib.FTP(self.MOANA_IP)
+        # self.ftpConnect()
 
     # establish ssh connection, move into working directory, and start python3 shell
     # recursively calls until successful
@@ -60,6 +61,8 @@ class MYSSH:
     # recursively calls until successful
     def sendCommand(self, command):
         try:
+            print("Attempting to connect ssh...")
+            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
             print("Sending command: " + command + "...")
             ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
             print(ssh_stdout.readlines()) # print output
