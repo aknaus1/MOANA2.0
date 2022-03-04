@@ -513,4 +513,5 @@ void CANsend(int ID, int sensor)
   while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
   while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
+  clearBuffer(&Buffer[0]);
 }

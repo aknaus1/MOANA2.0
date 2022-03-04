@@ -36,7 +36,6 @@ float zpos = 0;
 int counter = 100;
 int type = IDLE;
 int input = 0;
-int sent = 0;
 float heading_kp = HEADING_KP;
 float heading_kd = KD;
 int previousState = IDLE;
@@ -130,10 +129,10 @@ void loop()
     case 0:
       Serial.print("Input: ");
       Serial.println(input);
-      //if (abs(input) <= MAX_RUDDER_ANGLE)
-      rudder.write(input);
-      //else
-      //Serial.println("Input angle too high!");
+      if (abs(input - 150) <= MAX_RUDDER_ANGLE)
+        rudder.write(input);
+      else
+        Serial.println("Input angle too high!");
       break;
     case 1:
       if (direction)//if auv is turning around, need to specify which direction to turn.
@@ -141,10 +140,7 @@ void loop()
       setHeading(input);
       break;
     case 3:
-      if (sent == 0) {
-        CANsend(JETSON, sensorRequest);
-        sent = 1;
-      }
+      CANsend(JETSON, sensorRequest);
       break;
     case 5://set heading_kp in  CANin
       break;
@@ -238,7 +234,7 @@ void CANIn()
   
   // Wait for the command to be accepted by the controller
   if (can_cmd(&Msg) != CAN_CMD_ACCEPTED) return;
-  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
+  if (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED) return;
   
   int id = 0;
   id = Msg.pt_data[0];
@@ -250,7 +246,7 @@ void CANIn()
   switch (type) {
     case 0:
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
-      input += 150;
+      input += 150;// for some reason servo is off by 150 degrees
       break;
     case 1:
       direction = Msg.pt_data[4];
@@ -326,6 +322,7 @@ void CANsend(int ID, int sensor)
   while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
   while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
+  clearBuffer(&Buffer[0]);
 }
 
 void serialPrintData(st_cmd_t *msg)
