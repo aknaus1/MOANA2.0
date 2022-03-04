@@ -25,14 +25,15 @@
 #define MAX_ANGLE 12
 #define DEPTH_KP 3
 #define PITCH_KP .1
-#define STEP_KP .00125
+#define STEP_KP .002
 #define IDLE 69
 
 float xpos = 0;
 float zpos = 0;
 int counter = 100;
-int type = 0;
+int type = IDLE;
 int previousState = IDLE;
+int lastControlType = IDLE;
 float kp[3] = {PITCH_KP, DEPTH_KP, STEP_KP};//array of constants that willl be used in depth, slider and pitch control loops
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
@@ -52,8 +53,8 @@ uint8_t Buffer[8] = {};
 char inputBuffer[5];
 int number = 0; // constants won't change. They're used here to set pin numbers:
 
-const int buttonPin1 = 6; // the number of the pushbutton pins
-const int buttonPin2 = 7;
+const int buttonPin1 = 6; // pin at -16/kd[2]
+const int buttonPin2 = 5; //pin at 16/kd[2]
 const int ledPin = 13; // the number of the LED pin
 void calibrate();
 void pitchControl();
@@ -61,6 +62,8 @@ void pitchControl();
 void CANsend(int ID, int sensor);
 void saveType();
 void stateManager();//will manage states at the end of each loop in order to make sure the correct state is executed based off the current state and future/previous states
+void nudgeStepper();
+
 
 // variables will change:
 int buttonState1 = 0;
@@ -90,7 +93,8 @@ enum sensorSend
   YAW,
   STEP_POS,
   TEMP,
-  SLIDER
+  SLIDER,
+  ACK
 };
 
 enum IDs
@@ -108,7 +112,7 @@ void setup()
 
   canInit(500000);       // Initialise CAN port. must be before Serial.begin
   Serial.begin(1000000); // start serial port
-
+  Serial.println("Starting up");
   Msg.pt_data = &Buffer[0]; // reference message data to transmit buffer
 
   // Initialise CAN packet.
@@ -131,22 +135,21 @@ void setup()
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
 
+  Serial.println("set pins");
   initSensors();//prepares sensors to read data
+  Serial.println(" initialized sensors");
   calibrate(); // runs calibration
 }
 
-void loop()//main loop, refreshes every 
+void loop()//main loop, refreshes every
 {
-  // Clear the message buffer
-  clearBuffer(&Buffer[0]); // Send command to the CAN port controller
-  Msg.cmd = CMD_RX_DATA;   // Wait for the command to be accepted by the controller
-  if ((can_cmd(&Msg) == CAN_CMD_ACCEPTED) && (can_get_status(&Msg) != CAN_STATUS_NOT_COMPLETED))
-    CANin();
-
-  CANsend(DATA, PITCH); // data to data logger
-  CANsend(DATA, DEPTH);
-  CANsend(DATA, TEMP);
-
+  Serial.println("head of loop");
+  CANin();
+  Serial.println("State:");
+  Serial.println(type);
+  //CANsend(DATA, PITCH); // data to data logger
+  //CANsend(DATA, DEPTH);
+  //CANsend(DATA, TEMP);
   switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
     case 0:
       setPitch(xInput);
@@ -161,10 +164,10 @@ void loop()//main loop, refreshes every
       CANsend(JETSON, sensorRequest);
       break;
     case 4://water density
-      if(water == 0)
-       depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
+      if (water == 0)
+        depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
       else
-       depthSensor.setFluidDensity(SALTWATER);
+        depthSensor.setFluidDensity(SALTWATER);
       break;
     case 5://KPs
       break;
@@ -177,24 +180,27 @@ void loop()//main loop, refreshes every
   delay(500);
 }
 
-void saveType() {//if the current state is one that should be reverted to once the new state has finished, then save the current state 
+void saveType() {//if the current state is one that should be reverted to once the new state has finished, then save the current state
   previousState = type;
+  if (type < 3)
+    lastControlType = type;
 }
 
 void stateManager() {//will manage states at the end of each loop in order to make sure the correct state is executed based off the current state and future/previous states
-
+  if (type > 2 && type != IDLE)
+    type = lastControlType;
 
 }
 
 void initSensors()
 { // depth Sensor code
-  while (!depthSensor.init()){
-    Serial.println("Init failed!");
-    Serial.println("Are SDA/SCL connected correctly?");
-    Serial.println("Blue Robotics Bar30: White=SDA, Green=SCL");
-    Serial.println("\n\n\n");
-    delay(5000);
-  }
+  //  while (!depthSensor.init()){
+  //    Serial.println("Init failed!");
+  //    Serial.println("Are SDA/SCL connected correctly?");
+  //    Serial.println("Blue Robotics Bar30: White=SDA, Green=SCL");
+  //    Serial.println("\n\n\n");
+  //    delay(5000);
+  //  }
 
   depthSensor.setModel(MS5837::MS5837_30BA);
 
@@ -212,27 +218,53 @@ void initSensors()
   bno.setExtCrystalUse(true);
 }
 
+void nudgeStepper() //moves stepper a little bit in the direction it's been set
+{
+  for (int i = 0; i < 500 ; i++) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(400);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(400);
+  }
+}
+
 void setSliderPosition(float dist)
 {
+
   stepsToX = dist / kp[2] - currentLocation;
 
   //set direction of stepper motor
-  stepsToX <= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
+  stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
 
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
-
+  Serial.println("About to start slider movement");
+  //delay(2000);
   for (int i = 0; i < abs(stepsToX); i++)
   {
+
     currentLocation = currentLocation + stepsToX / abs(stepsToX);
     digitalWrite(stepPin, HIGH);
-    delayMicroseconds(300);
+    delayMicroseconds(400);
     digitalWrite(stepPin, LOW);
-    delayMicroseconds(300);
-    delay(1);
+    delayMicroseconds(400);
+    if (digitalRead(buttonPin2) == HIGH || digitalRead(buttonPin1) == HIGH)//if it hits an edge, recalibrate
+    {
+      if (digitalRead(buttonPin2) == HIGH)
+      {
+        currentLocation = 16 / kp[2];
+        digitalWrite(dirPin, LOW);
+      }
+      else
+      {
+        currentLocation = -16 / kp[2];
+        digitalWrite(dirPin, HIGH);
+      }
+      nudgeStepper();
+      break;
+    }
+    //delay(1);
   }
-
-  Serial.println(currentLocation);
   sliderDone();
 }
 
@@ -240,12 +272,16 @@ void setPitch(float pitch)
 {
   float newPos;
   int sign = 1;
+  Serial.println("Set pitch:");
+  Serial.println(pitch);
+
   if (pitch < 0)
     sign = -1;
   if (abs(pitch) > MAX_ANGLE)
     pitch = MAX_ANGLE * sign;
   newPos = (pitch - getPitch()) * kp[0];
-
+  Serial.println("newPos:");
+  Serial.println(newPos);
   setSliderPosition(newPos);
 }
 
@@ -264,7 +300,6 @@ void setDepth(int d)
 
 float getPitch() // reads pitch from sensor
 {
-  Serial.println("GETTING SENSOR YDATA:");
   sensors_event_t event;
   bno.getEvent(&event);
   float ypos = event.orientation.z;
@@ -285,18 +320,27 @@ double getTemp()
 
 void calibrate()
 {
+  if(digitalRead(buttonPin1 == HIGH))
+  {
+    digitalWrite(dirPin, HIGH);
+    nudgeStepper();
+  } 
   Serial.println("Running Calibration. Please wait.");
   while (true)
   {
     buttonState1 = digitalRead(buttonPin1); // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
     buttonState2 = digitalRead(buttonPin2);
+    Serial.println(buttonState1);
+    Serial.println(buttonState2);
     if ((buttonState1 == HIGH) || (buttonState2 == HIGH))
     {
       // turn LED on:
       digitalWrite(ledPin, HIGH);
+      digitalWrite(stepPin, LOW);
       Serial.println("Calibration Complete");
-      currentLocation = 16.5 / STEP_KP;
-      xInput = 0;
+
+      currentLocation = 16 / kp[2];
+      distance = 0;
       break;
     }
     else
@@ -309,6 +353,10 @@ void calibrate()
       delayMicroseconds(400);
     }
   }
+  digitalWrite(dirPin, LOW);
+  nudgeStepper();
+  setSliderPosition(distance);
+
 }
 
 void feedback()
@@ -329,6 +377,14 @@ void feedback()
 void CANin()
 {
 
+  //Clear the message buffer
+  clearBuffer(&Buffer[0]);
+  // Send command to the CAN port controller
+  Msg.cmd = CMD_RX_DATA;
+  if (can_cmd(&Msg) != CAN_CMD_ACCEPTED) return;
+  if(can_get_status(&Msg) = CAN_STATUS_NOT_COMPLETED) return;
+  
+  Serial.println("CANIn");
   // Clear the message buffer
   // clearBuffer( & Buffer[0]); // Send command to the CAN port controller
   // Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
@@ -339,8 +395,9 @@ void CANin()
   // Data is now available in the message object
   int dir = 0, angle = 0, id = 0;
   id = Msg.pt_data[0];
-  
+
   if (id != MESSAGE_ID) return;
+  CANsend(JETSON, ACK);//sends an acknowledgment that command was received.
   saveType();//saves the last type that was of a state that should leave once executed
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
 
@@ -353,8 +410,8 @@ void CANin()
       break;
     case 2: // set stepper position
       distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
-      ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
-      : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
+                 ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+                 : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
       break;
     case 3://sensor request
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
@@ -364,7 +421,7 @@ void CANin()
       break;
     case 5://kp set
       //forms array of kps for depth control, pitch control and slider control, converting 2 byte floats sent by jetson
-        kp[MESSAGE_TYPE + 1] = Msg.pt_data[(MESSAGE_TYPE + 2)] + (Msg.pt_data[(MESSAGE_TYPE + 3)] / 100 );//value of right side of dot xxxx.XXXX
+      kp[MESSAGE_TYPE + 1] = Msg.pt_data[(MESSAGE_TYPE + 2)] + (Msg.pt_data[(MESSAGE_TYPE + 3)] / 100 );//value of right side of dot xxxx.XXXX
       break;
     default:
       break;
@@ -402,11 +459,13 @@ void convert(float testValue) // converts a float or double into an array that c
 
 void sliderDone()
 {
-  for (int i = 0; i < 20; i++)
+  //for (int i = 0; i < 20; i++)
   {
-    CANsend(DATA, SLIDER);
+    Serial.println("Slider done: current Location is");
+    Serial.println(currentLocation);
     delay(500);
   }
+  CANsend(DATA, SLIDER);
 }
 
 void CANsend(int ID, int sensor)
@@ -436,10 +495,13 @@ void CANsend(int ID, int sensor)
     case SLIDER:
       convert(currentLocation);
       //fills out the message array with a 3 byte representation of currentLocation, followed by a 3 byte representation of stepsToX since they are both floats
-      for(int i = MESSAGE_TYPE + 1; i<8;i++) {
-        if(i == 5) convert(stepsToX); //on 5th bit of array switch to stepsToX
-        Buffer[i] = yposArray[(i + 1) % 3];// (i+1)%3 = 0 1 2, 0 1 2 when running    
+      for (int i = MESSAGE_TYPE + 1; i < 8; i++) {
+        if (i == 5) convert(stepsToX); //on 5th bit of array switch to stepsToX
+        Buffer[i] = yposArray[(i + 1) % 3];// (i+1)%3 = 0 1 2, 0 1 2 when running
       }
+      break;
+    case ACK:
+      for(int i =2;i<8;i++) Buffer[i] = 0;
       break;
     default:
       Serial.print("Please pick a valid sensor to send!");
@@ -451,4 +513,5 @@ void CANsend(int ID, int sensor)
   while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
   while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
+  clearBuffer(&Buffer[0]);
 }
