@@ -12,7 +12,7 @@ class MYSSH:
 
     JETSON_PATH = ""
 
-    def __init__(self, moana_ip="", moana_user="", moana_pass="", jetson_path=""):
+    def __init__(self, moana_ip="192.168.137.209", moana_user="moana", moana_pass="root", jetson_path="MOANA2.0-master"):
         # initialize global variables
         self.MOANA_IP = moana_ip
         self.MOANA_USER = moana_user
