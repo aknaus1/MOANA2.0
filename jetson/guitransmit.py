@@ -12,7 +12,7 @@ class MYSSH:
 
     JETSON_PATH = ""
 
-    def __init__(self, moana_ip="192.168.137.209", moana_user="moana", moana_pass="root", jetson_path="MOANA2.0-master"):
+    def __init__(self, moana_ip="192.168.137.209", moana_user="moana", moana_pass="root", jetson_path="MOANA2.0-master/jetson"):
         # initialize global variables
         self.MOANA_IP = moana_ip
         self.MOANA_USER = moana_user
@@ -49,7 +49,7 @@ class MYSSH:
     def sshConnect(self):
         try: # try to connect
             print("Attempting to connect ssh...")
-            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False)
+            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
         except Exception as error_message: # if fails to connect
             print("error connecting to ssh server: " + str(error_message))
         else: # if succeeds in connecting
@@ -59,10 +59,8 @@ class MYSSH:
     # return stdin, stdout, and stderr as tuple
     # if not connected, attempts to reconnect
     # recursively calls until successful
-    def sendCommand(self, command):
+    def oldsendCommand(self, command):
         try:
-            print("Attempting to connect ssh...")
-            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
             print("Sending command: " + command + "...")
             ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
             print(ssh_stdout.readlines()) # print output
@@ -78,6 +76,39 @@ class MYSSH:
         self.sendCommand("python3") # start python3 shell
         self.sendCommand("from systemControl import SystemControl") # import SystemControl class
         self.sendCommand("sc = SystemControl()") # initialize systemControl
+
+    def sendCommand(self, command):
+        try: # try to connect
+            print("Attempting to connect ssh...")
+            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
+            print("Ssh connection successful!")
+        except Exception as error_message: # if fails to connect
+            print("error connecting to ssh server: " + str(error_message))
+
+        try:
+            print("Moving into working shell...")
+            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("cd " + self.JETSON_PATH)
+            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
+            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("python3")
+            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
+            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("from systemControl import SystemControl")
+            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
+            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("sc = SystemControl()")
+            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
+            print("Now in working shell!")
+        except Exception as error_message:
+            print("error sending ssh command: " + str(error_message))
+        
+        try:
+            print("Sending command: " + command + "...")
+            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
+            print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
+        except Exception as error_message:
+            print("error sending ssh command: " + str(error_message))
+
+        self.ssh.close()
+
+        
 
     # exit python3 shell
     def closeWorkingTerminal(self):
