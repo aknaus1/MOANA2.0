@@ -94,7 +94,7 @@ void loop() {
   // Data is now available in the message object
 
   id = Msg.id.ext;
-  for(int i = 0;i<7;i++){
+  for(int i = 0;i<8;i++){
     dataArr[i] = Msg.pt_data[i];
   }
  
