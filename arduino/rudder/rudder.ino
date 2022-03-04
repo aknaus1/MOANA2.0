@@ -70,7 +70,8 @@ enum sensorSend
   YAW,
   STEP_POS,
   TEMP,
-  SLIDER
+  SLIDER,
+  ACK
 };
 
 enum IDs
@@ -242,6 +243,7 @@ void CANIn()
   int id = 0;
   id = Msg.pt_data[0];
   if (id != MESSAGE_ID) return;
+  CANsend(JETSON, ACK);
   saveType();
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
@@ -311,6 +313,9 @@ void CANsend(int ID, int sensor)
       convert(getHeading());
       for (int i = 0; i < 7; i++)
         Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+      break;
+    case ACK:
+      for(int i=2;i<8;i++) Buffer[i] = 0;
       break;
     default:
       break;
