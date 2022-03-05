@@ -22,7 +22,6 @@ class MYSSH:
         # fill out ssh keys and connect
         self.ssh.load_system_host_keys()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # self.sshConnect()
 
         # # init ftp and connect
         # self.ftp = ftplib.FTP(self.MOANA_IP)
@@ -44,75 +43,36 @@ class MYSSH:
         except Exception as error_message:
             print("error fetching file: " + str(error_message))
 
-    # establish ssh connection, move into working directory, and start python3 shell
-    # recursively calls until successful
-    def sshConnect(self):
-        try: # try to connect
-            print("Attempting to connect ssh...")
-            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
-        except Exception as error_message: # if fails to connect
-            print("error connecting to ssh server: " + str(error_message))
-        else: # if succeeds in connecting
-            self.startWorkingTerminal()
-
-    # send command over ssh
-    # return stdin, stdout, and stderr as tuple
-    # if not connected, attempts to reconnect
-    # recursively calls until successful
-    def oldsendCommand(self, command):
-        try:
-            print("Sending command: " + command + "...")
-            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
-            print(ssh_stdout.readlines()) # print output
-        except Exception as error_message:
-            print("error sending ssh command: " + str(error_message))
-
-    # cd into working directory
-    # start python3 shell
-    # import SystemControl class
-    # initialize systemControl
-    def startWorkingTerminal(self):
-        self.sendCommand("cd " + self.JETSON_PATH) # cd into working directory
-        self.sendCommand("python3") # start python3 shell
-        self.sendCommand("from systemControl import SystemControl") # import SystemControl class
-        self.sendCommand("sc = SystemControl()") # initialize systemControl
-
+    # connect to moana over ssh
+    # move into working directory
+    # send command
     def sendCommand(self, command):
         try: # try to connect
-            print("Attempting to connect ssh...")
+            print("Attempting to connect SSH...")
             self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
-            print("Ssh connection successful!")
+            print("SSH connection successful!")
         except Exception as error_message: # if fails to connect
-            print("error connecting to ssh server: " + str(error_message))
+            print("Error connecting to SSH server: " + str(error_message))
+            return
 
         try:
-            print("Moving into working shell...")
+            print("Moving into working directory...")
             ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("cd " + self.JETSON_PATH)
-            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
-            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("python3")
-            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
-            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("from systemControl import SystemControl")
-            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
-            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("sc = SystemControl()")
-            # print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
-            print("Now in working shell!")
+            print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
+            print("Now in working directory!")
         except Exception as error_message:
-            print("error sending ssh command: " + str(error_message))
+            print("Error sending SSH command: " + str(error_message))
+            return
         
         try:
             print("Sending command: " + command + "...")
             ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
             print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
         except Exception as error_message:
-            print("error sending ssh command: " + str(error_message))
+            print("Error sending SSH command: " + str(error_message))
+            return
 
         self.ssh.close()
-
-        
-
-    # exit python3 shell
-    def closeWorkingTerminal(self):
-        self.sendCommand("exit()")
 
     # start mission(bearing, pathLength, pathWidth, pathCount, layerCount)
     # bearing: initial heading
@@ -121,17 +81,17 @@ class MYSSH:
     # pathCount: number of paths at each depth
     # layerCount: list of depths
     def mission(self, bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
-        args = str(bearing) + ", " + str(pathLength)  + ", " +  str(pathWidth)  + ", " 
-        args = args +  str(pathCount)  + ", " +  str(initialDepth)  + ", " +  str(layerCount)  + ", " 
-        args = args +  str(layerSpacing)  + ", " +  str(waterType)  + ", " +  str(dataParameter)
-        command = "sc.mission(" + args + ")"
+        args = str(bearing) + " " + str(pathLength)  + " " +  str(pathWidth)  + " " 
+        args = args +  str(pathCount)  + " " +  str(initialDepth)  + " " +  str(layerCount)  + " " 
+        args = args +  str(layerSpacing)  + " " +  str(waterType)  + " " +  str(dataParameter)
+        command = "python3 guiRecieve.py mission " + args
         self.sendCommand(command)
 
     # set thrust (thrust)
     # thrust: range speed 0-100
     def setThrust(self, thrust):
         if thrustIsValid(thrust):
-            command = "sc.setThrust(" + str(thrust) + ")"
+            command = "python3 guiRecieve.py setThrust " + str(thrust)
             self.sendCommand(command)
         else:
             thrustErrMsg()
@@ -140,7 +100,7 @@ class MYSSH:
     # angle: min max +- 20
     def setRudder(self, angle):
         if yawIsValid(angle):
-            command = "sc.setRudder(" + str(angle) + ")"
+            command = "python3 guiRecieve.py setRudder " + str(angle)
             self.sendCommand(command)
         else:
             yawErrMsg()
@@ -149,8 +109,10 @@ class MYSSH:
     # heading range: 0-360 degrees relative to North
     def setHeading(self, heading, kp = None):
         if headingIsValid(heading):
-            args = str(heading) + ", " + str(kp)
-            command = "sc.setHeading(" + args + ")"
+            args = str(heading)
+            if kp != None:
+                args = args + " " + str(kp)
+            command = "python3 guiRecieve.py setHeading " + args
             self.sendCommand(command)
         else:
             headingErrMsg()
@@ -161,15 +123,17 @@ class MYSSH:
         if sensor_type != 2:
             print("sensor type is not valid")
             return
-        command = "sc.rudderSensorRequest(" + str(sensor_type) + ")"
+        command = "python3 guiRecieve.py rudderSensorRequest " + str(sensor_type)
         self.sendCommand(command)
 
     # set pitch (angle)
     # angle: min max +- 12 degrees
     def setPitch(self, angle, kp = None):
         if pitchIsValid(angle):
-            args = str(angle) + ", " + str(kp)
-            command = "sc.setPitch(" + args + ")"
+            args = str(angle)
+            if kp != None:
+                args = args + " " + str(kp)
+            command = "python3 guiRecieve.py setPitch " + args
             self.sendCommand(command)
         else:
             pitchErrMsg()
@@ -178,8 +142,10 @@ class MYSSH:
     # depth: range 0 - 30 m
     def setDepth(self, depth, kpp = None, kpd = None):
         if depthIsValid(depth):
-            args = str(depth) + ", " + str(kpp) + ", " + str(kpd)
-            command = "sc.setDepth(" + args + ")"
+            args = str(depth)
+            if kpp != None and kpd != None:
+                args = args + " " + str(kpp) + " " + str(kpd)
+            command = "python3 guiRecieve.py setDepth " + args
             self.sendCommand(command)
         else:
             depthErrMsg()
@@ -189,7 +155,7 @@ class MYSSH:
     # position: min max +- 16.5 cm
     def setStepper(self, position):
         if stepperIsValid(position):
-            command = "sc.setStepper(" + str(position) + ")"
+            command = "python3 guiRecieve.py setStepper " + str(position)
             self.sendCommand(command)
         else:
             stepperErrMsg()
@@ -200,7 +166,7 @@ class MYSSH:
         if sensor_type != 0 and sensor_type != 1 and sensor_type != 4 and sensor_type != 5:
             print("sensor type is not valid")
             return
-        command = "sc.pitchSensorRequest(" + str(sensor_type) + ")"
+        command = "python3 guiRecieve.py pitchSensorRequest " + str(sensor_type)
         self.sendCommand(command)
         
 
@@ -208,14 +174,14 @@ class MYSSH:
     # time: length to run (default: 0 = run until told to stop)
     # stop scientific payload collection
     def startDataCollection(self, interval, time = 0):
-        args = str(interval) + ", " + str(time)
-        command = "sc.startDataCollection(" + args + ")"
+        args = str(interval) + " " + str(time)
+        command = "python3 guiRecieve.py startDataCollection " + args
         self.sendCommand(command)
         
     # stop data collection ()
     # stop scientific payload collection
     def stopDataCollection(self):
-        command = "sc.stopDataCollection()"
+        command = "python3 guiRecieve.py stopDataCollection"
         self.sendCommand(command)
         
 
