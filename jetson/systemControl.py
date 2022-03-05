@@ -1,7 +1,8 @@
 import enum
 import sys
 from time import sleep
-from smbus2 import SMBus
+# from smbus2 import SMBus
+import smbus
 from validator import *
 
 
@@ -42,18 +43,18 @@ class SystemControl:
 
     # i2c address of the arduino we are writing to
     address = 0x40
+    bus = smbus.SMBus(0)
 
     def __init__(self):
         return
 
     # Read from bus
     def readFromBus(self):
-        with SMBus(1) as bus:
-            # Read a block of 16 bytes from address 80, offset 0
-            block = bus.read_i2c_block_data(self.address, 0, 16)
-            # Returned value is a list of 16 bytes
-            print(block)
-            return block
+        # Read a block of 16 bytes from address 80, offset 0
+        block = self.bus.read_i2c_block_data(self.address, 0, 16)
+        # Returned value is a list of 16 bytes
+        print(block)
+        return block
 
     # Write to bus (data)
     # data: max len = 8
@@ -64,8 +65,10 @@ class SystemControl:
 
         self.fillBytes(data)
         print(data)
-        with SMBus(1) as bus:
-            bus.write_i2c_block_data(self.address, 0, data)
+        for byte in data:
+            self.bus.write_byte(self.address, byte)
+        # with SMBus(0) as bus:
+        #     bus.write_i2c_block_data(self.address, 0, data)
 
     # fill bytes (data)
     def fillBytes(self, data):
@@ -149,7 +152,8 @@ class SystemControl:
     # set thrust (thrust, time)
     # thrust: range speed 0-100
     # time: (optional) time > 0
-    def setThrust(self, thrust, time = 0):
+    # time: 255 = indefinite
+    def setThrust(self, thrust, time = 255):
         if time < 0:
             print("Invalid time parameter")
         elif thrustIsValid(thrust):
@@ -224,7 +228,9 @@ class SystemControl:
         data.append(sensor_type)
         self.writeToBus(data)
 
-        self.readFromBus()
+        block = self.readFromBus()
+        while block == None:
+            block = self.readFromBus()
 
     # set heading constant(kpOrkd, kp)
     # kpOrkd: input is kp(0) or kd(1)
@@ -304,8 +310,9 @@ class SystemControl:
         data.append(sensor_type)
         self.writeToBus(data)
 
-        self.readFromBus()
-        
+        block = self.readFromBus()
+        while block == None:
+            block = self.readFromBus()
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
