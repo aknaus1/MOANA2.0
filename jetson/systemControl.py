@@ -14,6 +14,7 @@ class SystemControl:
     PITCH_ID = 5
     LOGGER_ID = 6
     SENSOR_ID = 7
+    DEPTH_SENSOR_ID = 8
 
     # Command Types
     SENSOR_REQUEST = 3
@@ -91,7 +92,7 @@ class SystemControl:
         if pathCount <= 0:
             print("Invalid path count")
             return
-        if not depthIsValid(initDepth) or not depthIsValid(initDepth + (layerCount * layerSpacing)):
+        if not depthIsValid(initialDepth) or not depthIsValid(initialDepth + (layerCount * layerSpacing)):
             depthErrMsg()
             return
         if waterType is not self.FRESH_WATER and waterType is not self.SALT_WATER:
@@ -152,8 +153,8 @@ class SystemControl:
     # set thrust (thrust, time)
     # thrust: range speed 0-100
     # time: (optional) time > 0
-    # time: 255 = indefinite
-    def setThrust(self, thrust, time = 255):
+    # time: 0 = indefinite
+    def setThrust(self, thrust, time = 0):
         if time < 0:
             print("Invalid time parameter")
         elif thrustIsValid(thrust):
@@ -305,7 +306,7 @@ class SystemControl:
             return
 
         data = []
-        data.append(self.PITCH_ID)  # Write yaw ID
+        data.append(self.PITCH_ID if sensor_type != 0 else self.DEPTH_SENSOR_ID)  # Write yaw ID
         data.append(self.SENSOR_REQUEST)  # Write yaw command
         data.append(sensor_type)
         self.writeToBus(data)
@@ -319,7 +320,7 @@ class SystemControl:
     def setWaterType(self, type):
         if type == self.FRESH_WATER or type == self.SALT_WATER:
             data = []
-            data.append(self.PITCH_ID)  # Write yaw ID
+            data.append(self.DEPTH_SENSOR_ID)  # Write yaw ID
             data.append(self.WATER_TYPE_COMMAND)  # Write yaw command
             data.append(type)
             self.writeToBus(data)
