@@ -61,20 +61,22 @@ class MYSSH:
                 fullCommand = "cd " + self.JETSON_PATH + " && " + command
                 ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand)
 
-                stdin = ssh_stdin.readlines()
+                # stdin = ssh_stdin.readlines()
                 stdout = ssh_stdout.readlines()
                 stderr = ssh_stderr.readlines()
 
-                if len(stdin) > 0:
-                    print("stdin: ")
-                    print(stdin)
+                # if len(stdin) > 0:
+                #     print("stdin: ")
+                #     print(stdin)
                 if len(stdout) > 0:
                     print("stdout: ")
-                    print(stdout)
+                    for i in stdout:
+                        print(i)
                 if len(stderr) > 0:
                     print("stderr: ")
-                    print(stderr)
-                print("Command Sent!: " + fullCommand)
+                    for i in stderr:
+                        print(i)
+                print("Command Sent!")
             except Exception as error_message:
                 print("Error sending SSH command: " + str(error_message))
                 return
@@ -89,14 +91,14 @@ class MYSSH:
     def mission(self, bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
         args = str(bearing) + " " + str(pathLength)  + " " + str(pathCount) + " " + str(initialDepth)  + " " 
         args = args + str(layerCount)  + " " +  str(layerSpacing)  + " " +  str(waterType)  + " " +  str(dataParameter)
-        command = "python3 guiRecieve.py m " + args
+        command = "python3 guirecieve.py m " + args
         self.sendCommand(command)
 
     # set thrust (thrust)
     # thrust: range speed 0-100
     def setThrust(self, thrust):
         if thrustIsValid(thrust):
-            command = "python3 guiRecieve.py st " + str(thrust)
+            command = "python3 guirecieve.py st " + str(thrust)
             self.sendCommand(command)
         else:
             thrustErrMsg()
@@ -105,7 +107,7 @@ class MYSSH:
     # angle: min max +- 20
     def setRudder(self, angle):
         if yawIsValid(angle):
-            command = "python3 guiRecieve.py sr " + str(angle)
+            command = "python3 guirecieve.py sr " + str(angle)
             self.sendCommand(command)
         else:
             yawErrMsg()
@@ -117,7 +119,7 @@ class MYSSH:
             args = str(heading)
             if kp != None:
                 args = args + " " + str(kp)
-            command = "python3 guiRecieve.py sh " + args
+            command = "python3 guirecieve.py sh " + args
             self.sendCommand(command)
         else:
             headingErrMsg()
@@ -128,7 +130,7 @@ class MYSSH:
         if sensor_type != 2:
             print("sensor type is not valid")
             return
-        command = "python3 guiRecieve.py rsr " + str(sensor_type)
+        command = "python3 guirecieve.py rsr " + str(sensor_type)
         self.sendCommand(command)
 
     # set pitch (angle)
@@ -138,7 +140,7 @@ class MYSSH:
             args = str(angle)
             if kp != None:
                 args = args + " " + str(kp)
-            command = "python3 guiRecieve.py sp " + args
+            command = "python3 guirecieve.py sp " + args
             self.sendCommand(command)
         else:
             pitchErrMsg()
@@ -152,7 +154,7 @@ class MYSSH:
                 args = args + " " + str(kpp)
             if kpd != None:
                 args = args + " " + str(kpd)
-            command = "python3 guiRecieve.py sd " + args
+            command = "python3 guirecieve.py sd " + args
             self.sendCommand(command)
         else:
             depthErrMsg()
@@ -162,7 +164,7 @@ class MYSSH:
     # position: min max +- 16.5 cm
     def setStepper(self, position):
         if stepperIsValid(position):
-            command = "python3 guiRecieve.py ss " + str(position)
+            command = "python3 guirecieve.py ss " + str(position)
             self.sendCommand(command)
         else:
             stepperErrMsg()
@@ -173,7 +175,7 @@ class MYSSH:
         if sensor_type != 0 and sensor_type != 1 and sensor_type != 4 and sensor_type != 5:
             print("sensor type is not valid")
             return
-        command = "python3 guiRecieve.py psr " + str(sensor_type)
+        command = "python3 guirecieve.py psr " + str(sensor_type)
         self.sendCommand(command)
         
 
@@ -184,13 +186,13 @@ class MYSSH:
         args = str(interval) 
         if time != 0:
             args = args + " " + str(time)
-        command = "python3 guiRecieve.py startdc " + args
+        command = "python3 guirecieve.py startdc " + args
         self.sendCommand(command)
         
     # stop data collection ()
     # stop scientific payload collection
     def stopDataCollection(self):
-        command = "python3 guiRecieve.py stopdc"
+        command = "python3 guirecieve.py stopdc"
         self.sendCommand(command)
         
 
