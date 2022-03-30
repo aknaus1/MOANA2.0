@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import *
-from guiTransmit import MYSSH
+from guitransmit import MYSSH
 
 class Window(QWidget):
     ssh = MYSSH()
