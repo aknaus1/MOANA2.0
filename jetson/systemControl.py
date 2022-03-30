@@ -154,7 +154,7 @@ class SystemControl:
     # thrust: range speed 0-100
     # time: (optional) time > 0
     # time: 0 = indefinite
-    def setThrust(self, thrust, time = 0):
+    def setThrust(self, thrust, time = 255):
         if time < 0:
             print("Invalid time parameter")
         elif thrustIsValid(thrust):

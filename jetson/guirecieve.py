@@ -21,6 +21,8 @@ if __name__ == '__main__':
     elif args[0] == "st":
         if(arglen == 2):
             sc.setThrust(int(args[1]))
+        elif(arglen == 3):
+            sc.setThrust(int(args[1]), int(args[2]))
         else:
             print("Invalid number of arguments for setThrust")
             print("python3 guiRecieve.py st [thrust]")
@@ -65,6 +67,8 @@ if __name__ == '__main__':
     elif args[0] == "sd":
         if(arglen == 2):
             sc.setPitch(int(args[1]))
+        elif(arglen == 3):
+            sc.setDepth(int(args[1]), int(args[2]))
         elif(arglen == 4):
             sc.setDepth(int(args[1]), int(args[2]), int(args[3]))
         else:

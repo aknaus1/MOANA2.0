@@ -96,9 +96,9 @@ class MYSSH:
 
     # set thrust (thrust)
     # thrust: range speed 0-100
-    def setThrust(self, thrust):
+    def setThrust(self, thrust, time = 255):
         if thrustIsValid(thrust):
-            command = "python3 guirecieve.py st " + str(thrust)
+            command = "python3 guirecieve.py st " + str(thrust) + " " + str(time)
             self.sendCommand(command)
         else:
             thrustErrMsg()

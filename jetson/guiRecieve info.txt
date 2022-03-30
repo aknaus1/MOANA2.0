@@ -1,0 +1,39 @@
+GUI Recieve info:
+
+command format:
+    python3 guirecieve.py [command] {args}
+
+command:
+    m: (mission)
+        args: [bearing] [pathLength] [pathCount] [initialDepth] [layerCount] [layerSpacing] [waterType] [dataParameter]
+
+    st: (setThrust)
+        args: [thrust] [optional: time]
+
+    sr: (setRudder)
+        args: [angle]
+
+    sh: (setHeading)
+        args: [heading] [optional: kp]
+
+    rsr: (rudderSensorRequest)
+        args: [sensor id]
+
+    sp: (setPitch)
+        args: [angle] [optional: kp]
+    
+    sd: (setDepth)
+        args: [depth] [optional: kpp] [optional: kpd]
+
+    ss: (setStepper)
+        args: [position]
+    
+    psr: (pitchSensorRequest)
+        args: [sensor id]
+
+    startdc: (startDataCollection)
+        args: [interval] [optional: time]
+
+    stopdc: (stopDataCollection)
+        args: none
+    
