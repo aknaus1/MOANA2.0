@@ -1,3 +1,4 @@
+from re import fullmatch
 from time import time
 import paramiko
 import ftplib
@@ -54,25 +55,31 @@ class MYSSH:
         except Exception as error_message: # if fails to connect
             print("Error connecting to SSH server: " + str(error_message))
             return
+        else:
+            try:
+                print("Sending Command...")
+                fullCommand = "cd " + self.JETSON_PATH + " && " + command
+                ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand)
 
-        try:
-            print("Moving into working directory...")
-            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command("cd " + self.JETSON_PATH)
-            print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
-            print("Now in working directory!")
-        except Exception as error_message:
-            print("Error sending SSH command: " + str(error_message))
-            return
-        
-        try:
-            print("Sending command: " + command + "...")
-            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(command) # return ssh_stdin, ssh_stdout, ssh_stderr
-            print(ssh_stdin.readlines(), ssh_stdout.readlines(), ssh_stderr.readlines()) # print output
-        except Exception as error_message:
-            print("Error sending SSH command: " + str(error_message))
-            return
+                stdin = ssh_stdin.readlines()
+                stdout = ssh_stdout.readlines()
+                stderr = ssh_stderr.readlines()
 
-        self.ssh.close()
+                if len(stdin) > 0:
+                    print("stdin: ")
+                    print(stdin)
+                if len(stdout) > 0:
+                    print("stdout: ")
+                    print(stdout)
+                if len(stderr) > 0:
+                    print("stderr: ")
+                    print(stderr)
+                print("Command Sent!: " + fullCommand)
+            except Exception as error_message:
+                print("Error sending SSH command: " + str(error_message))
+                return
+        finally:
+            self.ssh.close()
 
     # start mission(bearing, pathLength, pathWidth, pathCount, layerCount)
     # bearing: initial heading
