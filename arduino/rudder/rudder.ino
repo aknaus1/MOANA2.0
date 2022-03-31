@@ -7,6 +7,7 @@
 #include <ASTCanLib.h>
 #include <Servo.h>
 #include <Wire.h>
+#include <SPI.h>
 
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
@@ -99,7 +100,7 @@ void setup()
   Msg.id.ext = MESSAGE_ID;         // Set message ID
   Msg.dlc = MESSAGE_LENGTH;        // Data length: 8 bytes
   Msg.ctrl.rtr = MESSAGE_RTR;      // Set rtr bit
-
+  attachInterrupt(digitalPinToInterrupt(can_get_status(&Msg)), CANIn, CHANGE); // start interrupt
   // IMU Code
   Serial.println("Orientation Sensor Test");
   Serial.println(""); /* Initialise the sensor */
@@ -117,7 +118,7 @@ void setup()
 void loop()
 {
   Serial.println("");
-  CANIn();
+  //CANIn();
   //convert input
   //CANsend(DATA, HEADING_SENSOR); // data to data logger
   Serial.print("type:");
@@ -151,33 +152,6 @@ void loop()
   }
   stateManager();
   delay(500);
-  /*
-    // Clear the message buffer
-    clearBuffer(&Buffer[0]);
-
-    // Send command to the CAN port controller
-    Msg.cmd = CMD_RX_DATA;
-
-    // Wait for the command to be accepted by the controller
-    while(can_cmd(&Msg) != CAN_CMD_ACCEPTED);
-    // Wait for command to finish executing
-    while(can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
-    // Data is now available in the message object
-    // Print received data to the terminal
-    serialPrintData(&Msg);
-
-    int temp, id;
-    id = Msg.pt_data[0];
-
-  */
-  /*
-    if(id == 3){
-      //     Serial.print("accepted message\n");
-    //     Serial.print("Moving servo to position: ");
-    //     Serial.print(Msg.pt_data[1]);
-    //     Serial.print("\n");
-      temp = Msg.pt_data[1];
-    }*/
 }
 
 void saveType() {//save current state in order to revert once code has finished executing
@@ -192,17 +166,19 @@ void stateManager() {//makes sure bot is in correct state at end of each loop:
     type = lastControlType;
 }
 
-float getHeading()
+void getHeading()
 {
-  sensors_event_t event;
-  bno.getEvent(&event);
-  ypos = event.orientation.z;
-  xpos = event.orientation.x;
-  Serial.println("Outside ypos : ");
-  Serial.println(ypos);
-  Serial.println("Orientation: ");
-  Serial.println(xpos);
-  return xpos;
+  // sensors_event_t event;
+  // bno.getEvent(&event);
+  // ypos = event.orientation.z;
+  // xpos = event.orientation.x;
+  // Serial.println("Outside ypos : ");
+  // Serial.println(ypos);
+  // Serial.println("Orientation: ");
+  // Serial.println(xpos);
+  // return xpos;
+  CANsend(THRUST, YAW);
+  CANIn();
 }
 
 void turn(int dir)//this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
@@ -229,7 +205,7 @@ void setHeading(float h)
 
 void CANIn()
 {
-  clearBuffer(&Buffer[0]); 
+  //clearBuffer(&Buffer[0]); 
   Msg.cmd = CMD_RX_DATA;   // Send command to the CAN port controller
   
   // Wait for the command to be accepted by the controller
@@ -239,7 +215,6 @@ void CANIn()
   int id = 0;
   id = Msg.pt_data[0];
   if (id != MESSAGE_ID) return;
-  CANsend(JETSON, ACK);
   saveType();
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
@@ -305,13 +280,15 @@ void CANsend(int ID, int sensor)
   Buffer[0] = ID;
   Buffer[1] = sensor;
   switch (sensor) {
-    case HEADING_SENSOR:
-      convert(getHeading());
-      for (int i = 0; i < 7; i++)
-        Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
-      break;
+    //case HEADING_SENSOR:
+      // convert(getHeading());
+      // for (int i = 0; i < 7; i++)
+      //   Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+      // break;
     case ACK:
       for(int i=2;i<8;i++) Buffer[i] = 0;
+      break;
+    case YAW:
       break;
     default:
       break;
