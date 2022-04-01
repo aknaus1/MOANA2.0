@@ -5,7 +5,6 @@ from validator import *
 from pitch import PitchControl
 from rudder import RudderControl
 
-
 class SystemControl:
     # CAN IDs
     THRUST_ID = 2
@@ -129,7 +128,7 @@ class SystemControl:
     # set thrust (thrust, time)
     # thrust: range speed 0-100
     # time: (optional) time > 0
-    # time: 0 = indefinite
+    # time: 255 = indefinite
     def setThrust(self, thrust, time = 255):
         if time < 0:
             print("Invalid time parameter")

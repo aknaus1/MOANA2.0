@@ -10,8 +10,16 @@ class CANBUS_COMMS:
 
     # Read from bus
     def readFromBus(self):
+        block = []
+
+        while len(block) < 8:
+            i = self.bus.read_byte(self.address) & 0xff
+            print(i)
+            if i is not None:
+                block.append(i)
+
         # Read a block of 16 bytes from address 80, offset 0
-        block = self.bus.read_i2c_block_data(self.address, 0, 16)
+        # block = self.bus.read_i2c_block_data(self.address, 0, 16)
         # Returned value is a list of 16 bytes
         print(block)
         return block
