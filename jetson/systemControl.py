@@ -1,5 +1,5 @@
 import time
-
+import threading
 from canbus_comms import CANBUS_COMMS
 from validator import *
 from pitch import PitchControl
@@ -47,8 +47,8 @@ class SystemControl:
     comms = CANBUS_COMMS()
 
     def __init__(self):
-        self.pc.startThread()
-        self.rc.startThread()
+        self.pc.startSensors()
+        self.rc.startSensors()
         return
 
     # start mission(bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter)
@@ -89,8 +89,8 @@ class SystemControl:
         # turn thruster to high
         self.setThrust(100)
 
-        self.pc.state = 1   # set pitch state to depth control
-        self.rc.state = 0   # set rudder state to heading control
+        # self.pc.state = 1   # set pitch state to depth control
+        # self.rc.state = 0   # set rudder state to heading control
 
         for _ in range(layerCount):
             if initDepth:
@@ -98,28 +98,35 @@ class SystemControl:
                 initDepth = False # has gone to initial depth
             else:
                 currentDepth = currentDepth + layerSpacing
-            self.pc.depth = currentDepth    # set new depth
+            dr = threading.Event() # depth control runner
+            dr.set() # set depth control runner
+            dt = threading.Thread(target=self.pc.holdDepth, args=(currentDepth, dr)) # depth control thread
+            dt.start() # start depth control thread
 
             for dummy in range(pathCount):
-                if turnRight:
-                    self.rc.direction = 2 # turn right
-                    self.rc.state = 1 # set state to turn
-                    self.rc.heading = bearing # set new heading
-                    turnRight = False # next turn should be left
-                else:
-                    self.rc.direction = 1 # turn left
-                    self.rc.state = 1 # set state to turn
-                    self.rc.heading = bearingOpposite # set new heading
-                    turnRight = True # next turn should be right
+                direction = 2 if turnRight else 1
+                heading = bearing if turnRight else bearingOpposite
+                turnRight = not turnRight
 
+                hr = threading.Event() # heading control runner
+                hr.set() # set heading control runner
+                ht = threading.Thread(target=self.rc.turnToHeading, args=(direction, heading, hr)) # heading control thread
+                ht.start() # start depth control thread
                 time.sleep(int(pathLength))
+                hr.clear() # unset heading control runner
+                ht.join() # wait for heading control thread to finish
 
             turnRight = not turnRight # turn same as last
             bearing, bearingOpposite = bearingOpposite, bearing
 
+            dr.clear() # unset depth control runner
+            dt.join() # wait for depth control thread to finish
+
         # return to surface
-        self.pc.depth = 0 # set depth to 0
-        self.rc.state = 69 # set rudder control to idle
+        dr = threading.Event() # depth control runner
+        dt = threading.Thread(target=self.pc.holdDepth, args=(0, dr)) # depth control thread
+        dt.start() # start depth control thread
+        dt.join() # wait for depth control thread to finish
         # turn of thruster
         self.setThrust(0)
         # stop data collection
@@ -145,7 +152,6 @@ class SystemControl:
     # set rudder (angle)
     # angle: min max +- 20
     def setRudder(self, angle):
-        self.rc.state = 69 # set rudder control to idle
         self.rc.setRudder(angle) # set rudder angle
 
     # turn to heading (heading, direction, radius)
@@ -153,51 +159,34 @@ class SystemControl:
     # direction: left(1) or right(2)
     # radius: turn radius
     def turnToHeading(self, heading, direction):
-        self.rc.direction = direction # set turn direction
-        self.rc.state = 1 # set rudder state to turn
-        self.rc.heading = heading # set new heading
+        self.rc.turnToHeading(direction, heading)
 
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
     def setHeading(self, heading, kp = None):
         if kp is not None:
-            self.setHeadingConstant(0, kp)
+            self.rc.setConstant(0, kp)
 
-        self.rc.state = 0 # set state to heading
-        self.rc.heading = heading # set new heading
+        self.rc.setHeading(heading)
 
     # rudder sensor request (sensor type)
     # sensor type: IMU(2)
-    def rudderSensorRequest(self, sensor_type):
+    def rudderSensorRequest(self, sensor_type = None):
         return self.rc.cur_heading
-
-    # set heading constant(kpOrkd, kp)
-    # kpOrkd: input is kp(0) or kd(1)
-    # kp: constant
-    def setHeadingConstant(self, kpOrkd, kp):
-        if kpOrkd == 0:
-            self.rc.heading_kp = kp
-        elif kpOrkd == 1:
-            self.rc.heading_kd = kp
-        else:
-            print("Invalid input")
-            return
 
     # set stepper (position)
     # position is distance from center,
     # position: min max +- 16.5 cm (use int value)
     def setStepper(self, position):
-        self.pc.state = 69 # set state to idle
         self.pc.setStepper(position) # set stepper position
 
-    # set pitch (angle)
-    # angle: min max +- 12 degrees
-    def setPitch(self, angle, kp = None):
+    # set pitch (pitch)
+    # pitch: min max +- 12 degrees
+    def setPitch(self, pitch, kp = None):
         if kp != None:
             self.pc.setConstant(0, kp)
 
-        self.pc.pitch = angle # set new angle
-        self.pc.state = 0 # set state to pitch
+        self.pc.setPitch(pitch)
     
     # set depth (depth)
     # depth: range 0 - 30 m
@@ -207,32 +196,23 @@ class SystemControl:
         if kpd != None:
             self.pc.setConstant(1, kpd)
 
-        self.pc.depth = depth # set new depth
-        self.pc.state = 1 # set state to depth
+        self.pc.setDepth(depth)
 
     # pitch sensor request (sensor type)
     # sensor type: Depth(0), IMU(1)
     def pitchSensorRequest(self, type):
         if type == 0:
-            return self.pc.getDepth()
+            # return self.pc.getDepth()
+            return self.pc.cur_depth
         elif type == 1:
-            return self.pc.getPitch()
+            # return self.pc.getPitch()
+            return self.pc.cur_pitch
+
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
     def setWaterType(self, type):
         self.pc.setWaterType(type)
-
-    # set heading constant(kind, kp)
-    # kind: pitch (0), depth (1)
-    # kp: constant
-    def setConstant(self, kind, kp):
-        if kind == 0:
-            self.pc.setConstant(0, kp)
-        elif kind == 1:
-            self.pc.setConstant(1, kp)
-        else:
-            print("Invalid kind: pitch (0), depth (1)")
 
     # start data collection (interval, time)
     # interval: time between readings

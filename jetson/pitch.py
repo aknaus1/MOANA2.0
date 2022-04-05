@@ -11,129 +11,114 @@ class PitchControl:
 
     MAX_ANGLE = 12
 
-    state = 69 # idle
-
-    pitch = 0
-    depth = 0
-
     cur_pitch = 0
     cur_depth = 0
 
     running = threading.Event()
-    running_sensor = threading.Event()
     thread = None
-    thread_sensor = None
 
     comms = CANBUS_COMMS()
 
     def __init__(self):
         return
 
-    def startThread(self):
+    def startSensors(self):
         self.running.set()
-        self.running_sensor.set()
-
-        self.thread = threading.Thread(target=self.fun, args=(self,))
-        self.thread_sensor = threading.Thread(target=self.readSensors, args=(self,))
-
+        self.thread = threading.Thread(target=self.readSensors)
         self.thread.start()
-        self.thread_sensor.start()
     
-    def stopThread(self):
-        self.running_sensor.clear()
+    def stopSensors(self):
         self.running.clear()
-
-        self.thread_sensor.join()
         self.thread.join()
-
-    def fun(self):
-        while self.running.is_set():
-            self.getPitch()
-            self.getDepth()
-            if self.state == 0: # Pitch
-                print("state = 0")
-                self.setPitch()
-            elif self.state == 1: # Depth
-                print("state = 1")
-                self.setDepth()
-            else: # Idle
-                print("state = idle")
-            time.sleep(1)
 
     # set stepper (position)
     # position is distance from center,
     # position: min max +- 16.5 cm (use int value)
     def setStepper(self, position):
-        if int(position) > 16.5 or int(position) < -16.5:
-            print("Position must be between -16.5 and positive 16.5")
-        else:
-            data = []
-            data.append(5)  # Write pitch ID
-            data.append(2)  # Write stepper command
-            data.append(0 if position < 0 else 1)
-            data.append(abs(position))  # Write position
-            self.comms.writeToBus(data)
+        if position > 16.5:
+            position = 16.5
+        elif position < -16.5:
+            position = -16.5
 
-    def setPitch(self):
-        newPos = 0.0
-        sign = -1 if self.pitch < 0 else 1
-        if abs(self.pitch) > self.MAX_ANGLE:
-            self.pitch = self.MAX_ANGLE * sign
+        data = []
+        data.append(5)  # Write pitch ID
+        data.append(2)  # Write stepper command
+        data.append(0 if position < 0 else 1)
+        data.append(abs(position))  # Write position
+        self.comms.writeToBus(data)
 
-        print("Set pitch: " + self.pitch)
+    def setPitch(self, pitch):
+        sign = -1 if pitch < 0 else 1
+        if abs(pitch) > self.MAX_ANGLE:
+            pitch = self.MAX_ANGLE * sign
 
-        # newPos = (self.pitch - self.getPitch()) * self.kp[0]
-        newPos = (self.pitch - self.cur_pitch) * self.kp[0] # replace if async
+        print("Set pitch: " + pitch)
+
+        newPos = (pitch - self.cur_pitch) * self.kp[0]
         print("newPos:" + newPos)
         self.setStepper(newPos)
+
+    def holdPitch(self, pitch, runner):
+        while runner.is_set():
+            self.setPitch(pitch)
     
-    def setDepth(self):
-        if self.depth > 30:
+    def setDepth(self, depth):
+        if depth > 30:
             print("Command exceeds depth limit of 30M")
             return
 
-        print("Set depth: " + self.depth)
+        print("Set depth: " + depth)
 
-        # newPitch = (self.depth - round(self.getDepth())) * self.kp[1] + self.MAINTAIN_DEPTH
-        newPitch = (self.depth - round(self.cur_depth)) * self.kp[1] + self.MAINTAIN_DEPTH # replace if async
+        newPitch = (depth - round(self.cur_depth)) * self.kp[1] + self.MAINTAIN_DEPTH
         self.setPitch(newPitch)
 
-    def getPitch(self): # reads pitch from sensor
-        ypos = sensor.orientation.z
-        print("Outside ypos : " + ypos)
+    def holdDepth(self, depth, runner):
+        if depth == 0:
+            while abs(self.cur_depth) > 5:
+                self.setDepth(0)
+        else:
+            while runner.is_set():
+                self.setDepth(depth)
 
-        self.cur_pitch = ypos
+        time.sleep(5) # give time for stepper to move
+
+    def getPitch(self): # reads pitch from sensor
+        data = []
+        data.append(8)  # IMU Sensor Board
+        data.append(3)  # IMU Request
+        self.comms.writeToBus(data)
+
+        self.cur_pitch = self.comms.readFromBus()
         return self.cur_pitch
 
     def getDepth(self): # reads the depth sensor and returns depth in Meters
         data = []
         data.append(8)  # Depth Sensor Board
         data.append(3)  # Sensor Request
-        data.append(0)  # Depth Sensor
         self.comms.writeToBus(data)
         
         self.cur_depth = self.comms.readFromBus()
         return self.cur_depth
 
     def readSensors(self):
-        while self.running_sensor.is_set():
+        while self.running.is_set():
             self.getPitch()
             self.getDepth()
-            time.sleep(1)
+            time.sleep(5) # time between readings
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
     def setWaterType(self, type):
         if int(type) == 0 or int(type) == 1:
             data = []
-            data.append(8)  # Write depth sensor ID
-            data.append(4)  # Write yaw command
-            data.append(int(type))
+            data.append(8)  # Depth sensor ID
+            data.append(4)  # Set water type
+            data.append(int(type)) # Water type
             self.comms.writeToBus(data)
         else:
             print("Invalid water type: freshwater (0), saltwater (1)")
 
-    # set heading constant(kind, kp)
+    # set constant(kind, kp)
     # kind: pitch (0), depth (1)
     # kp: constant
     def setConstant(self, kind, kp):
