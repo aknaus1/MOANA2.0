@@ -2,7 +2,7 @@ import sys
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import *
 from turtle import *
-# from guitransmit import MYSSH
+from guitransmit import MYSSH
 
 # to print to text box on manual command tab, use:
 # self.command_box.insertPlainText('example string\n')
@@ -12,7 +12,7 @@ from turtle import *
 # the fields will be automatically adjusted.
 
 class Window(QWidget):
-    # ssh = MYSSH()
+    ssh = MYSSH()
 
     def __init__(self):
         super().__init__()
