@@ -1,4 +1,4 @@
-from re import fullmatch
+from re import L, fullmatch
 from time import time
 import paramiko
 import ftplib
@@ -48,47 +48,52 @@ class MYSSH:
     # move into working directory
     # send command
     def sendCommand(self, command):
-        try: # try to connect
-            print("Attempting to connect SSH...")
-            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
-            print("SSH connection successful!")
-        except Exception as error_message: # if fails to connect
-            print("Error connecting to SSH server: " + str(error_message))
-            return
-        else:
-            try:
-                print("Sending Command...")
-                fullCommand = "cd " + self.JETSON_PATH + " && " + command
-                ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand)
+        # try: # try to connect
+        #     print("Attempting to connect SSH...")
+        #     self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
+        #     print("SSH connection successful!")
+        # except Exception as error_message: # if fails to connect
+        #     print("Error connecting to SSH server: " + str(error_message))
+        #     return
+        # else:
+        #     try:
+        #         print("Sending Command...")
+        #         fullCommand = "cd " + self.JETSON_PATH + " && " + command
+        #         ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand)
 
-                # stdin = ssh_stdin.readlines()
-                stdout = ssh_stdout.readlines()
-                stderr = ssh_stderr.readlines()
+        #         # stdin = ssh_stdin.readlines()
+        #         stdout = ssh_stdout.readlines()
+        #         stderr = ssh_stderr.readlines()
 
-                # if len(stdin) > 0:
-                #     print("stdin: ")
-                #     print(stdin)
-                if len(stdout) > 0:
-                    print("stdout: ")
-                    for i in stdout:
-                        print(i)
-                if len(stderr) > 0:
-                    print("stderr: ")
-                    for i in stderr:
-                        print(i)
-                print("Command Sent!")
-            except Exception as error_message:
-                print("Error sending SSH command: " + str(error_message))
-                return
-        finally:
-            self.ssh.close()
+        #         # if len(stdin) > 0:
+        #         #     print("stdin: ")
+        #         #     print(stdin)
+        #         if len(stdout) > 0:
+        #             print("stdout: ")
+        #             for i in stdout:
+        #                 print(i)
+        #         if len(stderr) > 0:
+        #             print("stderr: ")
+        #             for i in stderr:
+        #                 print(i)
+        #         print("Command Sent!")
+        #     except Exception as error_message:
+        #         print("Error sending SSH command: " + str(error_message))
+        #         return
+        # finally:
+        #     self.ssh.close()
+        print(command)
+        return
 
     # start mission(bearing, pathLength, pathWidth, pathCount, layerCount)
     # bearing: initial heading
     # pathLength: length in time of path
     # pathCount: number of paths at each depth
     # layerCount: list of depths
-    def mission(self, bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
+    def mission(self, bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
+        if not headingIsValid(bearing) or not pathLength.isnumeric() or not pathCount.isnumeric() or not depthIsValid(initialDepth) or not layerCount.isnumeric() or not layerSpacing.isnumeric() or not depthIsValid(int(initialDepth) + int(layerCount) * int(layerSpacing)) or not dataParameter.isnumeric() or not (waterType == 0 or waterType == 1):
+            print("Invalid mission parameters")
+            return
         args = str(bearing) + " " + str(pathLength)  + " " + str(pathCount) + " " + str(initialDepth)  + " " 
         args = args + str(layerCount)  + " " +  str(layerSpacing)  + " " +  str(waterType)  + " " +  str(dataParameter)
         command = "python3 guirecieve.py m " + args
@@ -114,11 +119,13 @@ class MYSSH:
     
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
-    def setHeading(self, heading, kp = None):
+    def setHeading(self, heading, kp = None, kd = None):
         if headingIsValid(heading):
             args = str(heading)
-            if kp != None:
+            if kp != None and kp.isnumeric():
                 args = args + " " + str(kp)
+                if kd != None and kd.isnumeric():
+                    args = args + " " + str(kd)
             command = "python3 guirecieve.py sh " + args
             self.sendCommand(command)
         else:
@@ -138,7 +145,7 @@ class MYSSH:
     def setPitch(self, angle, kp = None):
         if pitchIsValid(angle):
             args = str(angle)
-            if kp != None:
+            if kp != None and kp.isnumeric():
                 args = args + " " + str(kp)
             command = "python3 guirecieve.py sp " + args
             self.sendCommand(command)
@@ -150,10 +157,10 @@ class MYSSH:
     def setDepth(self, depth, kpp = None, kpd = None):
         if depthIsValid(depth):
             args = str(depth)
-            if kpp != None:
+            if kpp != None and kpp.isnumeric():
                 args = args + " " + str(kpp)
-            if kpd != None:
-                args = args + " " + str(kpd)
+                if kpd != None and kpd.isnumeric():
+                    args = args + " " + str(kpd)
             command = "python3 guirecieve.py sd " + args
             self.sendCommand(command)
         else:
@@ -198,5 +205,8 @@ class MYSSH:
     def customCommand(self, data):
         command = "python3 guirecieve.py cc"
         for i in data:
+            if not i.isnumeric():
+                print("Invalid byte: " + i)
+                return
             command = command + " " + i
         self.sendCommand(data)

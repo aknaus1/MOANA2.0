@@ -352,14 +352,14 @@ class Window(QWidget):
         print('heading control')
         for i in self.hc_fields:
             print(i.text())
-        self.ssh.setHeading(self.pc_fields[0].text(), self.pc_fields[1].text())
+        self.ssh.setHeading(self.hc_fields[0].text(), self.hc_fields[1].text(), self.hc_fields[2].text())
     
     # send depth control command
     def dc_command(self):
         print('depth control')
         for i in self.dc_fields:
             print(i.text())
-        self.ssh.setDepth(self.pc_fields[0].text(), self.pc_fields[1].text(), self.pc_fields[2].text())
+        self.ssh.setDepth(self.dc_fields[0].text(), self.dc_fields[1].text(), self.dc_fields[2].text())
 
     # send speed control command
     def sc_command(self):
@@ -396,8 +396,10 @@ class Window(QWidget):
         print('manual command')
         data = []
         for i in self.manual_command_fields:
-            print(i.text())
+            # print(i.text())
             data.append(i.text())
+
+        print(data)
         
         command_string = ''
         for i, v in enumerate(self.manual_command_fields):
@@ -409,7 +411,6 @@ class Window(QWidget):
         self.command_box.insertPlainText(command_string)
         
         self.ssh.customCommand(data)
-        # insert ssh command here
 
 if __name__ == '__main__':
     app = QApplication()

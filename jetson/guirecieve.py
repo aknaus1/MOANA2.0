@@ -41,6 +41,8 @@ if __name__ == '__main__':
             sc.setHeading(int(args[1]))
         elif(arglen == 3):
             sc.setHeading(int(args[1]), int(args[2]))
+        elif(arglen == 4):
+            sc.setHeading(int(args[1]), int(args[2]), int(args[3]))
         else:
             print("Invalid number of arguments for setHeading")
             print("python3 guiRecieve.py sh [heading] [optional: kp]")
