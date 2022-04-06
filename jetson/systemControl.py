@@ -52,7 +52,33 @@ class SystemControl:
         # self.rc.startSensors()
         return
 
-    # start mission(bearing, pathLength, pathWidth, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter)
+    # Read from bus
+    def readFromBus(self):
+        with SMBus(1) as bus:
+            # Read a block of 16 bytes from address 80, offset 0
+            block = bus.read_i2c_block_data(self.address, 0, 16)
+            # Returned value is a list of 16 bytes
+            print(block)
+            return block
+
+    # Write to bus (data)
+    # data: max len = 8
+    def writeToBus(self, data):
+        if len(data) > 8:
+            print("Invalid can bus input")
+            return
+
+        self.fillBytes(data)
+        print(data)
+        with SMBus(1) as bus:
+            bus.write_i2c_block_data(self.address, 0, data)
+
+    # fill bytes (data)
+    def fillBytes(self, data):
+        for i in range(len(data), 8):
+            data.append(0)
+
+    # start mission(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType)
     # bearing: initial heading
     # pathLength: length of path, pathCount: number of paths
     # initialDepth: intial depth, layerCount: number of layers, layerSpacing: distance between layers
