@@ -108,6 +108,17 @@ if __name__ == '__main__':
         else:
             print("python3 guiRecieve.py stopdc")
 
+    # Custom Command
+    elif args[0] == "cc":
+        if(arglen != 9):
+            print("invalid number of arguments")
+            print("python3 guiRecieve.py cc [b0] [b1] [b2] [b3] [b4] [b5] [b6] [b7]")
+        else:
+            data = []
+            for i in range(1,9):
+                data.append(args[i])
+            sc.customCommand(data)
+
     # Default Invalid Arguments
     else:
         print("Invalid arguments")

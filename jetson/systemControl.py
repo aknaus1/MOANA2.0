@@ -270,3 +270,6 @@ class SystemControl:
         data.append(self.SENSOR_ID)
         data.append(0)  # stop
         self.comms.writeToBus(data)
+
+    def customCommand(self, data):
+        self.comms.writeToBus(data)

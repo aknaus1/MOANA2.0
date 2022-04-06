@@ -394,8 +394,10 @@ class Window(QWidget):
 
     def manual_command(self):
         print('manual command')
+        data = []
         for i in self.manual_command_fields:
             print(i.text())
+            data.append(i.text())
         
         command_string = ''
         for i, v in enumerate(self.manual_command_fields):
@@ -406,6 +408,7 @@ class Window(QWidget):
                 command_string = command_string + '\n'
         self.command_box.insertPlainText(command_string)
         
+        self.ssh.customCommand(data)
         # insert ssh command here
 
 if __name__ == '__main__':

@@ -195,5 +195,8 @@ class MYSSH:
         command = "python3 guirecieve.py stopdc"
         self.sendCommand(command)
         
-
-    
+    def customCommand(self, data):
+        command = "python3 guirecieve.py cc"
+        for i in data:
+            command = command + " " + i
+        self.sendCommand(data)
