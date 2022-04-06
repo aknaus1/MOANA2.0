@@ -1,6 +1,5 @@
 import time
 import threading
-import os
 from canbus_comms import CANBUS_COMMS
 from validator import *
 from pitch import PitchControl
@@ -52,32 +51,6 @@ class SystemControl:
         # self.pc.startSensors()
         # self.rc.startSensors()
         return
-
-    # Read from bus
-    def readFromBus(self):
-        with SMBus(1) as bus:
-            # Read a block of 16 bytes from address 80, offset 0
-            block = bus.read_i2c_block_data(self.address, 0, 16)
-            # Returned value is a list of 16 bytes
-            print(block)
-            return block
-
-    # Write to bus (data)
-    # data: max len = 8
-    def writeToBus(self, data):
-        if len(data) > 8:
-            print("Invalid can bus input")
-            return
-
-        self.fillBytes(data)
-        print(data)
-        with SMBus(1) as bus:
-            bus.write_i2c_block_data(self.address, 0, data)
-
-    # fill bytes (data)
-    def fillBytes(self, data):
-        for i in range(len(data), 8):
-            data.append(0)
 
     # start mission(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType)
     # bearing: initial heading
@@ -150,8 +123,8 @@ class SystemControl:
                 hr.set()  # set heading control runner
                 ht = threading.Thread(
                     target=self.rc.turnToHeading, args=(direction, heading, hr))  # heading control thread
-                ht.start()  # start depth control thread
-                time.sleep(int(pathLength))
+                ht.start()  # start heading control thread
+                time.sleep(int(pathLength)) # sleep for path length
                 hr.clear()  # unset heading control runner
                 ht.join()  # wait for heading control thread to finish
 
@@ -167,10 +140,14 @@ class SystemControl:
                               args=(0, dr))  # depth control thread
         dt.start()  # start depth control thread
         dt.join()  # wait for depth control thread to finish
-        # turn of thruster
+        # turn off thruster
         self.setThrust(0)
         # stop data collection
         self.stopDataCollection()
+
+        # stop sensors
+        self.pc.stopSensors()
+        self.rc.stopSensors()
 
     # set thrust (thrust, time)
     # thrust: range speed 0-100
@@ -212,7 +189,7 @@ class SystemControl:
     # rudder sensor request (sensor type)
     # sensor type: IMU(2)
     def rudderSensorRequest(self, sensor_type=None):
-        return self.rc.cur_heading
+        return self.rc.getHeading()
 
     # set stepper (position)
     # position is distance from center,
@@ -243,10 +220,10 @@ class SystemControl:
     def pitchSensorRequest(self, type):
         if type == 0:
             # return self.pc.getDepth()
-            return self.pc.cur_depth
+            return self.pc.getDepth()
         elif type == 1:
             # return self.pc.getPitch()
-            return self.pc.cur_pitch
+            return self.pc.getPitch()
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)

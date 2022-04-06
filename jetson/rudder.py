@@ -73,11 +73,11 @@ class RudderControl:
         if direction == 1:
             print("Turning Left")
             self.setRudder(20)
-            time.sleep(4)
+            time.sleep(5)
         elif direction == 2:
             print("Turning Right")
             self.setRudder(-20)
-            time.sleep(4)
+            time.sleep(5)
         else:
             print("Invalid direction")
 

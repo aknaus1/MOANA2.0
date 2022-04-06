@@ -78,6 +78,7 @@ class PitchControl:
         if depth == 0:
             while abs(self.cur_depth) > 5:
                 self.setDepth(0)
+                time.sleep(5) # give time for stepper to move
         else:
             while runner.is_set():
                 self.setDepth(depth)
