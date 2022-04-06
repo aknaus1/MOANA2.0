@@ -85,11 +85,13 @@ class PitchControl:
 
     def getPitch(self): # reads pitch from sensor
         data = []
-        data.append(8)  # IMU Sensor Board
+        data.append(2)  # Thrust Board
         data.append(3)  # IMU Request
         self.comms.writeToBus(data)
 
-        # self.cur_pitch = self.comms.readFromBus()
+        bus_data = self.comms.readFromBus()
+
+        self.cur_pitch = bus_data[1]
         return self.cur_pitch
 
     def getDepth(self): # reads the depth sensor and returns depth in Meters
@@ -97,8 +99,10 @@ class PitchControl:
         data.append(8)  # Depth Sensor Board
         data.append(3)  # Sensor Request
         self.comms.writeToBus(data)
+
+        bus_data = self.comms.readFromBus()
         
-        # self.cur_depth = self.comms.readFromBus()
+        self.cur_depth = bus_data[1]
         return self.cur_depth
 
     def readSensors(self):
