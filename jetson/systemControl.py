@@ -1,5 +1,6 @@
 import time
 import threading
+import os
 from canbus_comms import CANBUS_COMMS
 from validator import *
 from pitch import PitchControl
@@ -171,20 +172,30 @@ class SystemControl:
         # stop data collection
         self.stopDataCollection()
 
+    # helper function for thrust control
+    def sendThrust(self, thrust):
+        data = []
+        data.append(self.THRUST_ID)  # Write thruster ID
+        data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
+        data.append(abs(thrust))  # Write thruster speed
+        data.append(time)  # Write time to run (0 - run until stop)
+        self.comms.writeToBus(data)
+
     # set thrust (thrust, time)
     # thrust: range speed 0-100
     # time: (optional) time > 0
     # time: 255 = indefinite
-    def setThrust(self, thrust, time=255):
-        if time < 0:
+    def setThrust(self, thrust, t=255):
+        if t < 0 or t > 255:
             print("Invalid time parameter")
         elif thrustIsValid(thrust):
-            data = []
-            data.append(self.THRUST_ID)  # Write thruster ID
-            data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
-            data.append(abs(thrust))  # Write thruster speed
-            data.append(time)  # Write time to run (0 - run until stop)
-            self.comms.writeToBus(data)
+            self.sendThrust(thrust)
+            if t != 255:
+                if os.fork() > 0:
+                    return
+                else:
+                    time.sleep(t)
+                    self.sendThrust(0)
         else:
             thrustErrMsg()
 
