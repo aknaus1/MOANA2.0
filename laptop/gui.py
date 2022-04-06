@@ -47,7 +47,7 @@ class Window(QWidget):
     def create_mission_tab(self):
         self._mission_tab = QWidget()
 
-        mission_label_values = ['Bearing [degrees]', 'Path Length [m]', 'Path Count', 'Initial Depth [m]', 'Layer Count', 'Layer Spacing [m]', 'Data Parameter', 'Water Type']
+        mission_label_values = ['Bearing [degrees]', 'Path Length [seconds]', 'Path Count', 'Initial Depth [m]', 'Layer Count', 'Layer Spacing [m]', 'Data Parameter', 'Water Type']
         mission_labels = []
         self.mission_fields = []
 
