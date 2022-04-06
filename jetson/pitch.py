@@ -5,7 +5,7 @@ from canbus_comms import CANBUS_COMMS
 class PitchControl:
     MAINTAIN_DEPTH = 3
     DEPTH_KP = 3
-    PITCH_KP = .1
+    PITCH_KP = 4/3
 
     kp = {PITCH_KP, DEPTH_KP}
 
@@ -40,6 +40,8 @@ class PitchControl:
         elif position < -16.5:
             position = -16.5
 
+        print("set stepper: " + str(position))
+
         data = []
         data.append(5)  # Write pitch ID
         data.append(2)  # Write stepper command
@@ -52,24 +54,24 @@ class PitchControl:
         if abs(pitch) > self.MAX_ANGLE:
             pitch = self.MAX_ANGLE * sign
 
-        print("Set pitch: " + pitch)
+        print("set pitch: " + str(pitch))
 
-        newPos = (pitch - self.cur_pitch) * self.kp[0]
-        print("newPos:" + newPos)
+        newPos = (pitch - self.cur_pitch) * self.PITCH_KP
         self.setStepper(newPos)
 
     def holdPitch(self, pitch, runner):
         while runner.is_set():
             self.setPitch(pitch)
+            time.sleep(5) # give time for stepper to move
     
     def setDepth(self, depth):
         if depth > 30:
             print("Command exceeds depth limit of 30M")
             return
 
-        print("Set depth: " + depth)
-
-        newPitch = (depth - round(self.cur_depth)) * self.kp[1] + self.MAINTAIN_DEPTH
+        print("set depth: " + str(depth))
+            
+        newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
         self.setPitch(newPitch)
 
     def holdDepth(self, depth, runner):
@@ -79,8 +81,7 @@ class PitchControl:
         else:
             while runner.is_set():
                 self.setDepth(depth)
-
-        time.sleep(5) # give time for stepper to move
+                time.sleep(5) # give time for stepper to move
 
     def getPitch(self): # reads pitch from sensor
         data = []
@@ -88,7 +89,7 @@ class PitchControl:
         data.append(3)  # IMU Request
         self.comms.writeToBus(data)
 
-        self.cur_pitch = self.comms.readFromBus()
+        # self.cur_pitch = self.comms.readFromBus()
         return self.cur_pitch
 
     def getDepth(self): # reads the depth sensor and returns depth in Meters
@@ -97,7 +98,7 @@ class PitchControl:
         data.append(3)  # Sensor Request
         self.comms.writeToBus(data)
         
-        self.cur_depth = self.comms.readFromBus()
+        # self.cur_depth = self.comms.readFromBus()
         return self.cur_depth
 
     def readSensors(self):

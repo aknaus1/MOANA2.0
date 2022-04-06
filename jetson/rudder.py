@@ -39,17 +39,18 @@ class RudderControl:
         elif angle > 20:
             angle = 20
 
-            data = []
-            data.append(3)  # Write rudder ID
-            data.append(0)  # Write yaw command
-            data.append(0 if int(self.angle) < 0 else 1)
-            data.append(abs(int(self.angle)))  # Write yaw
-            self.comms.writeToBus(data)
-        else:
-            print("yaw angle out of range: +- 20")
+        print("set rudder: " + str(angle))
+
+        data = []
+        data.append(3)  # Write rudder ID
+        data.append(0)  # Write yaw command
+        data.append(0 if int(angle) < 0 else 1)
+        data.append(abs(int(angle)))  # Write yaw
+        self.comms.writeToBus(data)
 
     def setHeading(self, heading):
         # error = self.heading - self.getHeading()
+        print("Set heading: " + str(heading))
         error = heading - self.cur_heading # replace if async
 
         error_derivative = (error - self.error_prev) / .5 # change(error - error_prev)/time(s)
@@ -70,9 +71,11 @@ class RudderControl:
 
     def turnToHeading(self, direction, heading, runner = None): # this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
         if direction == 1:
+            print("Turning Left")
             self.setRudder(20)
             time.sleep(4)
         elif direction == 2:
+            print("Turning Right")
             self.setRudder(-20)
             time.sleep(4)
         else:
@@ -89,7 +92,7 @@ class RudderControl:
         data.append(3)  # IMU Request
         self.comms.writeToBus(data)
         
-        self.cur_heading = self.comms.readFromBus()
+        # self.cur_heading = self.comms.readFromBus()
         return self.cur_heading
 
     def readSensors(self):
