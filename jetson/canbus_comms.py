@@ -1,9 +1,9 @@
-# import smbus
+import smbus
 
 class CANBUS_COMMS:
     # i2c address of the arduino we are writing to
     address = 0x40
-    # bus = smbus.SMBus(0)
+    bus = smbus.SMBus(0)
 
     def __init__(self):
         return
