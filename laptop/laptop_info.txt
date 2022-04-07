@@ -2,7 +2,7 @@ Getting Started:
 
     Laptop Username: RSL
     Laptop Password: rsl
-    Path: ~/Desktop/MOANA2.0
+    Path: ~/Desktop/moana/MOANA2.0
 
     Moana Username: moana
     Moana Password: root
