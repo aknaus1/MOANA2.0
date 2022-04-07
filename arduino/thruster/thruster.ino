@@ -1,5 +1,5 @@
 #include <ASTCanLib.h>
-
+#include <Adafruit_BNO055.h>
 #include <Servo.h>
 void CANsend(int ID, int sensor);
 // testing:
@@ -39,6 +39,10 @@ void serialPrintData(st_cmd_t *msg);
 
 // CAN message object
 st_cmd_t Msg;
+
+int yposArray[3];
+void convert(float testValue);
+
 
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
@@ -171,6 +175,34 @@ void CANsend(int ID, int sensor)
   clearBuffer(&Buffer[0]);
 }
 
+void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
+{
+  int whole, fraction;
+  if (testValue < 0.0)
+  {
+    yposArray[0] = 1; // 1 is a negative value
+    testValue = testValue * -1;
+  }
+  else if (testValue > 0.0)
+  {
+    yposArray[0] = 2; // 2 is positive
+  }
+  else if (testValue == 0)
+  {
+    yposArray[0] = 0;
+  }
+  whole = round(testValue);
+  yposArray[1] = whole;
+  fraction = testValue * 100;
+  fraction = fraction - (whole * 100);
+  yposArray[2] = fraction;
+  /*
+    Serial.println(testVal);
+    Serial.println(yposArray[0]);
+    Serial.println(yposArray[1]);
+    Serial.println(yposArray[2]);
+  */
+}
 
 void serialPrintData(st_cmd_t *msg)
 {

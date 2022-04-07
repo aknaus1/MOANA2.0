@@ -182,7 +182,10 @@ void CANsend(int ID, int sensor)
   Buffer[1] = sensor;
   switch (sensor) {
     case DEPTH:
+      Serial.print("Depth: ");
+      Serial.println(depthSensor.depth());
       convert(depthSensor.depth());
+      
       Buffer[2] = yposArray[1];
       Buffer[3] = yposArray[2];
       for (int i = 4; i <= 7; i++)

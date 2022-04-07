@@ -154,7 +154,7 @@ void loop()//main loop, refreshes every
     pitchSensor = -12;
   
   //Serial.println("head of loop");
-  //CANin();
+  CANin();
   Serial.print("State:");
   Serial.println(type);
   //CANsend(DATA, PITCH); // data to data logger
@@ -312,7 +312,7 @@ void getPitch() // reads pitch from sensor
 
 void getDepth() // reads the depth sensor and returns depth in Meters
 {
-  CANsend(DEPTH_SENSOR, 10);
+  CANsend(DEPTH_SENSOR, 0);
   CANin();
 }
 
@@ -380,9 +380,9 @@ void CANin()
   // Clear the message buffer
   clearBuffer( & Buffer[0]); // Send command to the CAN port controller
   Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
-  //while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
+  while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
   //Wait for command to finish executing
-  //while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
+  while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
 
   // Data is now available in the message object
   int dir = 0, angle = 0, id = 0;
