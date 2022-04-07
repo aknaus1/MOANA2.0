@@ -8,8 +8,6 @@ class RudderControl:
     heading_kp = .15
     heading_kd = .21
 
-    state = 69 # idle
-
     cur_heading = 0 # current heading
 
     error_prev = 0
@@ -67,7 +65,7 @@ class RudderControl:
     def holdHeading(self, heading, runner):
         while runner.is_set():
             self.setHeading(heading)
-            time.sleep(5)
+            time.sleep(.6)
 
     def turnToHeading(self, direction, heading, runner = None): # this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
         if direction == 1:
@@ -88,7 +86,7 @@ class RudderControl:
 
     def getHeading(self):
         data = []
-        data.append(2)  # Thrust Board
+        data.append(3)  # Rudder Board
         data.append(3)  # IMU Request
         self.comms.writeToBus(data)
 
@@ -100,7 +98,7 @@ class RudderControl:
     def readSensors(self):
         while self.running.is_set():
             self.getHeading()
-            time.sleep(5) # time between readings
+            time.sleep(.5) # time between readings
 
     # set constant(kpOrkd, kp)
     # kpOrkd: input is kp(0) or kd(1)

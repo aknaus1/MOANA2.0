@@ -1,0 +1,68 @@
+Getting Started:
+
+    Laptop Username: RSL
+    Laptop Password: rsl
+    Path: ~/Desktop/MOANA2.0
+
+    Moana Username: moana
+    Moana Password: root
+    Path: ~/MOANA2.0
+
+Things You Need:
+    1) MOANA - You need moana to test moana
+    2) Control Laptop - You need laptop to test with laptop
+    3) Self - Need self for self to do testing
+    4) Internet connection - Need to share connection between laptop and moana
+
+
+Connecting to MOANA:
+    1) On control laptop, go into network preferences
+    2) Make sure the laptop is connected to the internet
+    3) Turn on the laptop's hotspot
+    4) Wait for moana to connect.
+        i) moana should auto connect
+        ii) you will know that it was successful when the connected devices changes from 0/8 to 1/8
+        iii) additionally moana will be listed among the connected devices with it's ip address
+        iv) note: the ip-address will be needed later
+
+        Congratulations! You are now connected to MOANA!
+
+Running Tests on Command Line:
+    1) Open command prompt
+    2) Enter: ssh moana@ip-address
+        ii) ip-address should be replaced with the ip address from step 4 of the previous section
+    3) When prompted for a password enter: root
+    4) Enter: cd MOANA2.0/jetson
+        i) This will move you into the jetson directory of moana
+
+    Simple tests:
+        1) Refer to documentation listed in "info.txt" located in the MOANA2.0/jetson directory
+
+    In-Depth Tests:
+        1) Enter: python3
+            i) this will open a python3 shell
+            ii) start of line will be: >>>
+        2) Determine system to test: SystemControl, PitchControl, RudderControl, CANBUS_COMMS
+            i) For SystemControl enter: 
+                a) from systemControl import SystemControl
+                b) ob = SystemControl()
+            ii) For PitchControl enter:
+                a) from pitch import PitchControl
+                b) ob = PitchControl()
+            iii) For RudderControl enter:
+                a) from rudder import RudderControl
+                b) ob = RudderControl()
+            iv) For CANBUS_COMMS enter:
+                a) from canbus_comms import CANBUS_COMMS
+                b) ob = CANBUS_COMMS()
+        3) Run commands by entering: ob.command()
+            i) command() should be replaced with a some real command, can tab to auto-complete or show commands
+
+Running Tests With GUI:
+    1) Open command prompt
+    2) Enter: cd Desktop/MOANA2.0/laptop
+        i) This will move you into the laptop directory of moana
+    3) Enter: python3 gui.py
+        i) This should open the gui
+        ii) Make sure to keep command prompt window open, or it will close GUI
+        iii) If expecting an output, it can be viewed in command prompt window

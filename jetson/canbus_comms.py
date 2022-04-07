@@ -18,9 +18,9 @@ class CANBUS_COMMS:
             if i is not None:
                 block.append(i)
 
-        # # Read a block of 8 bytes from address, offset 0
-        # # block = self.bus.read_i2c_block_data(self.address, 0, 8)
-        # # Returned value is a list of 16 bytes
+        # Read a block of 8 bytes from address, offset 0
+        # block = self.bus.read_i2c_block_data(self.address, 0, 8)
+        # Returned value is a list of 8 bytes
         print(block)
         return block
 
@@ -33,10 +33,8 @@ class CANBUS_COMMS:
 
         self.fillBytes(data)
         print(data)
-        # for byte in data:
-        #     self.bus.write_byte(self.address, byte)
-        # # with SMBus(0) as bus:
-        # #     bus.write_i2c_block_data(self.address, 0, data)
+        for byte in data:
+            self.bus.write_byte(self.address, byte)
 
     # fill bytes (data)
     def fillBytes(self, data):

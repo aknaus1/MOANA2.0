@@ -62,7 +62,7 @@ class PitchControl:
     def holdPitch(self, pitch, runner):
         while runner.is_set():
             self.setPitch(pitch)
-            time.sleep(5) # give time for stepper to move
+            time.sleep(4) # give time for stepper to move
     
     def setDepth(self, depth):
         if depth > 30:
@@ -78,11 +78,11 @@ class PitchControl:
         if depth == 0:
             while abs(self.cur_depth) > 5:
                 self.setDepth(0)
-                time.sleep(5) # give time for stepper to move
+                time.sleep(4) # give time for stepper to move
         else:
             while runner.is_set():
                 self.setDepth(depth)
-                time.sleep(5) # give time for stepper to move
+                time.sleep(4) # give time for stepper to move
 
     def getPitch(self): # reads pitch from sensor
         data = []
@@ -110,7 +110,7 @@ class PitchControl:
         while self.running.is_set():
             self.getPitch()
             self.getDepth()
-            time.sleep(5) # time between readings
+            time.sleep(.5) # time between readings
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
