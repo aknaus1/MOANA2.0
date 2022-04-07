@@ -88,6 +88,7 @@ class RudderControl:
         data = []
         data.append(3)  # Rudder Board
         data.append(3)  # IMU Request
+        data.append(2)
         self.comms.writeToBus(data)
 
         bus_data = self.comms.readFromBus()
