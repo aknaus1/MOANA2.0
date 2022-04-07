@@ -88,12 +88,12 @@ class RudderControl:
         data = []
         data.append(3)  # Rudder Board
         data.append(3)  # IMU Request
-        data.append(2)
+        data.append(2)  # Heading Request
         self.comms.writeToBus(data)
 
         bus_data = self.comms.readFromBus()
         
-        self.cur_heading = bus_data[1]
+        self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
         return self.cur_heading
 
     def readSensors(self):

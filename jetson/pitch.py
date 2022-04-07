@@ -86,11 +86,14 @@ class PitchControl:
 
     def getPitch(self): # reads pitch from sensor
         data = []
-        data.append(2)  # Thrust Board
+        data.append(3)  # Thrust Board
         data.append(3)  # IMU Request
+        data.append(1)  # Pitch Request
         self.comms.writeToBus(data)
 
         bus_data = self.comms.readFromBus()
+
+        self.cur_pitch = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
 
         self.cur_pitch = bus_data[1]
         return self.cur_pitch
@@ -103,7 +106,7 @@ class PitchControl:
 
         bus_data = self.comms.readFromBus()
         
-        self.cur_depth = bus_data[1]
+        self.cur_depth = bus_data[2]
         return self.cur_depth
 
     def readSensors(self):
