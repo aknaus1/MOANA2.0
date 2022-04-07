@@ -16,9 +16,9 @@ Things You Need:
 
 
 Connecting to MOANA:
-    1) On control laptop, go into network preferences
+    1) On control laptop, go into network and internet settings
     2) Make sure the laptop is connected to the internet
-    3) Turn on the laptop's hotspot
+    3) Under mobile hotspot, turn on mobile hotspot
     4) Wait for moana to connect.
         i) moana should auto connect
         ii) you will know that it was successful when the connected devices changes from 0/8 to 1/8

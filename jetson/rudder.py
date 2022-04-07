@@ -17,7 +17,9 @@ class RudderControl:
 
     comms = CANBUS_COMMS()
 
-    def __init__(self):
+    def __init__(self, in_lock, out_lock):
+        self.in_lock = in_lock
+        self.out_lock = out_lock
         return
 
     def startSensors(self):
@@ -44,7 +46,10 @@ class RudderControl:
         data.append(0)  # Write yaw command
         data.append(0 if int(angle) < 0 else 1)
         data.append(abs(int(angle)))  # Write yaw
-        self.comms.writeToBus(data)
+
+        self.out_lock.acquire() # Get I2C to CAN lock
+        self.comms.writeToBus(data) # Write to CAN
+        self.out_lock.release() # Release I2C to CAN lock
 
     def setHeading(self, heading):
         # error = self.heading - self.getHeading()
@@ -65,7 +70,6 @@ class RudderControl:
     def holdHeading(self, heading, runner):
         while runner.is_set():
             self.setHeading(heading)
-            time.sleep(.6)
 
     def turnToHeading(self, direction, heading, runner = None): # this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
         if direction == 1:
@@ -89,9 +93,14 @@ class RudderControl:
         data.append(3)  # Rudder Board
         data.append(3)  # IMU Request
         data.append(2)  # Heading Request
-        self.comms.writeToBus(data)
+        
+        self.in_lock.acquire()  # Get CAN to I2C lock
+        self.out_lock.acquire() # Get I2C to CAN lock
+        self.comms.writeToBus(data) # Write to CAN
+        self.out_lock.release() # Release I2C to CAN lock
 
-        bus_data = self.comms.readFromBus()
+        bus_data = self.comms.readFromBus() # Read from CAN
+        self.in_lock.release()  # Release CAN to I2C lock
         
         self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
         return self.cur_heading
@@ -99,7 +108,6 @@ class RudderControl:
     def readSensors(self):
         while self.running.is_set():
             self.getHeading()
-            time.sleep(.5) # time between readings
 
     # set constant(kpOrkd, kp)
     # kpOrkd: input is kp(0) or kd(1)

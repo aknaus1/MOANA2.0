@@ -12,14 +12,6 @@ class CANBUS_COMMS:
 
     # Read from bus
     def readFromBus(self):
-        # block = []
-
-        # while len(block) < 8:
-        #     i = self.bus_in.read_byte(self.address) & 0xff
-        #     print(i)
-        #     if i is not None:
-        #         block.append(i)
-
         # Read a block of 8 bytes from address, offset 0
         time.sleep(.25)
         block = self.bus_in.read_i2c_block_data(self.address, 0, 8)

@@ -41,13 +41,15 @@ class SystemControl:
     # SALT v FRESH
     FRESH_WATER = 0
     SALT_WATER = 1
-
-    pc = PitchControl()
-    rc = RudderControl()
+    
+    in_lock = threading.Lock()
+    out_lock = threading.Lock()
 
     comms = CANBUS_COMMS()
 
     def __init__(self):
+        self.pc = PitchControl(self.in_lock, self.out_lock)
+        self.rc = RudderControl(self.in_lock, self.out_lock)
         # self.pc.startSensors()
         # self.rc.startSensors()
         return
@@ -78,12 +80,12 @@ class SystemControl:
             print("Data parameter is invalid")
             return
 
-        self.pc.startSensors()
-        self.rc.startSensors()
-
         bearing = int(bearing)
         bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter \
-            = int(bearing), int(pathLength), int(pathCount), int(initialDepth), int(layerCount), int(layerSpacing), int(waterType), int(dataParameter)
+            = int(bearing), int(pathLength), int(pathCount), int(initialDepth), int(layerCount), int(layerSpacing), int(waterType), int(dataParameter)     
+
+        self.pc.startSensors()
+        self.rc.startSensors()
 
         initDepth = True  # hasnt gone to initial depth
         # get opposite degree of bearing
