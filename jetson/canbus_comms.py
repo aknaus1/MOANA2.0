@@ -21,7 +21,7 @@ class CANBUS_COMMS:
         #         block.append(i)
 
         # Read a block of 8 bytes from address, offset 0
-        time.sleep(.25)
+        time.sleep(.5)
         block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
         # Returned value is a list of 8 bytes
         print(block)
