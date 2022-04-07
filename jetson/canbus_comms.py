@@ -1,4 +1,5 @@
 import smbus
+import time
 
 class CANBUS_COMMS:
     # i2c address of the arduino we are writing to
@@ -20,14 +21,11 @@ class CANBUS_COMMS:
         #         block.append(i)
 
         # Read a block of 8 bytes from address, offset 0
-        while 1:
-            block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-            if block[0] != 0:
-                print(block)
-                return block
+        time.sleep(.1)
+        block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
         # Returned value is a list of 8 bytes
-        # print(block)
-        # return block
+        print(block)
+        return block
 
     # Write to bus (data)
     # data: max len = 8
