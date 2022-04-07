@@ -11,6 +11,7 @@ class PitchControl:
 
     MAX_ANGLE = 12
 
+    cur_pos = 0
     cur_pitch = 0
     cur_depth = 0
 

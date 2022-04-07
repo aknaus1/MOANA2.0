@@ -45,6 +45,12 @@ class SystemControl:
     in_lock = threading.Lock()
     out_lock = threading.Lock()
 
+    rudder_runner = threading.Event()
+    rudder_thread = threading.Thread()
+
+    stepper_runner = threading.Event()
+    stepper_thread = threading.Thread()
+
     comms = CANBUS_COMMS()
 
     def __init__(self):
@@ -164,13 +170,18 @@ class SystemControl:
             data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
             data.append(abs(thrust))  # Write thruster speed
             data.append(t)  # Write time to run (0 - run until stop)
+            self.out_lock.acquire()
             self.comms.writeToBus(data)
+            self.out_lock.release()
         else:
             thrustErrMsg()
 
     # set rudder (angle)
     # angle: min max +- 20
     def setRudder(self, angle):
+        if self.rudder_runner.is_set():
+            self.rudder_runner.clear()
+            self.rudder_thread.join()
         self.rc.setRudder(angle)  # set rudder angle
 
     # turn to heading (heading, direction, radius)
@@ -178,7 +189,13 @@ class SystemControl:
     # direction: left(1) or right(2)
     # radius: turn radius
     def turnToHeading(self, heading, direction):
-        self.rc.turnToHeading(direction, heading)
+        if self.rudder_runner.is_set():
+            self.rudder_runner.clear()
+            self.rudder_thread.join()
+        self.rudder_runner.set()
+        self.rudder_thread = threading.Thread(target=self.rc.turnToHeading, args=(direction, heading, self.rudder_runner))
+        self.rudder_thread.start()
+        # self.rc.turnToHeading(direction, heading)
 
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
@@ -186,7 +203,13 @@ class SystemControl:
         if kp is not None:
             self.rc.setConstant(0, kp)
 
-        self.rc.setHeading(heading)
+        # self.rc.setHeading(heading)
+        if self.rudder_runner.is_set():
+            self.rudder_runner.clear()
+            self.rudder_thread.join()
+        self.rudder_runner.set()
+        self.rudder_thread = threading.Thread(target=self.rc.holdHeading, args=(heading, self.rudder_runner))
+        self.rudder_thread.start()
 
     # rudder sensor request (sensor type)
     # sensor type: IMU(2)
@@ -197,6 +220,9 @@ class SystemControl:
     # position is distance from center,
     # position: min max +- 16.5 cm (use int value)
     def setStepper(self, position):
+        if self.stepper_runner.is_set():
+            self.stepper_runner.clear()
+            self.stepper_thread.join()
         self.pc.setStepper(position)  # set stepper position
 
     # set pitch (pitch)
@@ -205,7 +231,13 @@ class SystemControl:
         if kp != None:
             self.pc.setConstant(0, kp)
 
-        self.pc.setPitch(pitch)
+        # self.pc.setPitch(pitch)
+        if self.stepper_runner.is_set():
+            self.stepper_runner.clear()
+            self.stepper_thread.join()
+        self.stepper_runner.set()
+        self.stepper_thread = threading.Thread(target=self.pc.holdPitch, args=(pitch, self.stepper_runner))
+        self.stepper_thread.start()
 
     # set depth (depth)
     # depth: range 0 - 30 m
@@ -215,7 +247,13 @@ class SystemControl:
         if kpd != None:
             self.pc.setConstant(1, kpd)
 
-        self.pc.setDepth(depth)
+        # self.pc.setDepth(depth)
+        if self.stepper_runner.is_set():
+            self.stepper_runner.clear()
+            self.stepper_thread.join()
+        self.stepper_runner.set()
+        self.stepper_thread = threading.Thread(target=self.pc.holdDepth, args=(depth, self.stepper_runner))
+        self.stepper_thread.start()
 
     # pitch sensor request (sensor type)
     # sensor type: Depth(0), IMU(1)
@@ -241,7 +279,9 @@ class SystemControl:
         data.append(1)  # start
         data.append(interval)
         data.append(time)
+        self.out_lock.acquire()
         self.comms.writeToBus(data)
+        self.out_lock.release()
 
     # stop data collection ()
     # stop scientific payload collection
@@ -249,7 +289,11 @@ class SystemControl:
         data = []
         data.append(self.SENSOR_ID)
         data.append(0)  # stop
+        self.out_lock.acquire()
         self.comms.writeToBus(data)
+        self.out_lock.release()
 
     def customCommand(self, data):
+        self.out_lock.acquire()
         self.comms.writeToBus(data)
+        self.out_lock.release()
