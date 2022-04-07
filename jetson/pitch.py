@@ -92,10 +92,11 @@ class PitchControl:
         self.comms.writeToBus(data)
 
         bus_data = self.comms.readFromBus()
+        
+        if bus_data[0] != 0 and bus_data[1] != 1:
+            return self.getPitch()
 
         self.cur_pitch = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
-
-        self.cur_pitch = bus_data[1]
         return self.cur_pitch
 
     def getDepth(self): # reads the depth sensor and returns depth in Meters
