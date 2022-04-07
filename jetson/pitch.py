@@ -64,7 +64,7 @@ class PitchControl:
         print("set pitch: " + str(pitch))
 
         newPos = (pitch - self.cur_pitch) * self.PITCH_KP
-        self.setStepper(newPos)
+        self.setStepper(int(newPos))
 
     def holdPitch(self, pitch, runner):
         while runner.is_set():
