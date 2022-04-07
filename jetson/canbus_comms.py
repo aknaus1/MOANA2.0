@@ -3,7 +3,8 @@ import smbus
 class CANBUS_COMMS:
     # i2c address of the arduino we are writing to
     address = 0x40
-    bus = smbus.SMBus(0)
+    bus_out = smbus.SMBus(0)
+    bus_in = smbus.SMBus(1)
 
     def __init__(self):
         return
@@ -13,7 +14,7 @@ class CANBUS_COMMS:
         block = []
 
         while len(block) < 8:
-            i = self.bus.read_byte(self.address) & 0xff
+            i = self.bus_in.read_byte(self.address) & 0xff
             print(i)
             if i is not None:
                 block.append(i)
@@ -34,7 +35,7 @@ class CANBUS_COMMS:
         self.fillBytes(data)
         print(data)
         for byte in data:
-            self.bus.write_byte(self.address, byte)
+            self.bus_out.write_byte(self.address, byte)
 
     # fill bytes (data)
     def fillBytes(self, data):
