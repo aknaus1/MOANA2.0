@@ -23,7 +23,7 @@ Servo rudder;
 #define HEADING_KP .15
 #define KD .21
 #define MAX_RUDDER_ANGLE 20
-#define HEADING_SENSOR 2
+
 #define BNO055_SAMPLERATE_DELAY_MS 10
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 #define dirPin 8
@@ -100,10 +100,8 @@ void setup()
   Msg.id.ext = MESSAGE_ID;         // Set message ID
   Msg.dlc = MESSAGE_LENGTH;        // Data length: 8 bytes
   Msg.ctrl.rtr = MESSAGE_RTR;      // Set rtr bit
-  attachInterrupt(digitalPinToInterrupt(can_get_status(&Msg)), CANIn, CHANGE); // start interrupt
   // IMU Code
   Serial.println("Orientation Sensor Test");
-  Serial.println(""); /* Initialise the sensor */
   if (!bno.begin())
   {
     /* There was a problem detecting the BNO055 ... check your connections */
@@ -117,8 +115,7 @@ void setup()
 
 void loop()
 {
-  Serial.println("");
-  //CANIn();
+  CANIn();
   //convert input
   //CANsend(DATA, HEADING_SENSOR); // data to data logger
   Serial.print("type:");
@@ -135,11 +132,11 @@ void loop()
       else
         Serial.println("Input angle too high!");
       break;
-    case 1:
-      if (direction)//if auv is turning around, need to specify which direction to turn.
-        turn(direction);
-      setHeading(input);
-      break;
+    // case 1:
+    //   if (direction)//if auv is turning around, need to specify which direction to turn.
+    //     turn(direction);
+    //   setHeading(input);
+    //   break;
     case 3:
       CANsend(JETSON, sensorRequest);
       break;
@@ -166,19 +163,25 @@ void loop()
 //     type = lastControlType;
 // }
 
-void getHeading()
+float getHeading()
 {
-  // sensors_event_t event;
-  // bno.getEvent(&event);
-  // ypos = event.orientation.z;
-  // xpos = event.orientation.x;
-  // Serial.println("Outside ypos : ");
-  // Serial.println(ypos);
-  // Serial.println("Orientation: ");
-  // Serial.println(xpos);
-  // return xpos;
-  CANsend(THRUST, YAW);
-  CANIn();
+  sensors_event_t event;
+  bno.getEvent(&event);
+  xpos = event.orientation.x;
+  Serial.println("Orientation: ");
+  Serial.println(xpos);
+  return xpos;
+}
+
+float getPitch() // reads pitch from sensor
+{
+  sensors_event_t event;
+  bno.getEvent(&event);
+  float ypos = event.orientation.z;
+  Serial.println("Outside ypos : ");
+  Serial.println(ypos);
+  return ypos;
+
 }
 
 void turn(int dir)//this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
@@ -205,6 +208,7 @@ void setHeading(float h)
 
 void CANIn()
 {
+  Serial.println("CANin");
   clearBuffer(&Buffer[0]); 
   Msg.cmd = CMD_RX_DATA;   // Send command to the CAN port controller
   
@@ -223,10 +227,10 @@ void CANIn()
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
       input += 150;// for some reason servo is off by 150 degrees
       break;
-    case 1:
-      direction = Msg.pt_data[4];
-      input = (Msg.pt_data[MESSAGE_TYPE + 1] * 10) + Msg.pt_data[MESSAGE_TYPE + 2]; // return heading in degrees
-      break;
+    // case 1:
+    //   direction = Msg.pt_data[4];
+    //   input = (Msg.pt_data[MESSAGE_TYPE + 1] * 10) + Msg.pt_data[MESSAGE_TYPE + 2]; // return heading in degrees
+    //   break;
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
       break;
@@ -275,23 +279,53 @@ void convert(float testValue) // converts a float or double into an array that c
 
 void CANsend(int ID, int sensor)
 {
+  Serial.println("CANsend");
   clearBuffer(&Buffer[0]);
   Msg.id.ext = MESSAGE_ID; // Set message ID
   Buffer[0] = ID;
   Buffer[1] = sensor;
-  switch (sensor) {
-    //case HEADING_SENSOR:
-      // convert(getHeading());
-      // for (int i = 0; i < 7; i++)
-      //   Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
-      // break;
-    case ACK:
-      for(int i=2;i<8;i++) Buffer[i] = 0;
-      break;
-    case YAW:
-      break;
-    default:
-      break;
+  Serial.print("sensor: ");
+  Serial.println(sensor);
+//  switch (sensor) {
+//    case PITCH:
+//      Serial.println("Pitch");
+//      float pitch = getPitch();
+//      Buffer[MESSAGE_TYPE+1] = pitch < 0 ? 1 : 2;
+//      pitch = abs(pitch);
+//      Buffer[MESSAGE_TYPE+2] = round(floor(pitch));
+//      Buffer[MESSAGE_TYPE+3] = round((pitch - floor(pitch)) * 100);
+//      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
+//      break;
+//    case YAW:
+//      Serial.println("Yaw");
+//      float head = getHeading();
+//      Buffer[MESSAGE_TYPE+1] = round(floor(head / 10));
+//      Buffer[MESSAGE_TYPE+2] = round(floor(head)) % 10;
+//      Buffer[MESSAGE_TYPE+3] = round((head - floor(head)) * 100);
+//      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
+//      break;
+//    default:
+//
+//  }
+  if(sensor == PITCH) {
+      Serial.println("Pitch");
+      float pitch = getPitch();
+      Buffer[MESSAGE_TYPE+1] = pitch < 0 ? 1 : 2;
+      pitch = abs(pitch);
+      Buffer[MESSAGE_TYPE+2] = round(floor(pitch));
+      Buffer[MESSAGE_TYPE+3] = round((pitch - floor(pitch)) * 100);
+      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
+  }
+  else if (sensor == YAW) {
+      Serial.println("Yaw");
+      float head = getHeading();
+      Buffer[MESSAGE_TYPE+1] = round(floor(head / 10));
+      Buffer[MESSAGE_TYPE+2] = round(floor(head)) % 10;
+      Buffer[MESSAGE_TYPE+3] = round((head - floor(head)) * 100);
+      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
+  }
+  else {
+      Serial.println("default for sonme reason");
   }
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message

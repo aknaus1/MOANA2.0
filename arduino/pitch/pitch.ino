@@ -187,6 +187,7 @@ void loop()//main loop, refreshes every
   Serial.println(depthSensor);
   Serial.print("pitch: ");
   Serial.println(pitchSensor);
+  Serial.println("make work");
   delay(500);
 }
 
@@ -296,18 +297,6 @@ void setDepth(int d)
   float newPitch;
   newPitch = (d - round(depthSensor)) * kp[1] + MAINTAIN_DEPTH;
   setPitch(newPitch);
-}
-
-void getPitch() // reads pitch from sensor
-{
-  // sensors_event_t event;
-  // bno.getEvent(&event);
-  // float ypos = event.orientation.z;
-  // Serial.println("Outside ypos : ");
-  // Serial.println(ypos);
-  // return ypos;
-  CANsend(THRUST, PITCH);
-  CANin();
 }
 
 void getDepth() // reads the depth sensor and returns depth in Meters

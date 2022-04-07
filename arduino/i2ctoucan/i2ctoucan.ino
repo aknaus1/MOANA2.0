@@ -22,17 +22,18 @@ int counter = 0;
 uint8_t conv_arr[3] = {};
 
 // CAN message object
-st_cmd_t Msg;
+st_cmd_t txMsg;
+st_cmd_t rxMsg;
 
 // Transmit buffer
-uint8_t Buffer[8] = {};
-void CANin();
+uint8_t txBuffer[8] = {};
 
 void setup() 
 { 
   canInit(500000);                  // Initialise CAN port. must be before Serial.begin
   Serial.begin(1000000);             // start serial port
-  Msg.pt_data = &Buffer[0];      // reference message data to transmit buffer
+  txMsg.pt_data = &txBuffer[0];      // reference message data to transmit buffer
+ 
   // Init I2C line
   Wire.begin(i2cAddress);                // join i2c bus with address #0x40
   Wire.onReceive(receiveEvent); // register event
@@ -41,24 +42,27 @@ void setup()
 
 void loop() 
 {
+  // If message isn't complete, then wait
   if(counter == 8)
   { 
-    Serial.println("Sending message");
+    Serial.print("Sending message");
     // Setup CAN packet.
-    Msg.ctrl.ide = MESSAGE_PROTOCOL;  // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
-    Msg.id.ext   = MESSAGE_ID;        // Set message ID
-    Msg.dlc      = MESSAGE_LENGTH;    // Data length: 8 bytes
-    Msg.ctrl.rtr = MESSAGE_RTR;       // Set rtr bit
-    
+    txMsg.ctrl.ide = MESSAGE_PROTOCOL;  // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
+    txMsg.id.ext   = MESSAGE_ID;        // Set message ID
+    txMsg.dlc      = MESSAGE_LENGTH;    // Data length: 8 bytes
+    txMsg.ctrl.rtr = MESSAGE_RTR;       // Set rtr bit
+
     // Send command to the CAN port controller
-    Msg.cmd = CMD_TX_DATA;       // send message
+    txMsg.cmd = CMD_TX_DATA;       // send message
     // Wait for the command to be accepted by the controller
-    while(can_cmd(&Msg) != CAN_CMD_ACCEPTED);
+    while(can_cmd(&txMsg) != CAN_CMD_ACCEPTED);
     // Wait for command to finish executing
-    while(can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
+    while(can_get_status(&txMsg) == CAN_STATUS_NOT_COMPLETED);
 
     // Print out msg info to serial just in case
     Serial.print("CAN Message sent: \n");
+    serialPrintData(&txMsg);
+    counter = 0;
   }
   delay(500);
 }
@@ -66,8 +70,10 @@ void loop()
 // This is called when we send a command over I2C to the CAN network
 // All messages are sent in segments of 8, so it tracks when one message ends with a global counter
 void receiveEvent(int bytes) {
-  Buffer[counter] = Wire.read();    // read one character from the I2C
-  //Serial.println(Buffer[counter++]);
+  txBuffer[counter] = Wire.read();    // read one character from the I2C
+  Serial.print(txBuffer[counter]);
+  Serial.print(" ");
+  ++counter;
 }
 
 // This is called when we need to send data back to the jetson from the CAN network over I2C
@@ -76,27 +82,10 @@ void receiveEvent(int bytes) {
 void sendData(uint8_t *msg)
 {
   int i = 0;
-  while(i < 8)
+  while(msg[i] != '\0')
   {
     Wire.write(msg[i++]);
   }
-  Serial.println("End send data");
-}
-
-void sendJetson()
-{
-  Serial.println("Start send Jetson");
- 
-  counter = 0;
-  int i = 0;
-  uint8_t *msg;
-  msg = Buffer;
-  while(i < 8)
-  {
-    Serial.println(msg[i]);
-    Wire.write(Buffer[i++]);
-  }
-  Serial.println("End send Jetson");
 }
 
 void serialPrintData(st_cmd_t *msg){
