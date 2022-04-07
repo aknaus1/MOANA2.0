@@ -150,21 +150,21 @@ void loop()
     default:
       break;
   }
-  stateManager();
+  //stateManager();
   delay(500);
 }
 
-void saveType() {//save current state in order to revert once code has finished executing
-  previousState = type;
-  if (type < 3)
-    lastControlType = type;
+// void saveType() {//save current state in order to revert once code has finished executing
+//   previousState = type;
+//   if (type < 3)
+//     lastControlType = type;
 
-}
+// }
 
-void stateManager() {//makes sure bot is in correct state at end of each loop:
-  if (type > 2 && type != IDLE)
-    type = lastControlType;
-}
+// void stateManager() {//makes sure bot is in correct state at end of each loop:
+//   if (type > 2 && type != IDLE)
+//     type = lastControlType;
+// }
 
 void getHeading()
 {
@@ -193,29 +193,29 @@ void turn(int dir)//this solution is kind of janky but basically turn function g
 
 void setHeading(float h)
 {
-  float error = h - getHeading();
-  float error_derivative = (error - error_prev) / .5;// change(error - error_prev)/time(s)
-  float newAngle = (error) * heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
-  if (newAngle > MAX_RUDDER_ANGLE * 2)
-    newAngle = MAX_RUDDER_ANGLE * 2;
-  newAngle -= MAX_RUDDER_ANGLE;
-  error_prev == h - getHeading();
-  rudder.write(newAngle + 150);
+  //float error = h - getHeading();
+  //float error_derivative = (error - error_prev) / .5;// change(error - error_prev)/time(s)
+  //float newAngle = (error) * heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
+  //if (newAngle > MAX_RUDDER_ANGLE * 2)
+    //newAngle = MAX_RUDDER_ANGLE * 2;
+  //newAngle -= MAX_RUDDER_ANGLE;
+  //error_prev == h - getHeading();
+  //rudder.write(newAngle + 150);
 }
 
 void CANIn()
 {
-  //clearBuffer(&Buffer[0]); 
+  clearBuffer(&Buffer[0]); 
   Msg.cmd = CMD_RX_DATA;   // Send command to the CAN port controller
   
   // Wait for the command to be accepted by the controller
-  if (can_cmd(&Msg) != CAN_CMD_ACCEPTED) return;
-  if (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED) return;
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
   
   int id = 0;
   id = Msg.pt_data[0];
   if (id != MESSAGE_ID) return;
-  saveType();
+  //saveType();
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
   switch (type) {

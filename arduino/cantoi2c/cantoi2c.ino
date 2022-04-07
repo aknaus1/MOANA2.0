@@ -9,7 +9,7 @@
 #include <ASTCanLib.h>
 #include <Wire.h>
 
-#define MESSAGE_ID        1         // Message sender ID
+#define MESSAGE_ID        0         // Message sender ID
 #define MESSAGE_PROTOCOL  1         // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
 #define MESSAGE_LENGTH    8         // Data length: 8 bytes
 #define MESSAGE_RTR       0         // rtr bit
@@ -33,41 +33,38 @@ void setup()
   canInit(500000);                  // Initialise CAN port. must be before Serial.begin
   Serial.begin(1000000);             // start serial port
   Msg.pt_data = &Buffer[0];      // reference message data to transmit buffer
+  
+  Msg.ctrl.ide = MESSAGE_PROTOCOL;  // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
+  Msg.id.ext   = MESSAGE_ID;        // Set message ID
+  Msg.dlc      = MESSAGE_LENGTH;    // Data length: 8 bytes
+  Msg.ctrl.rtr = MESSAGE_RTR;  
   // Init I2C line
   Wire.begin(i2cAddress);                // join i2c bus with address #0x40
-  Wire.onReceive(receiveEvent); // register event
-  Wire.onRequest(sendData);
+  Wire.onRequest(sendJetson);
 }
 
 void loop() 
 {
-  if(counter == 8)
-  { 
-    Serial.println("Sending message");
-    // Setup CAN packet.
-    Msg.ctrl.ide = MESSAGE_PROTOCOL;  // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
-    Msg.id.ext   = MESSAGE_ID;        // Set message ID
-    Msg.dlc      = MESSAGE_LENGTH;    // Data length: 8 bytes
-    Msg.ctrl.rtr = MESSAGE_RTR;       // Set rtr bit
-    
-    // Send command to the CAN port controller
-    Msg.cmd = CMD_TX_DATA;       // send message
-    // Wait for the command to be accepted by the controller
-    while(can_cmd(&Msg) != CAN_CMD_ACCEPTED);
-    // Wait for command to finish executing
-    while(can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
-
-    // Print out msg info to serial just in case
-    Serial.print("CAN Message sent: \n");
-  }
+  CANin();
   delay(500);
 }
 
 // This is called when we send a command over I2C to the CAN network
 // All messages are sent in segments of 8, so it tracks when one message ends with a global counter
 void receiveEvent(int bytes) {
-  Buffer[counter] = Wire.read();    // read one character from the I2C
+  Buffer[counter++] = Wire.read();    // read one character from the I2C
   //Serial.println(Buffer[counter++]);
+}
+
+void CANin()
+{
+  clearBuffer(&Buffer[0]); 
+  Msg.cmd = CMD_RX_DATA;   // Send command to the CAN port controller
+  
+  // Wait for the command to be accepted by the controller
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
+  
 }
 
 // This is called when we need to send data back to the jetson from the CAN network over I2C
@@ -94,7 +91,7 @@ void sendJetson()
   while(i < 8)
   {
     Serial.println(msg[i]);
-    Wire.write(Buffer[i++]);
+    Wire.write(msg[i++]);
   }
   Serial.println("End send Jetson");
 }
