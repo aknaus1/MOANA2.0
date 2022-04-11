@@ -115,7 +115,9 @@ class PitchControl:
         self.out_lock.release() # Release I2C to CAN lock
         self.in_lock.release()  # Release CAN to I2C lock
 
-        self.cur_pitch = -1 if bus_data[2] == 1 else 1 * ( bus_data[3] + bus_data[4] / 100)
+        sign = -1 if bus_data[2] == 1 else 1
+
+        self.cur_pitch = sign * ( bus_data[3] + bus_data[4] / 100)
 
         print("updated pitch: " + str(self.cur_pitch))
 
