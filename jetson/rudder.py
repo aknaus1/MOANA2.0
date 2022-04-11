@@ -17,7 +17,7 @@ class RudderControl:
 
     comms = CANBUS_COMMS()
 
-    def __init__(self, in_lock, out_lock):
+    def __init__(self, in_lock = threading.Lock(), out_lock = threading.Lock()):
         self.in_lock = in_lock
         self.out_lock = out_lock
         return
