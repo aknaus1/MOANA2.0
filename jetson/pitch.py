@@ -68,7 +68,7 @@ class PitchControl:
             pitch = self.MAX_ANGLE * sign
 
         print("set pitch: " + str(pitch))
-        print("Current pitch: " + str(self.cur_pitch))
+        # print("Current pitch: " + str(self.cur_pitch))
 
         changePos = (pitch - self.cur_pitch) * self.PITCH_KP
         newPos = self.cur_pos + changePos
@@ -85,7 +85,7 @@ class PitchControl:
             return
 
         print("set depth: " + str(depth))
-        print("Current depth: " + str(self.cur_heading))
+        # print("Current depth: " + str(self.cur_heading))
             
         newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
         self.setPitch(newPitch)
@@ -117,6 +117,8 @@ class PitchControl:
 
         self.cur_pitch = -1 if bus_data[2] == 1 else 1 * ( bus_data[3] + bus_data[4] / 100)
 
+        print("updated pitch: " + str(self.cur_pitch))
+
         return self.cur_pitch
 
     def getDepth(self): # reads the depth sensor and returns depth in Meters
@@ -138,6 +140,9 @@ class PitchControl:
 
         
         self.cur_depth = bus_data[2]
+
+        print("updated depth: " + str(self.cur_depth))
+
         return self.cur_depth
 
     def readSensors(self):

@@ -58,7 +58,7 @@ class RudderControl:
     def setHeading(self, heading):
         # error = self.heading - self.getHeading()
         print("Set heading: " + str(heading))
-        print("Current heading: " + str(self.cur_heading))
+        # print("Current heading: " + str(self.cur_heading))
         error = heading - self.cur_heading # replace if async
 
         error_derivative = (error - self.error_prev) / .5 # change(error - error_prev)/time(s)
@@ -111,6 +111,8 @@ class RudderControl:
         self.in_lock.release()  # Release CAN to I2C lock
         
         self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
+
+        print("updated heading: " + str(self.cur_heading))
         return self.cur_heading
 
     def readSensors(self):
