@@ -103,9 +103,9 @@ class RudderControl:
         self.out_lock.acquire() # Get I2C to CAN lock
 
         bus_data = []
-        while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 2):
-            self.comms.writeToBus(data) # Write to CAN
-            bus_data = self.comms.readFromBus() # Read from CAN
+        # while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 2):
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
 
         self.out_lock.release() # Release I2C to CAN lock
         self.in_lock.release()  # Release CAN to I2C lock
