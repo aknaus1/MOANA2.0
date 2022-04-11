@@ -1,5 +1,7 @@
+from sys import implementation
 import smbus
 import time
+import threading
 
 class CANBUS_COMMS:
     # i2c address of the arduino we are writing to
@@ -7,8 +9,25 @@ class CANBUS_COMMS:
     bus_out = smbus.SMBus(0)
     bus_in = smbus.SMBus(1)
 
+    lastRecievedMessage = [0,0,0,0,0,0,0,0]
+
     def __init__(self):
         return
+
+    # Read from bus
+    def readBus(self):
+        # Read a block of 8 bytes from address, offset 0
+        block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
+        # Returned value is a list of 8 bytes
+        # print(block)
+        return block
+
+    def readBusLoop(self, runner):
+        block1 = [0,1,2]
+        while runner.is_set():
+            block = self.readBus()
+            if block[0] == 0 and (block[1] in [0,1,2]):
+                time.sleep(.5)
 
     # Read from bus
     def readFromBus(self):
@@ -27,8 +46,9 @@ class CANBUS_COMMS:
             return
 
         self.fillBytes(data)
-        print(data)
+        # print(data)
         for byte in data:
+            byte = int(byte)
             self.bus_out.write_byte(self.address, byte)
 
     # fill bytes (data)
