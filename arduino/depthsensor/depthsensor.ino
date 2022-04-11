@@ -30,6 +30,7 @@ int sensorRequest = 0;
 
 int type = IDLE;
 int input = 0;
+int counter= 0;
 int water;
 
 // CAN message object
@@ -110,7 +111,8 @@ void loop()
       break;
   }
   //Serial.println(digitalRead(intPin));
-  delay(500);
+
+  CANsend(DATA, TEMP);
 }
 
 double getTemp()
