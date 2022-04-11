@@ -56,8 +56,8 @@ class SystemControl:
     def __init__(self):
         self.pc = PitchControl(self.in_lock, self.out_lock)
         self.rc = RudderControl(self.in_lock, self.out_lock)
-        # self.pc.startSensors()
-        # self.rc.startSensors()
+        self.pc.startSensors()
+        self.rc.startSensors()
         return
 
     # start mission(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType)
@@ -90,8 +90,8 @@ class SystemControl:
         bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter \
             = int(bearing), int(pathLength), int(pathCount), int(initialDepth), int(layerCount), int(layerSpacing), int(waterType), int(dataParameter)     
 
-        self.pc.startSensors()
-        self.rc.startSensors()
+        # self.pc.startSensors()
+        # self.rc.startSensors()
 
         initDepth = True  # hasnt gone to initial depth
         # get opposite degree of bearing
