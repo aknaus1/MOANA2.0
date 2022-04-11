@@ -58,7 +58,7 @@ class RudderControl:
     def setHeading(self, heading):
         # error = self.heading - self.getHeading()
         print("Set heading: " + str(heading))
-        # print("Current heading: " + str(self.cur_heading))
+        print("Current heading: " + str(self.cur_heading))
         error = heading - self.cur_heading # replace if async
 
         error_derivative = (error - self.error_prev) / .5 # change(error - error_prev)/time(s)

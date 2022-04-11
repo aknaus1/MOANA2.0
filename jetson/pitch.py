@@ -68,7 +68,7 @@ class PitchControl:
             pitch = self.MAX_ANGLE * sign
 
         print("set pitch: " + str(pitch))
-        # print("Current pitch: " + str(self.cur_pitch))
+        print("Current pitch: " + str(self.cur_pitch))
 
         changePos = (pitch - self.cur_pitch) * self.PITCH_KP
         newPos = self.cur_pos + changePos
@@ -86,7 +86,7 @@ class PitchControl:
             return
 
         print("set depth: " + str(depth))
-        # print("Current depth: " + str(self.cur_heading))
+        print("Current depth: " + str(self.cur_heading))
             
         newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
         self.setPitch(newPitch)
