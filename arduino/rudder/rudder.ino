@@ -39,8 +39,6 @@ int type = IDLE;
 int input = 0;
 float heading_kp = HEADING_KP;
 float heading_kd = KD;
-int previousState = IDLE;
-int lastControlType = IDLE;
 float error_prev = 0;
 
 enum d {LEFT = 1, RIGHT};
@@ -132,11 +130,6 @@ void loop()
       else
         Serial.println("Input angle too high!");
       break;
-    // case 1:
-    //   if (direction)//if auv is turning around, need to specify which direction to turn.
-    //     turn(direction);
-    //   setHeading(input);
-    //   break;
     case 3:
       CANsend(JETSON, sensorRequest);
       break;
@@ -147,21 +140,9 @@ void loop()
     default:
       break;
   }
-  //stateManager();
+
   delay(500);
 }
-
-// void saveType() {//save current state in order to revert once code has finished executing
-//   previousState = type;
-//   if (type < 3)
-//     lastControlType = type;
-
-// }
-
-// void stateManager() {//makes sure bot is in correct state at end of each loop:
-//   if (type > 2 && type != IDLE)
-//     type = lastControlType;
-// }
 
 float getHeading()
 {
@@ -194,18 +175,6 @@ void turn(int dir)//this solution is kind of janky but basically turn function g
   direction = 0;
 }
 
-void setHeading(float h)
-{
-  //float error = h - getHeading();
-  //float error_derivative = (error - error_prev) / .5;// change(error - error_prev)/time(s)
-  //float newAngle = (error) * heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
-  //if (newAngle > MAX_RUDDER_ANGLE * 2)
-    //newAngle = MAX_RUDDER_ANGLE * 2;
-  //newAngle -= MAX_RUDDER_ANGLE;
-  //error_prev == h - getHeading();
-  //rudder.write(newAngle + 150);
-}
-
 void CANIn()
 {
   Serial.println("CANin");
@@ -227,19 +196,15 @@ void CANIn()
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
       input += 150;// for some reason servo is off by 150 degrees
       break;
-    // case 1:
-    //   direction = Msg.pt_data[4];
-    //   input = (Msg.pt_data[MESSAGE_TYPE + 1] * 10) + Msg.pt_data[MESSAGE_TYPE + 2]; // return heading in degrees
-    //   break;
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
       break;
-    case 5:
-      if (!Msg.pt_data[MESSAGE_TYPE + 1]) //heading kp
-        heading_kp = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
-      else //heading kd
-        heading_kd = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
-      break;
+    // case 5:
+    //   if (!Msg.pt_data[MESSAGE_TYPE + 1]) //heading kp
+    //     heading_kp = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
+    //   else //heading kd
+    //     heading_kd = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
+    //   break;
     case IDLE:
       break;
     default:
@@ -269,12 +234,6 @@ void convert(float testValue) // converts a float or double into an array that c
   fraction = testValue * 100;
   fraction = fraction - (whole * 100);
   yposArray[2] = fraction;
-  /*
-    Serial.println(testVal);
-    Serial.println(yposArray[0]);
-    Serial.println(yposArray[1]);
-    Serial.println(yposArray[2]);
-  */
 }
 
 void CANsend(int ID, int sensor)
@@ -286,27 +245,7 @@ void CANsend(int ID, int sensor)
   Buffer[1] = sensor;
   Serial.print("sensor: ");
   Serial.println(sensor);
-//  switch (sensor) {
-//    case PITCH:
-//      Serial.println("Pitch");
-//      float pitch = getPitch();
-//      Buffer[MESSAGE_TYPE+1] = pitch < 0 ? 1 : 2;
-//      pitch = abs(pitch);
-//      Buffer[MESSAGE_TYPE+2] = round(floor(pitch));
-//      Buffer[MESSAGE_TYPE+3] = round((pitch - floor(pitch)) * 100);
-//      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
-//      break;
-//    case YAW:
-//      Serial.println("Yaw");
-//      float head = getHeading();
-//      Buffer[MESSAGE_TYPE+1] = round(floor(head / 10));
-//      Buffer[MESSAGE_TYPE+2] = round(floor(head)) % 10;
-//      Buffer[MESSAGE_TYPE+3] = round((head - floor(head)) * 100);
-//      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
-//      break;
-//    default:
-//
-//  }
+
   if(sensor == PITCH) {
       Serial.println("Pitch");
       float pitch = getPitch();
