@@ -44,9 +44,9 @@ class CANBUS_COMMS:
         if len(data) > 8:
             print("Invalid can bus input")
             return
-
+            
         self.fillBytes(data)
-        # print(data)
+        print(data)
         for byte in data:
             byte = int(byte)
             self.bus_out.write_byte(self.address, byte)
