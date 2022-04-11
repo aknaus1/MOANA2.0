@@ -49,7 +49,7 @@ class PitchControl:
         data.append(5)  # Write pitch ID
         data.append(2)  # Write stepper command
         data.append(0 if position < 0 else 1)
-        data.append(abs(position))  # Write position
+        data.append(abs(int(position)))  # Write position
         
         self.out_lock.acquire() # Get I2C to CAN lock
         self.comms.fillBytes(data)
@@ -78,6 +78,7 @@ class PitchControl:
     def holdPitch(self, pitch, runner):
         while runner.is_set():
             self.setPitch(pitch)
+            time.sleep(3)
     
     def setDepth(self, depth):
         if depth > 30:
@@ -94,9 +95,11 @@ class PitchControl:
         if depth == 0:
             while abs(self.cur_depth) > 5:
                 self.setDepth(0)
+                time.sleep(3)
         else:
             while runner.is_set():
                 self.setDepth(depth)
+                time.sleep(3)
 
     def getPitch(self): # reads pitch from sensor
         data = []
