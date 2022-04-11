@@ -46,7 +46,6 @@ void setup()
 void loop() 
 {
   CANin();
-  delay(500);
 }
 
 // This is called when we send a command over I2C to the CAN network
@@ -58,13 +57,22 @@ void receiveEvent(int bytes) {
 
 void CANin()
 {
-  clearBuffer(&Buffer[0]); 
+  Serial.println("CANin");
+
   Msg.cmd = CMD_RX_DATA;   // Send command to the CAN port controller
   
   // Wait for the command to be accepted by the controller
   while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
-  
+  if(Msg.pt_data[0] !=0) return;
+//  if(Msg.id == 0) return;
+  for(int i =0;i<8;i++)
+  {
+    Serial.print(Buffer[i]);
+    Serial.print(" ");
+  }
+  Serial.println("");
+  //sendJetson();
 }
 
 // This is called when we need to send data back to the jetson from the CAN network over I2C
@@ -86,13 +94,13 @@ void sendJetson()
  
   counter = 0;
   int i = 0;
-  uint8_t *msg;
-  msg = Buffer;
   while(i < 8)
   {
-    Serial.println(msg[i]);
-    Wire.write(msg[i++]);
+    Serial.print(Buffer[i]);
+    Serial.print(" ");
+    Wire.write(Buffer[i++]);
   }
+  clearBuffer(&Buffer[0]); 
   Serial.println("End send Jetson");
 }
 
