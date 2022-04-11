@@ -55,6 +55,8 @@ class PitchControl:
         self.comms.writeToBus(data) # Write to CAN
         self.out_lock.release() # Release I2C to CAN lock
 
+        self.cur_pos = position
+
 
     def setPitch(self, pitch):
         sign = -1 if pitch < 0 else 1
@@ -63,7 +65,9 @@ class PitchControl:
 
         print("set pitch: " + str(pitch))
 
-        newPos = (pitch - self.cur_pitch) * self.PITCH_KP
+        changePos = (pitch - self.cur_pitch) * self.PITCH_KP
+        newPos = self.cur_pos + changePos
+        
         self.setStepper(int(newPos))
 
     def holdPitch(self, pitch, runner):
@@ -96,10 +100,13 @@ class PitchControl:
         
         self.in_lock.acquire()  # Get CAN to I2C lock
         self.out_lock.acquire() # Get I2C to CAN lock
-        self.comms.writeToBus(data) # Write to CAN
-        self.out_lock.release() # Release I2C to CAN lock
 
-        bus_data = self.comms.readFromBus() # Read from CAN
+        bus_data = []
+        while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 1):
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+
+        self.out_lock.release() # Release I2C to CAN lock
         self.in_lock.release()  # Release CAN to I2C lock
 
         self.cur_pitch = -1 if bus_data[2] == 1 else 1 * ( bus_data[3] + bus_data[4] / 100)
@@ -114,9 +121,13 @@ class PitchControl:
         self.in_lock.acquire()  # Get CAN to I2C lock
         self.out_lock.acquire() # Get I2C to CAN lock
         self.comms.writeToBus(data) # Write to CAN
-        self.out_lock.release() # Release I2C to CAN lock
 
-        bus_data = self.comms.readFromBus() # Read from CAN
+        bus_data = []
+        while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 0):
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+
+        self.out_lock.release() # Release I2C to CAN lock
         self.in_lock.release()  # Release CAN to I2C lock
 
         
