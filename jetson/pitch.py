@@ -52,6 +52,10 @@ class PitchControl:
         data.append(abs(position))  # Write position
         
         self.out_lock.acquire() # Get I2C to CAN lock
+        self.comms.fillBytes(data)
+        print("sending: ", end="")
+        print(data)
+
         self.comms.writeToBus(data) # Write to CAN
         self.out_lock.release() # Release I2C to CAN lock
 
@@ -64,6 +68,7 @@ class PitchControl:
             pitch = self.MAX_ANGLE * sign
 
         print("set pitch: " + str(pitch))
+        print("Current pitch: " + str(self.cur_pitch))
 
         changePos = (pitch - self.cur_pitch) * self.PITCH_KP
         newPos = self.cur_pos + changePos
@@ -80,6 +85,7 @@ class PitchControl:
             return
 
         print("set depth: " + str(depth))
+        print("Current depth: " + str(self.cur_heading))
             
         newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
         self.setPitch(newPitch)

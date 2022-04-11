@@ -170,7 +170,12 @@ class SystemControl:
             data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
             data.append(abs(thrust))  # Write thruster speed
             data.append(t)  # Write time to run (0 - run until stop)
+            
             self.out_lock.acquire()
+            self.comms.fillBytes(data)
+            print("sending: ", end="")
+            print(data)
+
             self.comms.writeToBus(data)
             self.out_lock.release()
         else:

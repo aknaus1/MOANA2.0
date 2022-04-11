@@ -35,8 +35,8 @@ class CANBUS_COMMS:
         time.sleep(.5)
         block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
         # Returned value is a list of 8 bytes
-        print("reading: ", end="")
-        print(block)
+        # print("reading: ", end="")
+        # print(block)
         return block
 
     # Write to bus (data)
@@ -47,8 +47,8 @@ class CANBUS_COMMS:
             return
             
         self.fillBytes(data)
-        print("sending: ", end="")
-        print(data)
+        # print("sending: ", end="")
+        # print(data)
         for byte in data:
             byte = int(byte)
             self.bus_out.write_byte(self.address, byte)
