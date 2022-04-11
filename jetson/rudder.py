@@ -112,7 +112,7 @@ class RudderControl:
         
         self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
 
-        print("updated heading: " + str(self.cur_heading))
+        # print("updated heading: " + str(self.cur_heading))
         return self.cur_heading
 
     def readSensors(self):

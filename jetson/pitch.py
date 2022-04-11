@@ -119,7 +119,7 @@ class PitchControl:
 
         self.cur_pitch = sign * ( bus_data[3] + bus_data[4] / 100)
 
-        print("updated pitch: " + str(self.cur_pitch))
+        # print("updated pitch: " + str(self.cur_pitch))
 
         return self.cur_pitch
 
@@ -143,7 +143,7 @@ class PitchControl:
         
         self.cur_depth = bus_data[2]
 
-        print("updated depth: " + str(self.cur_depth))
+        # print("updated depth: " + str(self.cur_depth))
 
         return self.cur_depth
 
