@@ -50,6 +50,8 @@ class CANBUS_COMMS:
         for byte in data:
             byte = int(byte)
             self.bus_out.write_byte(self.address, byte)
+            
+        time.sleep(.5)
 
     # fill bytes (data)
     def fillBytes(self, data):
