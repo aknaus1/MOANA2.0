@@ -72,6 +72,7 @@ class PitchControl:
         self.lock.release() # Release I2C to CAN lock
 
     def positionFromPitch(self, pitch):
+        self.getPitchNoLock()
         changePos = (pitch - self.cur_pitch) * self.PITCH_KP
         newPos = self.cur_pos + changePos
 
@@ -85,6 +86,7 @@ class PitchControl:
         print("set pitch: " + str(pitch))
 
         self.lock.acquire()
+        self.getPitchNoLock()
         print("Current pitch: " + str(self.cur_pitch))
         
         self.sendPos(self.positionFromPitch(pitch))
@@ -102,6 +104,7 @@ class PitchControl:
         print("set depth: " + str(depth))
 
         self.lock.acquire()
+        self.getDepthNoLock()
         print("Current depth: " + str(self.cur_depth))
             
         newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
@@ -115,6 +118,25 @@ class PitchControl:
         else:
             while runner.is_set():
                 self.setDepth(depth)
+
+    def getPitchNoLock(self): # reads pitch from sensor
+        data = []
+        data.append(3)  # Thrust Board
+        data.append(3)  # IMU Request
+        data.append(1)  # Pitch Request
+    
+        bus_data = []
+        # while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 1):
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+
+        sign = -1 if bus_data[2] == 1 else 1
+
+        self.cur_pitch = sign * ( bus_data[3] + bus_data[4] / 100)
+
+        # print("updated pitch: " + str(self.cur_pitch))
+
+        return self.cur_pitch
 
     def getPitch(self): # reads pitch from sensor
         data = []
@@ -138,6 +160,25 @@ class PitchControl:
         # print("updated pitch: " + str(self.cur_pitch))
 
         return self.cur_pitch
+
+    def getDepthNoLock(self): # reads the depth sensor and returns depth in Meters
+        data = []
+        data.append(8)  # Depth Sensor Board
+        data.append(3)  # Sensor Request
+        data.append(0)  # Depth Data
+
+        self.comms.writeToBus(data) # Write to CAN
+
+        bus_data = []
+        # while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 0):
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+        
+        self.cur_depth = bus_data[2] + bus_data[3]/100
+
+        # print("updated depth: " + str(self.cur_depth))
+
+        return self.cur_depth
 
     def getDepth(self): # reads the depth sensor and returns depth in Meters
         data = []

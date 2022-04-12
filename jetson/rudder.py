@@ -61,6 +61,9 @@ class RudderControl:
         print("Set heading: " + str(heading))
 
         self.lock.acquire()
+
+        self.getHeadingNoLock()
+        
         print("Current heading: " + str(self.cur_heading))
 
         error = heading - self.cur_heading # replace if async
@@ -97,6 +100,22 @@ class RudderControl:
             self.holdHeading(heading, runner)
         else:
             self.setHeading(heading)
+
+    def getHeadingNoLock(self):
+        data = []
+        data.append(3)  # Rudder Board
+        data.append(3)  # IMU Request
+        data.append(2)  # Heading Request
+
+        bus_data = []
+        # while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 2):
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+        
+        self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
+
+        # print("updated heading: " + str(self.cur_heading))
+        return self.cur_heading
 
     def getHeading(self):
         data = []
