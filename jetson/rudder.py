@@ -68,11 +68,11 @@ class RudderControl:
 
         newAngle = 0
         if heading + 180 < self.cur_heading:
-            newAngle = -20
+            newAngle = (heading - (self.cur_heading-360)) * self.heading_kp
         else:
-            newAngle = 20
+            newAngle = (heading - self.cur_heading) * self.heading_kp
 
-        # newAngle = (heading - self.cur_heading) * self.heading_kp
+        #newAngle = (heading - self.cur_heading) * self.heading_kp
 
         # error = heading - self.cur_heading # replace if async
 
