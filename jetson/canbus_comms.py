@@ -9,32 +9,34 @@ class CANBUS_COMMS:
     bus_out = smbus.SMBus(0)
     bus_in = smbus.SMBus(1)
 
-    lastRecievedMessage = [0,0,0,0,0,0,0,0]
+    # used in readBusLoop, not implemented
+    # last_heading = 0
+    # last_pitch = 0
+    # last_depth = 0
+
+    lock = threading.Lock()
 
     def __init__(self):
         return
 
-    # Read from bus
-    def readBus(self):
-        # Read a block of 8 bytes from address, offset 0
-        block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-        # Returned value is a list of 8 bytes
-        # print(block)
-        return block
-
-    def readBusLoop(self, runner):
-        block1 = [0,1,2]
-        while runner.is_set():
-            block = self.readBus()
-            if block[0] == 0 and (block[1] in [0,1,2]):
-                time.sleep(.5)
+    # not implemented, might be helpful in future
+    # def readBusLoop(self, runner):
+    #     while runner.is_set():
+    #         time.sleep(.5)
+    #         block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
+    #         if block[0] == 0:
+    #             if block[1] == 0: # depth
+    #                 self.last_depth = block[2]
+    #             if block[1] == 1: # pitch
+    #                 sign = -1 if block[2] == 1 else 1
+    #                 self.last_pitch = sign * ( block[3] + block[4] / 100)
+    #             if block[1] == 2: # heading
+    #                 self.last_heading = block[2] * 10 + block[3] + block[4] / 100
 
     # Read from bus
     def readFromBus(self):
-        # Read a block of 8 bytes from address, offset 0
         time.sleep(.5)
         block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-        # Returned value is a list of 8 bytes
         # print("reading: ", end="")
         # print(block)
         return block
@@ -45,8 +47,8 @@ class CANBUS_COMMS:
         if len(data) > 8:
             print("Invalid can bus input")
             return
-            
-        self.fillBytes(data)
+        elif len(data) < 8:
+            self.fillBytes(data)
         # print("sending: ", end="")
         # print(data)
         for byte in data:

@@ -42,8 +42,7 @@ class SystemControl:
     FRESH_WATER = 0
     SALT_WATER = 1
     
-    in_lock = threading.Lock()
-    out_lock = threading.Lock()
+    lock = threading.Lock()
 
     rudder_runner = threading.Event()
     rudder_thread = threading.Thread()
@@ -54,8 +53,8 @@ class SystemControl:
     comms = CANBUS_COMMS()
 
     def __init__(self):
-        self.pc = PitchControl(self.in_lock, self.out_lock)
-        self.rc = RudderControl(self.in_lock, self.out_lock)
+        self.pc = PitchControl(self.lock)
+        self.rc = RudderControl(self.lock)
         self.pc.startSensors()
         self.rc.startSensors()
         return
@@ -170,7 +169,7 @@ class SystemControl:
             data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
             data.append(abs(thrust))  # Write thruster speed
             data.append(t)  # Write time to run (0 - run until stop)
-            
+
             self.out_lock.acquire()
             self.comms.fillBytes(data)
             print("sending: ", end="")

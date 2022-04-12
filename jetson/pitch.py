@@ -1,3 +1,4 @@
+from curses import newpad
 import threading
 import time
 from canbus_comms import CANBUS_COMMS
@@ -20,9 +21,8 @@ class PitchControl:
 
     comms = CANBUS_COMMS()
 
-    def __init__(self, in_lock = threading.Lock(), out_lock = threading.Lock()):
-        self.in_lock = in_lock
-        self.out_lock = out_lock
+    def __init__(self, lock = threading.Lock()):
+        self.lock = lock
         return
 
     def startSensors(self):
@@ -34,33 +34,47 @@ class PitchControl:
         self.running.clear()
         self.thread.join()
 
-    # set stepper (position)
-    # position is distance from center,
-    # position: min max +- 16.5 cm (use int value)
-    def setStepper(self, position):
-        if position > 16.5:
-            position = 16.5
-        elif position < -16.5:
-            position = -16.5
-
-        print("set stepper: " + str(position))
-
+    def sendPos(self, pos):
         data = []
         data.append(5)  # Write pitch ID
         data.append(2)  # Write stepper command
-        data.append(0 if position < 0 else 1)
-        data.append(abs(int(position)))  # Write position
+        data.append(0 if pos < 0 else 1)
+        data.append(abs(int(pos)))  # Write position
         
-        self.out_lock.acquire() # Get I2C to CAN lock
         self.comms.fillBytes(data)
         print("sending: ", end="")
         print(data)
 
         self.comms.writeToBus(data) # Write to CAN
-        self.out_lock.release() # Release I2C to CAN lock
 
-        self.cur_pos = position
+        self.cur_pos = pos
+        
+        time.sleep(3)
 
+    # set stepper (position)
+    # position is distance from center,
+    # position: min max +- 16.5 cm (use int value)
+    def setStepper(self, position):
+        if position > 16:
+            position = 16
+        elif position < -16:
+            position = -16
+
+        print("set stepper: " + str(position))
+
+        self.lock.acquire() # Get lock
+        self.sendPos(position)
+        self.lock.release() # Release I2C to CAN lock
+
+    def positionFromPitch(self, pitch):
+        sign = -1 if pitch < 0 else 1
+        if abs(pitch) > self.MAX_ANGLE:
+            pitch = self.MAX_ANGLE * sign
+
+        changePos = (pitch - self.cur_pitch) * self.PITCH_KP
+        newPos = self.cur_pos + changePos
+
+        return int(round(newPos))
 
     def setPitch(self, pitch):
         sign = -1 if pitch < 0 else 1
@@ -68,17 +82,16 @@ class PitchControl:
             pitch = self.MAX_ANGLE * sign
 
         print("set pitch: " + str(pitch))
-        print("Current pitch: " + str(self.cur_pitch))
 
-        changePos = (pitch - self.cur_pitch) * self.PITCH_KP
-        newPos = self.cur_pos + changePos
+        self.lock.acquire()
+        print("Current pitch: " + str(self.cur_pitch))
         
-        self.setStepper(int(newPos))
+        self.sendPos(self.positionFromPitch(pitch))
+        self.lock.release()
 
     def holdPitch(self, pitch, runner):
         while runner.is_set():
             self.setPitch(pitch)
-            time.sleep(3)
     
     def setDepth(self, depth):
         if depth > 30:
@@ -86,20 +99,21 @@ class PitchControl:
             return
 
         print("set depth: " + str(depth))
-        print("Current depth: " + str(self.cur_heading))
+
+        self.lock.acquire()
+        print("Current depth: " + str(self.cur_depth))
             
         newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
-        self.setPitch(newPitch)
+        self.sendPos(self.positionFromPitch(newPitch))
+        self.lock.release()
 
     def holdDepth(self, depth, runner):
         if depth == 0:
             while abs(self.cur_depth) > 5:
                 self.setDepth(0)
-                time.sleep(3)
         else:
             while runner.is_set():
                 self.setDepth(depth)
-                time.sleep(3)
 
     def getPitch(self): # reads pitch from sensor
         data = []
@@ -107,16 +121,14 @@ class PitchControl:
         data.append(3)  # IMU Request
         data.append(1)  # Pitch Request
         
-        self.in_lock.acquire()  # Get CAN to I2C lock
-        self.out_lock.acquire() # Get I2C to CAN lock
+        self.lock.acquire()
 
         bus_data = []
         # while len(bus_data) == 0 or not (bus_data[0] == 0 and bus_data[1] == 1):
         self.comms.writeToBus(data) # Write to CAN
         bus_data = self.comms.readFromBus() # Read from CAN
 
-        self.out_lock.release() # Release I2C to CAN lock
-        self.in_lock.release()  # Release CAN to I2C lock
+        self.lock.release()
 
         sign = -1 if bus_data[2] == 1 else 1
 
@@ -131,8 +143,7 @@ class PitchControl:
         data.append(8)  # Depth Sensor Board
         data.append(3)  # Sensor Request
 
-        self.in_lock.acquire()  # Get CAN to I2C lock
-        self.out_lock.acquire() # Get I2C to CAN lock
+        self.lock.acquire()
         self.comms.writeToBus(data) # Write to CAN
 
         bus_data = []
@@ -140,8 +151,7 @@ class PitchControl:
         self.comms.writeToBus(data) # Write to CAN
         bus_data = self.comms.readFromBus() # Read from CAN
 
-        self.out_lock.release() # Release I2C to CAN lock
-        self.in_lock.release()  # Release CAN to I2C lock
+        self.lock.release()
 
         
         self.cur_depth = bus_data[2]
@@ -154,6 +164,7 @@ class PitchControl:
         while self.running.is_set():
             self.getPitch()
             self.getDepth()
+            time.sleep(.5)
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
@@ -164,9 +175,9 @@ class PitchControl:
             data.append(4)  # Set water type
             data.append(int(type)) # Water type
 
-            self.out_lock.acquire() # Get I2C to CAN lock
+            self.lock.acquire() # Get I2C to CAN lock
             self.comms.writeToBus(data) # Write to CAN
-            self.out_lock.release() # Release I2C to CAN lock
+            self.lock.release() # Release I2C to CAN lock
         else:
             print("Invalid water type: freshwater (0), saltwater (1)")
 
