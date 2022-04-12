@@ -66,16 +66,18 @@ class RudderControl:
         
         print("Current heading: " + str(self.cur_heading))
 
-        error = heading - self.cur_heading # replace if async
+        newAngle = (heading - self.cur_heading) * self.heading_kp
 
-        error_derivative = (error - self.error_prev) / .5 # change(error - error_prev)/time(s)
-        newAngle = (error) * self.heading_kp + error_derivative * self.heading_kd # new angle will now be from 0 - some float angle that should be maxed to 40
+        # error = heading - self.cur_heading # replace if async
+
+        # error_derivative = (error - self.error_prev) / .5 # change(error - error_prev)/time(s)
+        # newAngle = (error) * self.heading_kp + error_derivative * self.heading_kd # new angle will now be from 0 - some float angle that should be maxed to 40
         
-        if newAngle > self.MAX_RUDDER_ANGLE * 2:
-            newAngle = self.MAX_RUDDER_ANGLE * 2
-        newAngle -= self.MAX_RUDDER_ANGLE
+        # if newAngle > self.MAX_RUDDER_ANGLE * 2:
+        #     newAngle = self.MAX_RUDDER_ANGLE * 2
+        # newAngle -= self.MAX_RUDDER_ANGLE
 
-        self.error_prev == error
+        # self.error_prev == error
 
         self.sendAngle(newAngle)
         self.lock.release()
