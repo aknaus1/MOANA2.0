@@ -42,10 +42,12 @@ void setup()
 
 void loop() 
 {
+//  Serial.println(counter);
   // If message isn't complete, then wait
   if(counter == 8)
   { 
-    Serial.print("Sending message");
+    Serial.println("");
+    Serial.println("Sending message");
     // Setup CAN packet.
     txMsg.ctrl.ide = MESSAGE_PROTOCOL;  // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
     txMsg.id.ext   = MESSAGE_ID;        // Set message ID
@@ -71,9 +73,8 @@ void loop()
 // All messages are sent in segments of 8, so it tracks when one message ends with a global counter
 void receiveEvent(int bytes) {
   txBuffer[counter] = Wire.read();    // read one character from the I2C
-  Serial.print(txBuffer[counter]);
+  Serial.print(txBuffer[counter++]);
   Serial.print(" ");
-  ++counter;
 }
 
 // This is called when we need to send data back to the jetson from the CAN network over I2C
