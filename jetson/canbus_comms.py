@@ -2,21 +2,23 @@ from sys import implementation
 import smbus
 import time
 import threading
+import logging
 
 class CANBUS_COMMS:
     # i2c address of the arduino we are writing to
     address = 0x40
-    bus_out = smbus.SMBus(0)
-    bus_in = smbus.SMBus(1)
 
     # used in readBusLoop, not implemented
     # last_heading = 0
     # last_pitch = 0
     # last_depth = 0
 
-    lock = threading.Lock()
+    # lock = threading.Lock()
 
     def __init__(self):
+        self.bus_out = smbus.SMBus(0)
+        self.bus_in = smbus.SMBus(1)
+        logging.basicConfig(filename="can.log", filemode="w", format='%(message)s', level=logging.INFO)
         return
 
     # not implemented, might be helpful in future
@@ -35,10 +37,11 @@ class CANBUS_COMMS:
 
     # Read from bus
     def readFromBus(self):
-        time.sleep(.5)
+        time.sleep(.5) # needed to give boards time
         block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
         # print("reading: ", end="")
         # print(block)
+        logging.info("Reading: " + str(block))
         return block
 
     # Write to bus (data)
@@ -51,6 +54,7 @@ class CANBUS_COMMS:
             self.fillBytes(data)
         # print("sending: ", end="")
         # print(data)
+        logging.info("Sending: " + str())
         for byte in data:
             byte = int(byte)
             self.bus_out.write_byte(self.address, byte)

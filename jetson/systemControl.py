@@ -1,5 +1,6 @@
 import time
 import threading
+import logging
 from canbus_comms import CANBUS_COMMS
 from validator import *
 from pitch import PitchControl
@@ -50,9 +51,13 @@ class SystemControl:
     stepper_runner = threading.Event()
     stepper_thread = threading.Thread()
 
+    dc_runner = threading.Event()
+    dc_thread = threading.Thread()
+
     comms = CANBUS_COMMS()
 
     def __init__(self):
+        logging.basicConfig(filename="temperature.log", filemode="w", format='%(message)s', level=logging.INFO)
         self.pc = PitchControl(self.lock)
         self.rc = RudderControl(self.lock)
         self.pc.startSensors()
@@ -279,23 +284,34 @@ class SystemControl:
     # time: length to run (default: 0 = run until told to stop)
     def startDataCollection(self, interval, time=0):
         data = []
-        data.append(self.SENSOR_ID)
+        data.append(8) # Depth Sensor
         data.append(1)  # start
         data.append(interval)
         data.append(time)
-        self.out_lock.acquire()
+        self.lock.acquire()
         self.comms.writeToBus(data)
-        self.out_lock.release()
+        self.lock.release()
+
+    def getTemperatureData(self):
+        data = []
+        data.append(8) # Depth Sensor
+        data.append(3)  # start
+        data.append(4)
+        self.lock.acquire()
+        self.comms.writeToBus(data)
+        bus_data = self.comms.readFromBus()
+        self.lock.release()
+
+        # if bus_data[0] == 0 and bus_data[1] == 4:
+        sign = -1 if bus_data[2] == 1 else 1
+        temp = sign * bus_data[3] + bus_data[4] / 100
+        logging.info("Temperature: " + str(temp))
 
     # stop data collection ()
     # stop scientific payload collection
     def stopDataCollection(self):
-        data = []
-        data.append(self.SENSOR_ID)
-        data.append(0)  # stop
-        self.out_lock.acquire()
-        self.comms.writeToBus(data)
-        self.out_lock.release()
+        self.dc_runner.clear()
+        self.dc_thread.join()
 
     def customCommand(self, data):
         self.out_lock.acquire()

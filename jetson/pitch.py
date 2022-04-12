@@ -35,6 +35,11 @@ class PitchControl:
         self.thread.join()
 
     def sendPos(self, pos):
+        if pos > 16:
+            pos = 16
+        elif pos < -16:
+            pos = -16
+
         data = []
         data.append(5)  # Write pitch ID
         data.append(2)  # Write stepper command
@@ -55,10 +60,10 @@ class PitchControl:
     # position is distance from center,
     # position: min max +- 16.5 cm (use int value)
     def setStepper(self, position):
-        if position > 16:
-            position = 16
-        elif position < -16:
-            position = -16
+        # if position > 16:
+        #     position = 16
+        # elif position < -16:
+        #     position = -16
 
         print("set stepper: " + str(position))
 
@@ -67,10 +72,6 @@ class PitchControl:
         self.lock.release() # Release I2C to CAN lock
 
     def positionFromPitch(self, pitch):
-        sign = -1 if pitch < 0 else 1
-        if abs(pitch) > self.MAX_ANGLE:
-            pitch = self.MAX_ANGLE * sign
-
         changePos = (pitch - self.cur_pitch) * self.PITCH_KP
         newPos = self.cur_pos + changePos
 
@@ -142,6 +143,7 @@ class PitchControl:
         data = []
         data.append(8)  # Depth Sensor Board
         data.append(3)  # Sensor Request
+        data.append(0)  # Depth Data
 
         self.lock.acquire()
         self.comms.writeToBus(data) # Write to CAN
@@ -154,7 +156,7 @@ class PitchControl:
         self.lock.release()
 
         
-        self.cur_depth = bus_data[2]
+        self.cur_depth = bus_data[2] + bus_data[3]/100
 
         # print("updated depth: " + str(self.cur_depth))
 
