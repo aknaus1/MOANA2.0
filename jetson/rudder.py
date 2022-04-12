@@ -5,7 +5,7 @@ from canbus_comms import CANBUS_COMMS
 class RudderControl:
     MAX_RUDDER_ANGLE = 20
 
-    heading_kp = .15
+    heading_kp = .4
     heading_kd = .21
 
     cur_heading = 0 # current heading
@@ -72,7 +72,10 @@ class RudderControl:
         else:
             newAngle = (heading - self.cur_heading) * self.heading_kp
 
-        #newAngle = (heading - self.cur_heading) * self.heading_kp
+        if newAngle > 20:
+            newAngle = 20
+        elif newAngle < -20:
+            newAngle = -20
 
         # error = heading - self.cur_heading # replace if async
 
