@@ -5,7 +5,7 @@ from canbus_comms import CANBUS_COMMS
 class RudderControl:
     MAX_RUDDER_ANGLE = 20
 
-    heading_kp = .4
+    heading_kp = 20/90
     heading_kd = .21
 
     cur_heading = 0 # current heading
