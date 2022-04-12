@@ -109,11 +109,11 @@ class MYSSH:
     # set rudder (angle)
     # angle: min max +- 20
     def setRudder(self, angle):
-        # if yawIsValid(angle):
-        command = "python3 guirecieve.py sr " + str(angle)
-        self.sendCommand(command)
-        # else:
-        #     yawErrMsg()
+        if yawIsValid(angle):
+            command = "python3 guirecieve.py sr " + str(angle)
+            self.sendCommand(command)
+        else:
+            yawErrMsg()
     
     # set heading (heading)
     # heading range: 0-360 degrees relative to North

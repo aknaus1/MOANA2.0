@@ -74,7 +74,7 @@ class RudderControl:
 
         self.error_prev == error
 
-        self.sendAngle(newAngle + 150)
+        self.sendAngle(newAngle)
         self.lock.release()
 
     def holdHeading(self, heading, runner):
