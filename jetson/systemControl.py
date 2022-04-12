@@ -60,8 +60,8 @@ class SystemControl:
         logging.basicConfig(filename="temperature.log", filemode="w", format='%(message)s', level=logging.INFO)
         self.pc = PitchControl(self.lock)
         self.rc = RudderControl(self.lock)
-        self.pc.startSensors()
-        self.rc.startSensors()
+        # self.pc.startSensors()
+        # self.rc.startSensors()
         return
 
     # start mission(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType)
@@ -305,7 +305,7 @@ class SystemControl:
         # if bus_data[0] == 0 and bus_data[1] == 4:
         sign = -1 if bus_data[2] == 1 else 1
         temp = sign * bus_data[3] + bus_data[4] / 100
-        logging.info("Temperature: " + str(temp))
+        logging.info("Depth: " + str(self.pc.cur_depth) + "\tTemperature: " + str(temp))
 
     # stop data collection ()
     # stop scientific payload collection
