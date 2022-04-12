@@ -47,8 +47,8 @@ class PitchControl:
         data.append(abs(int(pos)))  # Write position
         
         self.comms.fillBytes(data)
-        print("sending: ", end="")
-        print(data)
+        # print("sending: ", end="")
+        # print(data)
 
         self.comms.writeToBus(data) # Write to CAN
 

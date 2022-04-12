@@ -38,8 +38,8 @@ class RudderControl:
         data.append(abs(int(angle)))  # Write yaw
 
         self.comms.fillBytes(data)
-        print("sending: ", end="")
-        print(data)
+        # print("sending: ", end="")
+        # print(data)
         self.comms.writeToBus(data) # Write to CAN
 
     # set rudder (angle)
@@ -79,6 +79,7 @@ class RudderControl:
 
         # self.error_prev == error
 
+        print("Set angle: " + str(newAngle))
         self.sendAngle(newAngle)
         self.lock.release()
 
