@@ -135,9 +135,6 @@ void loop()//main loop, refreshes every
   CANin();
   Serial.print("State:");
   Serial.println(type);
-  //CANsend(DATA, PITCH); // data to data logger
-  //CANsend(DATA, DEPTH);
-  //CANsend(DATA, TEMP);
   switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
     case 2:
       setSliderPosition(distance);
@@ -150,7 +147,6 @@ void loop()//main loop, refreshes every
     default:
       break;
   }
-  Serial.println("make work");
   delay(500);
 }
 
@@ -242,19 +238,18 @@ void calibrate()
 
 void CANin()
 {
-  //Serial.println("CANIn");
   // Clear the message buffer
-  clearBuffer( & Buffer[0]); // Send command to the CAN port controller
+  clearBuffer( & Buffer[0]); 
+  // Send command to the CAN port controller
   Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
   while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
   //Wait for command to finish executing
   while (can_get_status( & Msg) == CAN_STATUS_NOT_COMPLETED);
-
   // Data is now available in the message object
-  int dir = 0, angle = 0, id = 0;
-  id = Msg.pt_data[0];
 
-  if (id != MESSAGE_ID) return;
+  int id = Msg.pt_data[0];
+  if (id != MESSAGE_ID) return;  
+  int dir = 0, angle = 0;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
 
   if(type == 2)
@@ -267,7 +262,8 @@ void CANin()
   {
     sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
   }
-
+  Serial.print("Distance: ");
+  Serial.println(distance);
   clearBuffer( & Buffer[0]);
 }
 
@@ -298,8 +294,8 @@ void sliderDone()
 {
   Serial.print("Slider done: current Location is ");
   Serial.println(currentLocation);
-  delay(500);
-  CANsend(DATA, SLIDER);
+  type = IDLE;
+  //CANsend(DATA, SLIDER);
 }
 
 void CANsend(int ID, int sensor)
