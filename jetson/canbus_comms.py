@@ -54,7 +54,7 @@ class CANBUS_COMMS:
             self.fillBytes(data)
         # print("sending: ", end="")
         # print(data)
-        logging.info("Sending: " + str())
+        logging.info("Sending: " + str(data))
         for byte in data:
             byte = int(byte)
             self.bus_out.write_byte(self.address, byte)
