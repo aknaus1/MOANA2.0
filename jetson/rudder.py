@@ -66,7 +66,13 @@ class RudderControl:
         
         print("Current heading: " + str(self.cur_heading))
 
-        newAngle = (heading - self.cur_heading) * self.heading_kp
+        newAngle = 0
+        if heading + 180 < self.cur_heading:
+            newAngle = -20
+        else:
+            newAngle = 20
+
+        # newAngle = (heading - self.cur_heading) * self.heading_kp
 
         # error = heading - self.cur_heading # replace if async
 
