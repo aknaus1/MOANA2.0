@@ -88,8 +88,11 @@ class PitchControl:
         self.lock.acquire()
         self.getPitchNoLock()
         print("Current pitch: " + str(self.cur_pitch))
+
+        newPos = self.positionFromPitch(pitch)
+        print("Send to pos: " + str(newPos))
         
-        self.sendPos(self.positionFromPitch(pitch))
+        self.sendPos(newPos)
         self.lock.release()
 
     def holdPitch(self, pitch, runner):
@@ -108,7 +111,10 @@ class PitchControl:
         print("Current depth: " + str(self.cur_depth))
             
         newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
-        self.sendPos(self.positionFromPitch(newPitch))
+        newPos = self.positionFromPitch(newPitch)
+        print("Send to pos: " + str(newPos))
+        
+        self.sendPos(newPos)
         self.lock.release()
 
     def holdDepth(self, depth, runner):
