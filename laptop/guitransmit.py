@@ -59,7 +59,7 @@ class MYSSH:
             try:
                 print("Sending Command...")
                 fullCommand = "cd " + self.JETSON_PATH + " && " + command
-                ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand)
+                ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand, timeout=5)
 
                 # stdin = ssh_stdin.readlines()
                 stdout = ssh_stdout.readlines()

@@ -1,4 +1,3 @@
-from sys import implementation
 import smbus
 import time
 import threading

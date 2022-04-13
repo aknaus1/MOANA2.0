@@ -169,6 +169,7 @@ class SystemControl:
         if t < 0 or t > 255:
             print("Invalid time parameter")
         elif thrustIsValid(thrust):
+            print("Set thrust: " + str(thrust))
             data = []
             data.append(self.THRUST_ID)  # Write thruster ID
             data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
@@ -177,8 +178,9 @@ class SystemControl:
 
             self.out_lock.acquire()
             self.comms.fillBytes(data)
-            print("sending: ", end="")
-            print(data)
+            
+            # print("sending: ", end="")
+            # print(data)
 
             self.comms.writeToBus(data)
             self.out_lock.release()
@@ -283,20 +285,13 @@ class SystemControl:
     # interval: time between readings
     # time: length to run (default: 0 = run until told to stop)
     def startDataCollection(self, interval, time=0):
-        data = []
-        data.append(8) # Depth Sensor
-        data.append(1)  # start
-        data.append(interval)
-        data.append(time)
-        self.lock.acquire()
-        self.comms.writeToBus(data)
-        self.lock.release()
+        self.getTemperatureData()
 
     def getTemperatureData(self):
         data = []
-        data.append(8) # Depth Sensor
-        data.append(3)  # start
-        data.append(4)
+        data.append(8)  # Depth Sensor
+        data.append(3)  # Sensor
+        data.append(4)  # Temp Sensor
         self.lock.acquire()
         self.comms.writeToBus(data)
         bus_data = self.comms.readFromBus()
@@ -305,6 +300,7 @@ class SystemControl:
         # if bus_data[0] == 0 and bus_data[1] == 4:
         sign = -1 if bus_data[2] == 1 else 1
         temp = sign * bus_data[3] + bus_data[4] / 100
+        # ATTACH DEPTH DATA TO MESSAGE
         logging.info("Depth: " + str(self.pc.cur_depth) + "\tTemperature: " + str(temp))
 
     # stop data collection ()
