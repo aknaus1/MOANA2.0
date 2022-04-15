@@ -46,6 +46,7 @@ void calibrate();
 
 void CANsend(int ID, int sensor);
 void nudgeStepper();
+void(* resetFunc) (void) = 0;
 
 
 // variables will change:
@@ -68,6 +69,7 @@ float totalMass = 728.125 - addedSliderMass; //[Newtons]
 float separation = 1;                        //[inches]
 float Kp = .1;
 int yposArray[3];
+int count = 0;
 
 enum sensorSend
 {
@@ -88,7 +90,8 @@ enum IDs
   DEPTH_PITCH = 5,
   DATA,
   MISSION,
-  DEPTH_SENSOR
+  DEPTH_TEMP,
+  FAILSAFE
 };
 
 void setup()
@@ -147,7 +150,11 @@ void loop()//main loop, refreshes every
     default:
       break;
   }
-  delay(500);
+  if(count++ % 5 == 0) {
+    Serial.println("Resetting Board");
+    resetFunc(); //call reset
+  }
+  //delay(500);
 }
 
 void nudgeStepper() //moves stepper a little bit in the direction it's been set
