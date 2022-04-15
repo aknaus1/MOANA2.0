@@ -40,6 +40,7 @@ int input = 0;
 float heading_kp = HEADING_KP;
 float heading_kd = KD;
 float error_prev = 0;
+int count=0;
 
 enum d {LEFT = 1, RIGHT};
 
@@ -56,6 +57,7 @@ void CANsend(int ID, int sensor);
 void CANIn();
 void saveType();//saves previous state
 void stateManager();//makes sure state is set correctly after each loop
+void(* resetFunc) (void) = 0;
 
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
@@ -79,7 +81,9 @@ enum IDs
   RUDDER,
   DEPTH_PITCH = 5,
   DATA,
-  MISSION
+  MISSION,
+  DEPTH_TEMP,
+  FAILSAFE
 };
 
 void setup()
@@ -107,7 +111,6 @@ void setup()
     while (1)
       ;
   }
-  delay(1000);
   bno.setExtCrystalUse(true);
 }
 
@@ -127,8 +130,10 @@ void loop()
       Serial.println(input);
       if (abs(input - 150) <= MAX_RUDDER_ANGLE)
         rudder.write(input);
+      else if(input - 150 > MAX_RUDDER_ANGLE)
+        rudder.write(MAX_RUDDER_ANGLE + 150);
       else
-        Serial.println("Input angle too high!");
+        rudder.write(-MAX_RUDDER_ANGLE + 150);
       break;
     case 3:
       CANsend(JETSON, sensorRequest);
@@ -140,8 +145,8 @@ void loop()
     default:
       break;
   }
-
-  delay(500);
+  if(count++ % 5 == 0)
+    resetFunc(); //call reset
 }
 
 float getHeading()
