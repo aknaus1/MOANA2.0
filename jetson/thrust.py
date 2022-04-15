@@ -11,12 +11,13 @@ class RudderControl:
 
     distance = 0
 
-    running = threading.Event()
-    thread = None
-
     comms = CANBUS_COMMS()
 
-    def __init__(self):
+    def __init__(self, lock = threading.Lock()):
+        self.lock = lock
+
+        self.running = threading.Event()
+        self.thread = threading.Thread(target=self.holdThrust)
         return
 
     def startSensors(self):
@@ -32,18 +33,38 @@ class RudderControl:
     # thrust: range speed 0-100
     # time: (optional) time > 0
     # time: 255 = indefinite
-    def setThrust(self, thrust, t=255):
-        if t < 0 or t > 255:
-            print("Invalid time parameter")
-        elif thrust > -30 and thrust <= 100:
+    def sendThrust(self, thrust):
+        if thrust >= -30 and thrust <= 100:
+            print("Set thrust: " + str(thrust))
             data = []
             data.append(self.THRUST_ID)  # Write thruster ID
             data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
             data.append(abs(thrust))  # Write thruster speed
-            data.append(t)  # Write time to run (0 - run until stop)
+            data.append(255)  # Write time to run (255 - run until stop)
+
+            self.out_lock.acquire()
+            self.comms.fillBytes(data)
+            
+            # print("sending: ", end="")
+            # print(data)
+
             self.comms.writeToBus(data)
+            self.out_lock.release()
         else:
             print("Thrust is out of range: -30 -> 100")
+
+    def holdThrust(self, thrust, t = -1):
+        self.sendThrust(thrust)
+        if t > 0:
+            start_ts = time.time()
+            while self.runner.is_set():
+                if start_ts + t > time.time():
+                    self.runner.clear()
+                time.sleep(1)
+        else:
+            while self.runner.is_set():
+                time.sleep(1)
+        self.sendThrust(0)
 
     def measureDistance(self, target):
         self.distance = 0

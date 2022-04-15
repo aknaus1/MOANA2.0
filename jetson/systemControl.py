@@ -199,7 +199,7 @@ class SystemControl:
     # heading range: 0-360 degrees relative to North
     # direction: left(1) or right(2)
     # radius: turn radius
-    def turnToHeading(self, heading, direction):
+    def turnToHeading(self, heading, direction, t=None):
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
             self.rudder_thread.join()
@@ -210,7 +210,7 @@ class SystemControl:
 
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
-    def setHeading(self, heading, kp=None):
+    def setHeading(self, heading, kp=None, t=None):
         if kp is not None:
             self.rc.setConstant(0, kp)
 
@@ -238,7 +238,7 @@ class SystemControl:
 
     # set pitch (pitch)
     # pitch: min max +- 12 degrees
-    def setPitch(self, pitch, kp=None):
+    def setPitch(self, pitch, kp=None, t=None):
         if kp != None:
             self.pc.setConstant(0, kp)
 
@@ -252,7 +252,7 @@ class SystemControl:
 
     # set depth (depth)
     # depth: range 0 - 30 m
-    def setDepth(self, depth, kpp=None, kpd=None):
+    def setDepth(self, depth, kpp=None, kpd=None, t=None):
         if kpp != None:
             self.pc.setConstant(0, kpp)
         if kpd != None:
@@ -284,8 +284,14 @@ class SystemControl:
     # start data collection (interval, time)
     # interval: time between readings
     # time: length to run (default: 0 = run until told to stop)
-    def startDataCollection(self, interval, time=0):
-        self.getTemperatureData()
+    def startDataCollection(self, runner, interval=1, t=-1):
+        start_ts = time.time()
+        while runner.is_set():
+            if t > 0 and start_ts + t > time.time():
+                self.dc_runner.clear()
+            else:
+                self.getTemperatureData()
+                time.sleep(int(interval))
 
     def getTemperatureData(self):
         data = []
