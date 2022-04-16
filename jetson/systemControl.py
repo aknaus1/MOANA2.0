@@ -137,11 +137,13 @@ class SystemControl:
     # time: (optional) time > 0
     # time: 255 = indefinite
     def setThrust(self, thrust, t=255):
+        print("Set Thrust: " + str(thrust))
         self.tc.setThrust(thrust)
 
     # set rudder (angle)
     # angle: min max +- 20
     def setRudder(self, angle):
+        print("Set Rudder: " + str(angle))
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
             self.rudder_thread.join()
@@ -164,6 +166,7 @@ class SystemControl:
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
     def setHeading(self, heading, kp=None, t=None):
+        print("Set Heading: " + str(heading))
         if kp is not None:
             self.rc.setConstant(0, kp)
 
@@ -178,6 +181,7 @@ class SystemControl:
     # rudder sensor request (sensor type)
     # sensor type: IMU(2)
     def getHeading(self):
+        print("Get Heading...")
         heading = self.rc.getHeading()
         print("Heading: " + str(heading))
         return heading
@@ -186,6 +190,7 @@ class SystemControl:
     # position is distance from center,
     # position: min max +- 16.5 cm (use int value)
     def setStepper(self, position):
+        print("Set Stepper: " + str(position))
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
             self.stepper_thread.join()
@@ -195,6 +200,7 @@ class SystemControl:
     # set pitch (pitch)
     # pitch: min max +- 12 degrees
     def setPitch(self, pitch, kp=None, t=None):
+        print("Set Pitch: " + str(pitch))
         if kp != None:
             self.pc.setConstant(0, kp)
 
@@ -209,6 +215,7 @@ class SystemControl:
     # set depth (depth)
     # depth: range 0 - 30 m
     def setDepth(self, depth, kpp=None, kpd=None, t=None):
+        print("Set Depth: " + str(depth))
         if kpp != None:
             self.pc.setConstant(0, kpp)
         if kpd != None:
@@ -223,11 +230,13 @@ class SystemControl:
         self.stepper_thread.start()
 
     def getDepth(self):
+        print("Get Depth...")
         depth = self.pc.getDepth()
         print("Depth: " + str(depth))
         return depth
 
     def getPitch(self):
+        print("Get Pitch...")
         pitch = self.pc.getPitch()
         print("Pitch: " + str(pitch))
         return pitch
@@ -243,6 +252,7 @@ class SystemControl:
     # set water type (type)
     # type: freshwater (0), saltwater (1)
     def setWaterType(self, type):
+        print("Set Water Type: " + str(type))
         self.pc.setWaterType(type)
 
     # start data collection (interval, time)
