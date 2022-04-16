@@ -53,10 +53,13 @@ class CANBUS_COMMS:
             self.fillBytes(data)
         # print("sending: ", end="")
         # print(data)
-        logging.info("Sending: " + str(data))
-        for byte in data:
-            byte = int(byte)
-            self.bus_out.write_byte(self.address, byte)
+        try:
+            logging.info("Sending: " + str(data))
+            for byte in data:
+                byte = int(byte)
+                self.bus_out.write_byte(self.address, byte)
+        except Exception as error_message:
+            print("Error sending command: " + str(error_message))
             
         time.sleep(.5)
 
