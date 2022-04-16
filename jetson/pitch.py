@@ -74,6 +74,8 @@ class PitchControl:
         if abs(pitch) > self.MAX_ANGLE:
             pitch = self.MAX_ANGLE * sign
 
+        print("here")
+
         self.lock.acquire()
 
         cur_pitch = self.getPitch()
