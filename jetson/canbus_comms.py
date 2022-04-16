@@ -39,7 +39,7 @@ class CANBUS_COMMS:
         try:
             time.sleep(1) # needed to give boards time
             # block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-            logging.info(str(time.time()) + "\tRead: " + str(block))
+            # logging.info(str(time.time()) + "\tRead: " + str(block))
             # return block
             return [0,0,0,0,0,0,0,0]
         except Exception as error_message:
@@ -60,6 +60,7 @@ class CANBUS_COMMS:
                 byte = int(byte)
                 self.bus_out.write_byte(self.address, byte)
             logging.info(str(time.time()) + "\tSent: " + str(data))
+            print("Sent: " + str(data))
         except Exception as error_message:
             print("Error writing to bus: " + str(error_message))
             
