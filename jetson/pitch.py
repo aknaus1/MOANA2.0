@@ -76,14 +76,14 @@ class PitchControl:
 
         self.lock.acquire()
 
-        # cur_pitch = self.getPitch()
+        cur_pitch = self.getPitch()
         cur_pitch = 0
         print("Set Pitch: " + str(pitch))
         print("Current pitch: " + str(cur_pitch))
         newPos = self.positionFromPitch(pitch, cur_pitch)
         self.sendPos(newPos)
 
-        # self.lock.release()
+        self.lock.release()
 
     def pitchThread(self, pitch, runner):
         while runner.is_set():
