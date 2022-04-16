@@ -284,9 +284,9 @@ class SystemControl:
     # start data collection (interval, time)
     # interval: time between readings
     # time: length to run (default: 0 = run until told to stop)
-    def startDataCollection(self, runner, interval=1, t=-1):
+    def startDataCollection(self, interval=1, t=-1):
         start_ts = time.time()
-        while runner.is_set():
+        while self.dc_runner.is_set():
             if t > 0 and start_ts + t > time.time():
                 self.dc_runner.clear()
             else:
