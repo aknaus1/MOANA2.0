@@ -74,9 +74,7 @@ class PitchControl:
         if abs(pitch) > self.MAX_ANGLE:
             pitch = self.MAX_ANGLE * sign
 
-        print("here")
-
-        self.lock.acquire()
+        # self.lock.acquire()
 
         cur_pitch = self.getPitch()
         print("Set Pitch: " + str(pitch))
@@ -84,7 +82,7 @@ class PitchControl:
         newPos = self.positionFromPitch(pitch, cur_pitch)
         self.sendPos(newPos)
 
-        self.lock.release()
+        # self.lock.release()
 
     def pitchThread(self, pitch, runner):
         while runner.is_set():
