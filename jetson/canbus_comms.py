@@ -37,11 +37,14 @@ class CANBUS_COMMS:
     # Read from bus
     def readFromBus(self):
         time.sleep(.5) # needed to give boards time
-        block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-        # print("reading: ", end="")
-        # print(block)
-        logging.info("Reading: " + str(block))
-        return block
+        try:
+            block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
+            # print("reading: ", end="")
+            # print(block)
+            logging.info("Reading: " + str(block))
+            return block
+        except:
+            self.readFromBus()
 
     # Write to bus (data)
     # data: max len = 8
@@ -60,6 +63,7 @@ class CANBUS_COMMS:
                 self.bus_out.write_byte(self.address, byte)
         except Exception as error_message:
             print("Error sending command: " + str(error_message))
+            self.writeToBus(data)
             
         time.sleep(.5)
 
