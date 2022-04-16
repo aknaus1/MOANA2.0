@@ -22,6 +22,16 @@ class PitchControl:
             self.lock = threading.Lock()
         else:
             self.lock = lock
+
+    def calibrate(self):
+        print("Calibrating...")
+
+        data = []
+        data.append(5)  # Write pitch ID
+        data.append(4)  # Write Calibrate Command
+
+        self.comms.writeToBus(data) # Write to CAN
+        self.cur_pos = 0
             
     def sendPos(self, pos):
         if pos > 16:

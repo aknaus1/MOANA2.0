@@ -36,12 +36,16 @@ class CANBUS_COMMS:
 
     # Read from bus
     def readFromBus(self):
-        time.sleep(.5) # needed to give boards time
-        block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-        # print("reading: ", end="")
-        # print(block)
-        logging.info("Reading: " + str(block))
-        return block
+        try:
+            time.sleep(.5) # needed to give boards time
+            block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
+            # print("reading: ", end="")
+            # print(block)
+            logging.info("Reading: " + str(block))
+            return block
+        except Exception as error_message:
+            print("Error reading bus: " + str(error_message))
+            return [0,0,0,0,0,0,0,0]
 
     # Write to bus (data)
     # data: max len = 8
