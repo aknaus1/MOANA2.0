@@ -75,7 +75,7 @@ class PitchControl:
         bus_data = self.comms.readFromBus() # Read from CAN
 
         sign = -1 if bus_data[2] == 1 else 1
-        self.cur_pitch = sign * ( bus_data[3] + bus_data[4] / 100)
+        self.cur_pitch = sign * (bus_data[3] + bus_data[4] / 100)
 
         return self.cur_pitch
 

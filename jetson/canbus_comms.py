@@ -40,6 +40,7 @@ class CANBUS_COMMS:
             time.sleep(1) # needed to give boards time
             block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
             logging.info(str(time.time()) + "\tRead: " + str(block))
+            print("Read: " + str(block))
             return block
             # return [0,0,0,0,0,0,0,0]
         except Exception as error_message:
