@@ -38,10 +38,10 @@ class CANBUS_COMMS:
     def readFromBus(self):
         try:
             time.sleep(1) # needed to give boards time
-            # block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-            # logging.info(str(time.time()) + "\tRead: " + str(block))
-            # return block
-            return [0,0,0,0,0,0,0,0]
+            block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
+            logging.info(str(time.time()) + "\tRead: " + str(block))
+            return block
+            # return [0,0,0,0,0,0,0,0]
         except Exception as error_message:
             print("Error reading from bus: " + str(error_message))
             return [0,0,0,0,0,0,0,0]
