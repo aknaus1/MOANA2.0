@@ -1,3 +1,4 @@
+from re import T
 import smbus
 import time
 import threading
@@ -39,12 +40,10 @@ class CANBUS_COMMS:
         try:
             time.sleep(.5) # needed to give boards time
             block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-            # print("reading: ", end="")
-            # print(block)
-            logging.info("Reading: " + str(block))
+            logging.info("Read: " + str(block))
             return block
         except Exception as error_message:
-            print("Error reading bus: " + str(error_message))
+            print("Error reading from bus: " + str(error_message))
             return [0,0,0,0,0,0,0,0]
 
     # Write to bus (data)
@@ -56,10 +55,13 @@ class CANBUS_COMMS:
         elif len(data) < 8:
             self.fillBytes(data)
 
-        logging.info("Sending: " + str(data))
-        for byte in data:
-            byte = int(byte)
-            self.bus_out.write_byte(self.address, byte)
+        try:
+            for byte in data:
+                byte = int(byte)
+                self.bus_out.write_byte(self.address, byte)
+            logging.info("Sent: " + str(data))
+        except Exception as error_message:
+            print("Error writing to bus: " + str(error_message))
             
     # fill bytes (data)
     def fillBytes(self, data):
