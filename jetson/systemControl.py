@@ -5,6 +5,7 @@ from canbus_comms import CANBUS_COMMS
 from validator import *
 from pitch import PitchControl
 from rudder import RudderControl
+from thrust import ThrustControl
 
 
 class SystemControl:
@@ -42,27 +43,23 @@ class SystemControl:
     # SALT v FRESH
     FRESH_WATER = 0
     SALT_WATER = 1
-    
-    lock = threading.Lock()
-
-    rudder_runner = threading.Event()
-    rudder_thread = threading.Thread()
-
-    stepper_runner = threading.Event()
-    stepper_thread = threading.Thread()
-
-    dc_runner = threading.Event()
-    dc_thread = threading.Thread()
-
-    comms = CANBUS_COMMS()
 
     def __init__(self):
         logging.basicConfig(filename="temperature.log", filemode="w", format='%(message)s', level=logging.INFO)
+        self.lock = threading.Lock()
         self.pc = PitchControl(self.lock)
         self.rc = RudderControl(self.lock)
-        # self.pc.startSensors()
-        # self.rc.startSensors()
-        return
+        self.tc = ThrustControl(self.lock)
+        self.comms = CANBUS_COMMS()
+
+        self.rudder_runner = threading.Event()
+        self.rudder_thread = threading.Thread()
+
+        self.stepper_runner = threading.Event()
+        self.stepper_thread = threading.Thread()
+
+        self.dc_runner = threading.Event()
+        self.dc_thread = threading.Thread()
 
     # start mission(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType)
     # bearing: initial heading
@@ -94,9 +91,6 @@ class SystemControl:
         bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter \
             = int(bearing), int(pathLength), int(pathCount), int(initialDepth), int(layerCount), int(layerSpacing), int(waterType), int(dataParameter)     
 
-        # self.pc.startSensors()
-        # self.rc.startSensors()
-
         initDepth = True  # hasnt gone to initial depth
         # get opposite degree of bearing
         bearingOpposite = bearing + 180 if bearing < 180 else bearing - 180
@@ -111,81 +105,39 @@ class SystemControl:
         # turn thruster to high
         self.setThrust(100)
 
-        # self.pc.state = 1   # set pitch state to depth control
-        # self.rc.state = 0   # set rudder state to heading control
-
         for _ in range(layerCount):
             if initDepth:
                 currentDepth = initialDepth
                 initDepth = False  # has gone to initial depth
             else:
                 currentDepth = currentDepth + layerSpacing
-            dr = threading.Event()  # depth control runner
-            dr.set()  # set depth control runner
-            dt = threading.Thread(target=self.pc.holdDepth,
-                                  args=(currentDepth, dr))  # depth control thread
-            dt.start()  # start depth control thread
+            self.setDepth(currentDepth)
 
             for dummy in range(pathCount):
                 direction = 2 if turnRight else 1
                 heading = bearing if turnRight else bearingOpposite
                 turnRight = not turnRight
 
-                hr = threading.Event()  # heading control runner
-                hr.set()  # set heading control runner
-                ht = threading.Thread(
-                    target=self.rc.turnToHeading, args=(direction, heading, hr))  # heading control thread
-                ht.start()  # start heading control thread
+                self.turnToHeading(heading, direction)
+
                 time.sleep(int(pathLength)) # sleep for path length
-                hr.clear()  # unset heading control runner
-                ht.join()  # wait for heading control thread to finish
 
             turnRight = not turnRight  # turn same as last
             bearing, bearingOpposite = bearingOpposite, bearing
 
-            dr.clear()  # unset depth control runner
-            dt.join()  # wait for depth control thread to finish
-
         # return to surface
-        dr = threading.Event()  # depth control runner
-        dt = threading.Thread(target=self.pc.holdDepth,
-                              args=(0, dr))  # depth control thread
-        dt.start()  # start depth control thread
-        dt.join()  # wait for depth control thread to finish
+        self.setDepth(0)
         # turn off thruster
         self.setThrust(0)
         # stop data collection
         self.stopDataCollection()
-
-        # stop sensors
-        self.pc.stopSensors()
-        self.rc.stopSensors()
 
     # set thrust (thrust, time)
     # thrust: range speed 0-100
     # time: (optional) time > 0
     # time: 255 = indefinite
     def setThrust(self, thrust, t=255):
-        if t < 0 or t > 255:
-            print("Invalid time parameter")
-        elif thrustIsValid(thrust):
-            print("Set thrust: " + str(thrust))
-            data = []
-            data.append(self.THRUST_ID)  # Write thruster ID
-            data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
-            data.append(abs(thrust))  # Write thruster speed
-            data.append(t)  # Write time to run (0 - run until stop)
-
-            self.lock.acquire()
-            self.comms.fillBytes(data)
-            
-            # print("sending: ", end="")
-            # print(data)
-
-            self.comms.writeToBus(data)
-            self.lock.release()
-        else:
-            thrustErrMsg()
+        self.tc.setThrust(thrust)
 
     # set rudder (angle)
     # angle: min max +- 20
@@ -193,6 +145,7 @@ class SystemControl:
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
             self.rudder_thread.join()
+
         self.rc.setRudder(angle)  # set rudder angle
 
     # turn to heading (heading, direction, radius)
@@ -203,10 +156,10 @@ class SystemControl:
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
             self.rudder_thread.join()
-        self.rudder_runner.set()
+
         self.rudder_thread = threading.Thread(target=self.rc.turnToHeading, args=(direction, heading, self.rudder_runner))
+        self.rudder_runner.set()
         self.rudder_thread.start()
-        # self.rc.turnToHeading(direction, heading)
 
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
@@ -214,18 +167,20 @@ class SystemControl:
         if kp is not None:
             self.rc.setConstant(0, kp)
 
-        # self.rc.setHeading(heading)
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
             self.rudder_thread.join()
+
+        self.rudder_thread = threading.Thread(target=self.rc.headingThread, args=(heading, self.rudder_runner))
         self.rudder_runner.set()
-        self.rudder_thread = threading.Thread(target=self.rc.holdHeading, args=(heading, self.rudder_runner))
         self.rudder_thread.start()
 
     # rudder sensor request (sensor type)
     # sensor type: IMU(2)
-    def rudderSensorRequest(self, sensor_type=None):
-        return self.rc.getHeading()
+    def getHeading(self):
+        heading = self.rc.getHeading()
+        print("Heading: " + str(heading))
+        return heading
 
     # set stepper (position)
     # position is distance from center,
@@ -234,6 +189,7 @@ class SystemControl:
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
             self.stepper_thread.join()
+
         self.pc.setStepper(position)  # set stepper position
 
     # set pitch (pitch)
@@ -242,12 +198,12 @@ class SystemControl:
         if kp != None:
             self.pc.setConstant(0, kp)
 
-        # self.pc.setPitch(pitch)
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
             self.stepper_thread.join()
+
+        self.stepper_thread = threading.Thread(target=self.pc.pitchThread, args=(pitch, self.stepper_runner))
         self.stepper_runner.set()
-        self.stepper_thread = threading.Thread(target=self.pc.holdPitch, args=(pitch, self.stepper_runner))
         self.stepper_thread.start()
 
     # set depth (depth)
@@ -258,23 +214,31 @@ class SystemControl:
         if kpd != None:
             self.pc.setConstant(1, kpd)
 
-        # self.pc.setDepth(depth)
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
             self.stepper_thread.join()
+
+        self.stepper_thread = threading.Thread(target=self.pc.depthThread, args=(depth, self.stepper_runner))
         self.stepper_runner.set()
-        self.stepper_thread = threading.Thread(target=self.pc.holdDepth, args=(depth, self.stepper_runner))
         self.stepper_thread.start()
+
+    def getDepth(self):
+        depth = self.pc.getDepth()
+        print("Depth: " + str(depth))
+        return depth
+
+    def getPitch(self):
+        pitch = self.pc.getPitch()
+        print("Pitch: " + str(pitch))
+        return pitch
 
     # pitch sensor request (sensor type)
     # sensor type: Depth(0), IMU(1)
     def pitchSensorRequest(self, type):
         if type == 0:
-            # return self.pc.getDepth()
-            return self.pc.getDepth()
+            return self.getDepth()
         elif type == 1:
-            # return self.pc.getPitch()
-            return self.pc.getPitch()
+            return self.getPitch()
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
@@ -296,18 +260,18 @@ class SystemControl:
     def getTemperatureData(self):
         data = []
         data.append(8)  # Depth Sensor
-        data.append(3)  # Sensor
-        data.append(4)  # Temp Sensor
+        data.append(6)  # Sensor
         self.lock.acquire()
         self.comms.writeToBus(data)
         bus_data = self.comms.readFromBus()
         self.lock.release()
 
-        # if bus_data[0] == 0 and bus_data[1] == 4:
-        sign = -1 if bus_data[2] == 1 else 1
-        temp = sign * bus_data[3] + bus_data[4] / 100
-        # ATTACH DEPTH DATA TO MESSAGE
-        logging.info("Depth: " + str(self.pc.cur_depth) + "\tTemperature: " + str(temp))
+        depth = bus_data[2] + bus_data[3]/100
+
+        sign = -1 if bus_data[4] == 1 else 1
+        temp = sign * bus_data[5] + bus_data[6] / 100
+
+        logging.info("Depth: " + str(depth) + "\tTemperature: " + str(temp))
 
     # stop data collection ()
     # stop scientific payload collection
