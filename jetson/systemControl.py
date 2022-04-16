@@ -176,14 +176,14 @@ class SystemControl:
             data.append(abs(thrust))  # Write thruster speed
             data.append(t)  # Write time to run (0 - run until stop)
 
-            self.out_lock.acquire()
+            self.lock.acquire()
             self.comms.fillBytes(data)
             
             # print("sending: ", end="")
             # print(data)
 
             self.comms.writeToBus(data)
-            self.out_lock.release()
+            self.lock.release()
         else:
             thrustErrMsg()
 
@@ -316,6 +316,6 @@ class SystemControl:
         self.dc_thread.join()
 
     def customCommand(self, data):
-        self.out_lock.acquire()
+        self.lock.acquire()
         self.comms.writeToBus(data)
-        self.out_lock.release()
+        self.lock.release()
