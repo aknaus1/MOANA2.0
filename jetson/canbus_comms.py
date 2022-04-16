@@ -56,6 +56,7 @@ class CANBUS_COMMS:
             self.fillBytes(data)
 
         try:
+            time.sleep(1)
             for byte in data:
                 byte = int(byte)
                 self.bus_out.write_byte(self.address, byte)
