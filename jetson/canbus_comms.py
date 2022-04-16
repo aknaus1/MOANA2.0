@@ -1,4 +1,3 @@
-from re import T
 import smbus
 import time
 import threading
@@ -38,7 +37,7 @@ class CANBUS_COMMS:
     # Read from bus
     def readFromBus(self):
         try:
-            time.sleep(.5) # needed to give boards time
+            time.sleep(1) # needed to give boards time
             block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
             logging.info("Read: " + str(block))
             return block
