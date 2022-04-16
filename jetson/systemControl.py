@@ -45,7 +45,7 @@ class SystemControl:
     SALT_WATER = 1
 
     def __init__(self):
-        logging.basicConfig(filename="temperature.log", filemode="w", format='%(message)s', level=logging.INFO)
+        logging.basicConfig(filename="temperature.log", filemode="a", format='%(message)s', level=logging.INFO)
         self.lock = threading.Lock()
         self.pc = PitchControl(self.lock)
         self.rc = RudderControl(self.lock)
@@ -271,7 +271,7 @@ class SystemControl:
         sign = -1 if bus_data[4] == 1 else 1
         temp = sign * bus_data[5] + bus_data[6] / 100
 
-        logging.info("Depth: " + str(depth) + "\tTemperature: " + str(temp))
+        logging.info(str(time.time()) + "\tDepth: " + str(depth) + "\tTemperature: " + str(temp))
 
     # stop data collection ()
     # stop scientific payload collection

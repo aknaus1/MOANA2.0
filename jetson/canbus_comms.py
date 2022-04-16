@@ -17,7 +17,7 @@ class CANBUS_COMMS:
     def __init__(self):
         self.bus_out = smbus.SMBus(0)
         self.bus_in = smbus.SMBus(1)
-        logging.basicConfig(filename="can.log", filemode="w", format='%(message)s', level=logging.INFO)
+        logging.basicConfig(filename="can.log", filemode="a", format='%(message)s', level=logging.INFO)
         return
 
     # not implemented, might be helpful in future
@@ -39,7 +39,7 @@ class CANBUS_COMMS:
         try:
             time.sleep(1) # needed to give boards time
             block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
-            logging.info("Read: " + str(block))
+            logging.info(str(time.time()) + "\tRead: " + str(block))
             return block
         except Exception as error_message:
             print("Error reading from bus: " + str(error_message))
@@ -58,7 +58,7 @@ class CANBUS_COMMS:
             for byte in data:
                 byte = int(byte)
                 self.bus_out.write_byte(self.address, byte)
-            logging.info("Sent: " + str(data))
+            logging.info(str(time.time()) + "\tSent: " + str(data))
         except Exception as error_message:
             print("Error writing to bus: " + str(error_message))
             
