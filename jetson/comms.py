@@ -73,7 +73,7 @@ def interface():
                 # Build thruster command
                 print("Building thruster command...\nWhat would you like to do with the thruster?")
                 print("\t1. Turn on at set speed\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
-                cmd_param = input("")
+                cmd_param = int(input(""))
                 if(cmd_param == 1):
                     # Turn thruster on to user defined speed
                     print("What speed would you like? (0-100)")
