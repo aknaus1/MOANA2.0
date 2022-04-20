@@ -116,7 +116,7 @@ def interface():
                 # Build rudder command
                 print("Building rudder command...\nWhat would you like to do with it?")
                 print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
-                cmd_param = input("")
+                cmd_param = int(input(""))
                 if(cmd_param == 1):
                     # Find whhat angle
                     print("What angle would you like to set? (-20 to 20)")
@@ -150,7 +150,7 @@ def interface():
                 # Build stepper command
                 print("Building stepper command...\nWhat would you like to do with it?")
                 print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth")
-                cmd_param = input("")
+                cmd_param = int(input(""))
                 if(cmd_param == 1):
                     print("What position would you like to set (-16 to 16)")
                     step_param = input("")
