@@ -311,12 +311,12 @@ class SystemControl:
 
     
     def customCommand(self, data, re = None):
-        if data[0] == 3:
-            self.rudder_runner.clear()
-            self.rudder_thread.join()
-        elif data[0] == 5:
-            self.stepper_runner.clear()
-            self.stepper_thread.join()
+        # if data[0] == 3:
+        #     self.rudder_runner.clear()
+        #     self.rudder_thread.join()
+        # elif data[0] == 5:
+        #     self.stepper_runner.clear()
+        #     self.stepper_thread.join()
         self.lock.acquire()
         self.comms.writeToBus(data)
         if re != None:
