@@ -117,11 +117,12 @@ class PitchControl:
 
         self.lock.acquire()
 
-        self.getDepth()
+        cur_depth = self.getDepth()
+        cur_pitch = self.getPitch()
         print("set depth: " + str(depth))
-        print("Current depth: " + str(self.cur_depth))
-        newPitch = (depth - round(self.cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
-        newPos = self.positionFromPitch(newPitch)        
+        print("Current depth: " + str(cur_depth))
+        newPitch = (depth - round(cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
+        newPos = self.positionFromPitch(newPitch, cur_pitch)        
         self.sendPos(newPos)
         self.lock.release()
 
