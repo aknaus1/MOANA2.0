@@ -2,11 +2,45 @@ import time
 import threading
 import logging
 from canbus_comms import CANBUS_COMMS
-from validator import *
 from pitch import PitchControl
 from rudder import RudderControl
 from thrust import ThrustControl
 
+def verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
+        res = True
+        try:
+            if int(bearing) < 0 or int(bearing) > 360:
+                print("Invalid bearing: 0 <= bearing <= 360")
+                res = False
+            if int(pathLength) <= 0:
+                print("Invalid path length: len > 0")
+                res = False
+            if int(pathCount) <= 0:
+                print("Invalid path count: count > 0")
+                res = False
+            if int(initialDepth) < 0:
+                print("Invalid initial depth: 0 < depth <= 30")
+                res = False
+            if int(layerCount) <= 0:
+                print("Invalid layer count: count > 0")
+                res = False
+            if int(layerSpacing) <= 0:
+                print("Invalid layer spacing: spacing > 0")
+                res = False
+            max_depth = (int(initialDepth) + int(layerCount) * int(layerSpacing))
+            if max_depth > 30 or max_depth < 0:
+                print("Invalid depth: 0 < initialDepth + layerCount * layerSpacing <= 30")
+                res = False
+            if int(dataParameter) <= 0:
+                print("Invalid data parameter: param > 0")
+                res = False
+            if int(waterType) != 0 and int(waterType) != 1:
+                print("Invalid water type: fresh(0), salt(1)")
+                res = False
+        except Exception:
+            return False
+        else:
+            return res
 
 class SystemControl:
     # CAN IDs
@@ -68,26 +102,10 @@ class SystemControl:
     # water type: type of water fresh(0) or salt(1)
     # data parameter: interval of sensor readings
     def mission(self, bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
-        if not headingIsValid(bearing):
-            headingErrMsg()
-            return
-        if pathLength <= 0:
-            print("Invlaid path length")
-            return
-        if pathCount <= 0:
-            print("Invalid path count")
-            return
-        if not depthIsValid(initialDepth) or not depthIsValid(initialDepth + (layerCount * layerSpacing)):
-            depthErrMsg()
-            return
-        if waterType is not self.FRESH_WATER and waterType is not self.SALT_WATER:
-            print("Water type is invalid")
-            return
-        if dataParameter <= 0:
-            print("Data parameter is invalid")
+        if not verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
+            print("Mission parameters are invalid")
             return
 
-        bearing = int(bearing)
         bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter \
             = int(bearing), int(pathLength), int(pathCount), int(initialDepth), int(layerCount), int(layerSpacing), int(waterType), int(dataParameter)     
 

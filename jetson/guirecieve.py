@@ -144,7 +144,7 @@ if __name__ == '__main__':
         else:
             data = []
             for i in range(1,9):
-                data.append(args[i])
+                data.append(int(args[i]))
             sc.customCommand(data)
 
     # Default Invalid Arguments
