@@ -54,6 +54,10 @@ def interface():
         print("\t1. Subsystem debug\n\t2. Scripted operations\n\t3. Mission planner\n\t4. Manual Input\n\t5. Exit Program")
 
         ui_input = input("")
+        try:
+            ui_input = int(ui_input)
+        except Exception:
+            continue
 
         if not ui_input:
             continue
