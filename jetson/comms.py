@@ -165,6 +165,15 @@ def interface():
                         sc.setPitch(int(pitch_param))
                     except Exception as e:
                         print("Set Pitch Failed: " + str(e))
+                    while(1):
+                        try:
+                            time.sleep(1)
+                        except KeyboardInterrupt:
+                            print("Ctrl-c interrupt")
+                            try:
+                                sc.setStepper(0)
+                            except Exception as e:
+                                print("Stop Failed: " + str(e))
                 elif(cmd_param == 3):
                     print("What depth would you like to set (0-30m)")
                     depth_param = input("")
@@ -173,9 +182,15 @@ def interface():
                         # sc.setThrust(100)
                     except Exception as e:
                         print("Set Depth Failed: " + str(e))
-                    except KeyboardInterrupt:
-                        print("Stopped with Ctrl C ")
-                        # sc.setThrust(0)
+                    while(1):
+                        try:
+                            time.sleep(1)
+                        except KeyboardInterrupt:
+                            print("Ctrl-c interrupt")
+                            try:
+                                sc.setStepper(0)
+                            except Exception as e:
+                                print("Stop Failed: " + str(e))
                 else:
                     continue
                     
