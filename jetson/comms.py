@@ -204,20 +204,20 @@ def interface():
                 for row in screader:
                     # On even rows, send commands
                     if line_no % 2 == 0:
-                        if row[0] == 1: # thrust
-                            if row[1] == 1: # set thrust
+                        if int(row[0]) == 1: # thrust
+                            if int(row[1]) == 1: # set thrust
                                 sc.setThrust(int(row[2]))
-                        elif row[0] == 2: # rudder
-                            if row[1] == 1: # set rudder
+                        elif int(row[0]) == 2: # rudder
+                            if int(row[1]) == 1: # set rudder
                                 sc.setRudder(int(row[2]))
-                            elif row[1] == 2: # set heading
+                            elif int(row[1]) == 2: # set heading
                                 sc.setHeading(int(row[2]))
-                        elif row[0] == 3: # stepper
-                            if row[1] == 1: # set stepper
+                        elif int(row[0]) == 3: # stepper
+                            if int(row[1]) == 1: # set stepper
                                 sc.setStepper(int(row[2]))
-                            elif row[1] == 2: # set pitch
+                            elif int(row[1]) == 2: # set pitch
                                 sc.setPitch(int(row[2]))
-                            elif row[1] == 3: # set depth
+                            elif int(row[1]) == 3: # set depth
                                 sc.setDepth(int(row[2]))
                     # On odd rows, read in the time delay
                     else:
