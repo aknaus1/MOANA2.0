@@ -1,4 +1,5 @@
 GUI Recieve info:
+Please see MOANA2.0/laptop/laptop_info.txt for MOANA documentation
 
 command format:
     python3 guirecieve.py [command] {args}
