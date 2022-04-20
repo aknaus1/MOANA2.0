@@ -221,7 +221,7 @@ def interface():
                                 sc.setDepth(int(row[2]))
                     # On odd rows, read in the time delay
                     else:
-                        time.sleep(row[0])
+                        time.sleep(int(row[0]))
                     # Increment line number
                     line_no = line_no + 1 
             print("Script ended. If the vehicle is unrecoverable at this point, best of luck!")
