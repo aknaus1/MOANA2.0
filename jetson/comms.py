@@ -194,7 +194,7 @@ def interface():
 
             # Ask user to select which file they want to execute
             print("\nWhich script would you like to execute?")
-            script_input = input("")
+            script_input = int(input(""))
 
             # Open file at that index
             # TODO: this is temp until I can run on the jetson, find out how to open file index and build path out to open
@@ -275,7 +275,7 @@ def interface():
                     elif(sys_in == 2):
                         # Build rudder command
                         print("Building rudder command...\nWhat would you like to do with it?")
-                        print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
+                        print("\t1. Set angle\n\t2. Set Heading\n\t3. Go back")
                         cmd_param = int(input(""))
                         if(cmd_param == 1):
                             # Find what angle
@@ -304,7 +304,7 @@ def interface():
                     elif(sys_in == 3): 
                         # Build Stepper Command
                         print("Building stepper command...\nWhat would you like to do with it?")
-                        print("\t1. Set stepper position\n\tSet pitch angle\n\tSet depth\n\t2. Go back")
+                        print("\t1. Set stepper position\n\t2. Set pitch angle\n\t3. Set depth\n\t4. Go back")
                         cmd_param = int(input(""))
                         if(cmd_param == 1):
                             print("What position? (-16 to 16)")
@@ -333,7 +333,7 @@ def interface():
                             cmd_arr[1] = 3
                             # Depth
                             cmd_arr[2] = depth_param
-                        elif(cmd_param == 3):
+                        elif(cmd_param == 4):
                             print("Returning to menu...\n")
                             continue
 
