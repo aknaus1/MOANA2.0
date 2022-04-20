@@ -106,6 +106,7 @@ def interface():
                         print("Ctrl-c interrupt")
                         try:
                             sc.setThrust(0)
+                            continue
                         except Exception as e:
                             print("Stop Failed: " + str(e))
                 else:
@@ -140,6 +141,7 @@ def interface():
                             print("Ctrl-c interrupt")
                             try:
                                 sc.setRudder(0)
+                                break
                             except Exception as e:
                                 print("Stop Failed: " + str(e))
                 else:
@@ -172,6 +174,7 @@ def interface():
                             print("Ctrl-c interrupt")
                             try:
                                 sc.setStepper(0)
+                                break
                             except Exception as e:
                                 print("Stop Failed: " + str(e))
                 elif(cmd_param == 3):
@@ -189,6 +192,7 @@ def interface():
                             print("Ctrl-c interrupt")
                             try:
                                 sc.setStepper(0)
+                                break
                             except Exception as e:
                                 print("Stop Failed: " + str(e))
                 else:
