@@ -4,8 +4,8 @@ from canbus_comms import CANBUS_COMMS
 
 class PitchControl:
     MAINTAIN_DEPTH = 3
-    DEPTH_KP = 3
     PITCH_KP = 4/3
+    DEPTH_KP = 3
     kp = {PITCH_KP, DEPTH_KP}
 
     MAX_ANGLE = 12

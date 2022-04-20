@@ -1,5 +1,3 @@
-from re import L, fullmatch
-from time import time
 import paramiko
 import ftplib
 from validator import *
@@ -129,13 +127,9 @@ class MYSSH:
         else:
             headingErrMsg()
 
-    # rudder sensor request (sensor type)
-    # sensor type: IMU(2)
-    def rudderSensorRequest(self, sensor_type):
-        if sensor_type != 2:
-            print("sensor type is not valid")
-            return
-        command = "python3 guirecieve.py rsr " + str(sensor_type)
+    # get heading
+    def getHeading(self):
+        command = "python3 guirecieve.py gh"
         self.sendCommand(command)
 
     # set pitch (angle)
@@ -174,15 +168,24 @@ class MYSSH:
         else:
             stepperErrMsg()
 
-    # pitch sensor request (sensor type)
-    # sensor type: Depth(0), IMU(1), Temperature(4), Slider(5)
-    def pitchSensorRequest(self, sensor_type):
-        if sensor_type != 0 and sensor_type != 1 and sensor_type != 4 and sensor_type != 5:
-            print("sensor type is not valid")
-            return
-        command = "python3 guirecieve.py psr " + str(sensor_type)
+    # get pitch
+    def getPitch(self):
+        command = "python3 guirecieve.py gp"
         self.sendCommand(command)
-        
+
+    # get pitch
+    def getPitch(self):
+        command = "python3 guirecieve.py gd"
+        self.sendCommand(command)
+
+    # set water type (type)
+    # type: fresh (0), salt(1)
+    def setWaterType(self, type):
+        if type == 0 or type == 1:
+            command = "python3 guirecieve.py swt " + str(type)
+            self.sendCommand(command)
+        else:
+            print("Invalid water type")
 
     # start data collection (time)
     # time: length to run (default: 0 = run until told to stop)

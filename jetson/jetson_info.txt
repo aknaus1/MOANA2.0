@@ -3,39 +3,66 @@ GUI Recieve info:
 command format:
     python3 guirecieve.py [command] {args}
 
+    example:
+        python3 guirecieve.py sd 30
+
 command:
     m: (mission)
         args: [bearing] [pathLength] [pathCount] [initialDepth] [layerCount] [layerSpacing] [waterType] [dataParameter]
+        info: run a standard mission
 
     st: (setThrust)
         args: [thrust] [optional: time]
+        info: set thrust indefinetly
 
     sr: (setRudder)
         args: [angle]
+        info: set rudder to desired angle
+    
+    th: (turnToHeading)
+        args: [heading] [turn direction]
+        info: turn in specified direction and continue to follow specified heading
 
     sh: (setHeading)
         args: [heading] [optional: kp]
+        info: follow specified heading
 
-    rsr: (rudderSensorRequest)
-        args: [sensor id]
+    gh: (getHeading)
+        args: none
+        info: get current facing direction (0-360)
 
     sp: (setPitch)
         args: [angle] [optional: kp]
+        info: try to set and hold pitch at specified angle
     
     sd: (setDepth)
         args: [depth] [optional: kpp] [optional: kpd]
+        info: go down to and hold specified depth
 
     ss: (setStepper)
         args: [position]
-    
-    psr: (pitchSensorRequest)
-        args: [sensor id]
+        info: move mass on slider to specifed position
+
+    gp: (getPitch)
+        args: none
+        info: get the current pitch
+
+    gd: (getDepth)
+        args: none
+        info: get the current depth
+
+    swt: (setWaterType)
+        args: [type: fresh (0), salt (1)]
+        info: set water type for depth sensor
 
     startdc: (startDataCollection)
-        args: [interval] [optional: time]
+        args: [optional: interval] [optional: time]
+        info: start recording temperature data
 
     stopdc: (stopDataCollection)
         args: none
+        info: stop recording temperature data
 
     cc: (customCommand)
-        args: [b0] [b1] [b2] [b3] [b4] [b5] [b6] [b7]
+        args: [B0] [B1] [B2] [B3] [B4] [B5] [B6] [B7]
+        info: send any command of 8 bytes

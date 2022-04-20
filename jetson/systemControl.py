@@ -131,6 +131,8 @@ class SystemControl:
         self.setThrust(0)
         # stop data collection
         self.stopDataCollection()
+        print("Should now be at the surface or returning to the surface.")
+        print("If the vehicle is unrecoverable at this point, best of luck!")
 
     # set thrust (thrust, time)
     # thrust: range speed 0-100
@@ -289,7 +291,17 @@ class SystemControl:
         self.dc_runner.clear()
         self.dc_thread.join()
 
-    def customCommand(self, data):
+    
+    def customCommand(self, data, re = None):
+        if data[0] == 3:
+            self.rudder_runner.clear()
+            self.rudder_thread.join()
+        elif data[0] == 5:
+            self.stepper_runner.clear()
+            self.stepper_thread.join()
         self.lock.acquire()
         self.comms.writeToBus(data)
+        if re != None:
+            bus_data = self.comms.readFromBus()
+            print("Response: " + str(bus_data))
         self.lock.release()

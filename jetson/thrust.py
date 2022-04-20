@@ -34,4 +34,5 @@ class ThrustControl:
     def setThrust(self, thrust):
         self.lock.acquire()
         print("Set Thrust: " + str(thrust))
+        self.sendThrust(thrust)
         self.lock.release()

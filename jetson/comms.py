@@ -1,15 +1,18 @@
 import smbus
 import time
-import sys
 import csv
 import time
 import os
+
+from systemControl import SystemControl
 
 
 bus = smbus.SMBus(0)
 
 # i2c address of the arduino we are writing to
 address = 0x40
+
+sc = SystemControl()
 
 def writeNumber(value):
     bus.write_byte(address, value)
@@ -47,7 +50,8 @@ print("#########################################################################
 def interface():
     while True:
         # thread.start_new_thread(readBus)
-        print("\nHello, welcome to Toucan, the CLI Interface to MOANA\nWhat mode would you like to operate in?\n\t1. Subsystem debug\n\t2. Scripted operations\n\t3. Mission planner\n\t4. Manual Input\n\t5. Exit Program")
+        print("\nHello, welcome to Toucan, the CLI Interface to MOANA\nWhat mode would you like to operate in?")
+        print("\t1. Subsystem debug\n\t2. Scripted operations\n\t3. Mission planner\n\t4. Manual Input\n\t5. Exit Program")
 
         ui_input = input("")
 
@@ -61,49 +65,30 @@ def interface():
         # Debug mode will allow the user to build individual commands to each subsystem and send them for testing and integration purposes 
         if(ui_input == 1):
             print("\nEntering debug mode...\n")
-            print("\nWhat subsystem do you want to test?\n\t1. Thruster\n\t2. Yaw Control\n\t3. Depth Control\n\t4. Pitch Control")
+            print("\nWhat subsystem do you want to test?")
+            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control")
             cmd_input = input("")
-            if(cmd_input == 1):
+            
+            if(cmd_input == 1): 
                 # Build thruster command
-                print("Building thruster command...\nWhat would you like to do with the thruster?\n\t1. Turn on at set speed\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
+                print("Building thruster command...\nWhat would you like to do with the thruster?")
+                print("\t1. Turn on at set speed\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
                 cmd_param = input("")
                 if(cmd_param == 1):
                     # Turn thruster on to user defined speed
                     print("What speed would you like? (0-100)")
                     speed_param = input("")
-                    # Build CAN command
-                    # Add thruster ID
-                    # Add data parameters
-                    
-                    #print("Sending command to run thruster at " + speed_param + "%...\n")
-                    # Write thruster ID
-                    writeNumber(2)
-                    # Write thruster direction
-                    writeNumber(1)
-                    # Write thruster speed
-                    writeNumber(speed_param)
-                    # Write default duration (0 - run until stop)
-                    writeNumber(0)
-                    # fill in 5 empty bytes
-                    for i in range(4):
-                        writeNumber(-1)
-                    
+                    try:
+                        sc.setThrust(int(speed_param))
+                    except Exception as e:
+                        print("Set Thrust Failed: " + str(e))
                 elif(cmd_param == 2):
                     # Turn thruster off
                     print("Sending shutoff command...\n")
-                    # Build CAN command
-                    # Write thruster ID
-                    writeNumber(2)
-                    # Write thruster direction
-                    writeNumber(1)
-                    # Write thruster speed
-                    writeNumber(0)
-                    # Write default duration (0 - run until stop)
-                    writeNumber(0)
-                    # fill in 4 empty bytes
-                    for i in range(4):
-                        writeNumber(-1)
-                    
+                    try:
+                        sc.setThrust(0)
+                    except Exception as e:
+                        print("Set Thrust Failed: " + str(e))  
                 elif(cmd_param == 3):
                     # TODO: Implement duration command for thruster
                     # Turn thruster on to user defined speed for user defined duration
@@ -111,95 +96,87 @@ def interface():
                     speed_param = input("")
                     print("What duration would you like? (TODO: not sure how kambe is implementing this yet)")
                     dur_param = input("")
-                    
-                    # Build CAN command
-                    # Add thruster ID
-                    # Add data parameters
-                    #print("Sending command to run thruster at " + speed_param + "% for " + dur_param + "ms...\n")
-                    # Write thruster ID
-                    writeNumber(2)
-                    # Write thruster direction
-                    writeNumber(1)
-                    # Write thruster speed
-                    writeNumber(speed_param)
-                    # Write default duration (0 - run until stop)
-                    writeNumber(dur_param)
-                    # fill in 4 empty bytes
-                    for i in range(4):
-                        writeNumber(-1)
-                
-                elif(cmd_param == 4):
+                    try:
+                        sc.setThrust(int(speed_param))
+                        time.sleep(int(dur_param))
+                        sc.setThrust(0)
+                    except Exception as e:
+                        print("Set Thrust Failed: " + str(e))
+                    except KeyboardInterrupt:
+                        print("Ctrl-c interrupt")
+                        try:
+                            sc.setThrust(0)
+                        except Exception as e:
+                            print("Stop Failed: " + str(e))
+                else:
                     # Skip back to start of loop
                     continue
+
             elif(cmd_input == 2):
-                # Build yaw command
-                print("Building yaw command...\nWhat would you like to do with it?\n\t1. Set to defined angle\n\t2. Go back")
+                # Build rudder command
+                print("Building rudder command...\nWhat would you like to do with it?")
+                print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
                 cmd_param = input("")
                 if(cmd_param == 1):
                     # Find whhat angle
-                    print("What angle would you like to set? (0-20)")
+                    print("What angle would you like to set? (-20 to 20)")
                     ang_param = input("")
-                    
-                    # Build CAN command
-                    # Write yaw ID
-                    writeNumber(3)
-                    # Write yaw angle
-                    writeNumber(ang_param)
-                    # fill in 4 empty bytes
-                    for i in range(6):
-                        writeNumber(-1)
-                    
+                    try:
+                        sc.setRudder(int(ang_param))
+                    except Exception as e:
+                        print("Set Rudder Failed: " + str(e))
                 elif(cmd_param == 2):
-                    print("Sending reset command now...\n")
-                    # Write yaw ID
-                    writeNumber(3)
-                    # Write yaw direction
-                    writeNumber(1)
-                    # Write yaw angle
-                    writeNumber(0)
-                    # fill in 4 empty bytes
-                    for i in range(5):
-                        writeNumber(-1)
-                    
-                elif(cmd_param == 3):
+                    # Find whhat heading
+                    print("What heading would you like to set? (0-360)")
+                    heading_param = input("")
+                    try:
+                        sc.setHeading(int(heading_param))
+                    except Exception as e:
+                        print("Set Heading Failed: " + str(e))
+                    while(1):
+                        try:
+                            time.sleep(1)
+                        except KeyboardInterrupt:
+                            print("Ctrl-c interrupt")
+                            try:
+                                sc.setRudder(0)
+                            except Exception as e:
+                                print("Stop Failed: " + str(e))
+                else:
                     # Return to main menu
                     continue
             
-            #TODO: build out depth, figure out what commands and how to send them. Not do right now
             elif(cmd_input == 3):
-                # TODO: Build depth command
-                print("This is currently unfinished, please try annother option")
-                continue
-                #print("Building depth command...\nWhat would you like to do with it?\n\t1. Set to defined ???\n\t2. Go back")
+                # Build stepper command
+                print("Building stepper command...\nWhat would you like to do with it?")
+                print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth")
                 cmd_param = input("")
                 if(cmd_param == 1):
-                    
-                    print("Sending command to run depth at ???...")
-                    # Build CAN command
-                    # Write depth ID
-                    writeNumber(4)
-                    # Write yaw direction
-                    writeNumber(dir_param)
-                    # Write yaw angle
-                    writeNumber(ang_param)
-                    # fill in 4 empty bytes
-                    for i in range(5):
-                        writeNumber(-1)
-                    
-                    #print("Sending command to run thruster at " + speed_param + "%...\n")
-                    # Write thruster ID
-                    writeNumber(2)
-                    # Write thruster direction
-                    writeNumber(1)
-                    # Write thruster speed
-                    writeNumber(speed_param)
-                    # Write default duration (0 - run until stop)
-                    writeNumber(0)
-                    # fill in 5 empty bytes
-                    for i in range(4):
-                        writeNumber(-1)
-                    
-                elif(cmd_input == 2):
+                    print("What position would you like to set (-16 to 16)")
+                    step_param = input("")
+                    try:
+                        sc.setStepper(int(step_param))
+                    except Exception as e:
+                        print("Set Stepper Failed: " + str(e))
+                elif(cmd_param == 2):
+                    print("What Pitch would you like to set (-12 to 12)")
+                    pitch_param = input("")
+                    try:
+                        sc.setPitch(int(pitch_param))
+                    except Exception as e:
+                        print("Set Pitch Failed: " + str(e))
+                elif(cmd_param == 3):
+                    print("What depth would you like to set (0-30m)")
+                    depth_param = input("")
+                    try:
+                        sc.setDepth(int(depth_param))
+                        # sc.setThrust(100)
+                    except Exception as e:
+                        print("Set Depth Failed: " + str(e))
+                    except KeyboardInterrupt:
+                        print("Stopped with Ctrl C ")
+                        # sc.setThrust(0)
+                else:
                     continue
                     
         elif(ui_input == 2):
@@ -227,9 +204,21 @@ def interface():
                 for row in screader:
                     # On even rows, send commands
                     if line_no % 2 == 0:
-                        # Read in each row and send the command, then wait the specified delay
-                        for element in row:
-                            writeNumber(element)
+                        if row[0] == 1: # thrust
+                            if row[1] == 1: # set thrust
+                                sc.setThrust(int(row[2]))
+                        elif row[0] == 2: # rudder
+                            if row[1] == 1: # set rudder
+                                sc.setRudder(int(row[2]))
+                            elif row[1] == 2: # set heading
+                                sc.setHeading(int(row[2]))
+                        elif row[0] == 3: # stepper
+                            if row[1] == 1: # set stepper
+                                sc.setStepper(int(row[2]))
+                            elif row[1] == 2: # set pitch
+                                sc.setPitch(int(row[2]))
+                            elif row[1] == 3: # set depth
+                                sc.setDepth(int(row[2]))
                     # On odd rows, read in the time delay
                     else:
                         time.sleep(row[0])
@@ -240,9 +229,9 @@ def interface():
 
         elif(ui_input == 3):
             print("\nEntering mission planner mode...\n")
-            print("What would you like to name this script?")
+            print("What would you like to name this mission?")
             # In python2, need raw input. Otherwise, tries to run string as python code
-            name_input = raw_input("")
+            name_input = input("")
 
             cmd_arr = [None] * 8
 
@@ -250,135 +239,104 @@ def interface():
             with open("missions/" + str(name_input) + ".csv", mode='w') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter = ",")
                 while(1):
-                    print("What subsystem do you want to command?\n\t1. Thruster\n\t2. Yaw Control\n\t3. Depth Control\n\t4. Pitch Control\n\t5. Exit")
+                    print("What subsystem do you want to command?\n\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t5. Exit")
                     sys_in = input("")
 
                     if(sys_in == 1):
                         # Build thruster command
-                        print("Building thruster command...\nWhat would you like to do with the thruster?\n\t1. Turn on at set speed\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
+                        print("Building thruster command...\nWhat would you like to do with the thruster?")
+                        print("\t1. Set Thrust\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
                         cmd_param = input("")
                         if(cmd_param == 1):
                             # Turn thruster on to user defined speed
                             print("What speed would you like? (0-100)")
                             speed_param = input("")
-                            # Write thruster ID
-                            cmd_arr[0] = 2
-                            # Write thruster direction, 1 for backwards 2 for forwards
-                            cmd_arr[1] = 2
-                            # Write thruster speed
-                            cmd_arr[2] = speed_param
-                            # Write default duration (0 - run until stop)
-                            cmd_arr[3] = 0 
-                            # fill in 5 empty bytes
-                            cmd_arr[4] = -1
-                            cmd_arr[5] = -1
-                            cmd_arr[6] = -1
-                            cmd_arr[7] = -1
-
-                            
-                        elif(cmd_param == 2):
-                            # Turn thruster off
-
-                            # Write thruster ID
-                            cmd_arr[0] = 2
-                            # Write thruster direction
+                            # Thrust
+                            cmd_arr[0] = 1
+                            # Set Thrust
                             cmd_arr[1] = 1
                             # Write thruster speed
-                            cmd_arr[2] = 0
-                            # Write default duration (0 - run until stop)
-                            cmd_arr[3] = 0
-                            # fill in 4 empty bytes
-                            cmd_arr[4] = -1
-                            cmd_arr[5] = -1
-                            cmd_arr[6] = -1
-                            cmd_arr[7] = -1
-
-                        elif(cmd_param == 3):
-                            # Turn thruster on to user defined speed for user defined duration
-                            print("What speed would you like? (0-100)")
-                            speed_param = input("")
-                            print("What duration would you like?")
-                            dur_param = input("")
-                            
-                            # Write thruster ID
-                            cmd_arr[0] = 2
-                            # Write thruster direction
-                            cmd_arr[1] = 2
-                            # Write thruster speed
                             cmd_arr[2] = speed_param
-                            # Write default duration (0 - run until stop)
-                            cmd_arr[3] = dur_param
-                            # fill in 4 empty bytes
-                            cmd_arr[4] = -1
-                            cmd_arr[5] = -1
-                            cmd_arr[6] = -1
-                            cmd_arr[7] = -1
-                        
-                        elif(cmd_param == 4):
+                        elif(cmd_param == 2):
+                            # Turn thruster off
+                            # Thrust
+                            cmd_arr[0] = 1
+                            # set Thrust
+                            cmd_arr[1] = 1
+                            # Write thruster speed as 0
+                            cmd_arr[2] = 0
+                        elif(cmd_param == 3):
+                            # TODO: # Turn thruster on to user defined speed for user defined time
+                            pass
+                        else:
                             # Skip back to start of loop
                             continue
+
                     elif(sys_in == 2):
-                        # Build yaw command
-                        print("Building yaw command...\nWhat would you like to do with it?\n\t1. Set to defined angle\n\t2. Go back")
+                        # Build rudder command
+                        print("Building rudder command...\nWhat would you like to do with it?")
+                        print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
                         cmd_param = input("")
                         if(cmd_param == 1):
                             # Find what angle
-                            print("What angle would you like to set? (0-20)")
+                            print("What angle would you like to set? (-20 to 20)")
                             ang_param = input("")
-                            
-                            print("Would you like positive or negative direction? (1 for neg, 2 for pos)")
-                            dir_param = input("")
-
-                            # Build CAN command
-                            # Write yaw ID
-                            cmd_arr[0] = 3
-                            # Write yaw angle
-                            cmd_arr[1] = ang_param
-                            # positive or negative
-                            cmd_arr[2] = dir_param 
-                            # fill in empty bytes
-                            cmd_arr[3] = -1
-                            cmd_arr[4] = -1
-                            cmd_arr[5] = -1
-                            cmd_arr[6] = -1
-                            cmd_arr[7] = -1
-
+                            # Rudder
+                            cmd_arr[0] = 2
+                            # Set Angle
+                            cmd_arr[1] = 1
+                            # User defined angle
+                            cmd_arr[2] = ang_param
                         elif(cmd_param == 2):
-                            print("Returning...\n")
+                            # Find whhat heading
+                            print("What heading would you like to set? (0-360)")
+                            heading_param = input("")
+                            # Rudder
+                            cmd_arr[0] = 2
+                            # Set Angle
+                            cmd_arr[1] = 2
+                            # User defined angle
+                            cmd_arr[2] = heading_param
+                        else:
+                            # Skip back to start of loop
                             continue
-                    
-                    # Build depth control command (CURRENTLY UNFINISHED SYSTEM, TODO: Fill in once implemented)
-                    elif(sys_in == 3):
-                        print("This subsystem is currently unfinished, please try annother option")
-                        continue
-                    
-                    # Build pitch control command
-                    elif(sys_in == 4): 
-                        print("Building pitch command...\nWhat would you like to do with it?\n\t1. Set to defined angle\n\t2. Go back")
+
+                    elif(sys_in == 3): 
+                        # Build Stepper Command
+                        print("Building stepper command...\nWhat would you like to do with it?")
+                        print("\t1. Set stepper position\n\tSet pitch angle\n\tSet depth\n\t2. Go back")
                         cmd_param = input("")
-
                         if(cmd_param == 1):
-                            # Store pitch control id
-                            cmd_arr[0] = 5
-                            # Store direction of pitch
-                            print("Positive or negative pitch angle? (1 for neg, 2 for pos)")
-                            pitch_dir = input("")
-                            cmd_arr[1] = pitch_dir
-                            # Store angle of pitch (0-12)
-                            print("What angle? (0-12 degrees)")
-                            pitch_ang = input("")
-                            cmd_arr[2] = pitch_ang
-                            cmd_arr[3] = -1
-                            cmd_arr[4] = -1
-                            cmd_arr[5] = -1
-                            cmd_arr[6] = -1
-                            cmd_arr[7] = -1
-
+                            print("What position? (-16 to 16)")
+                            step_param = input("")
+                            # Stepper
+                            cmd_arr[0] = 3
+                            # Set Position
+                            cmd_arr[1] = 1
+                            # Position
+                            cmd_arr[2] = step_param
                         elif(cmd_param == 2):
+                            print("What Pitch? (-12 to 12)")
+                            pitch_param = input("")
+                            # Stepper
+                            cmd_arr[0] = 3
+                            # Set Pitch
+                            cmd_arr[1] = 2
+                            # Pitch
+                            cmd_arr[2] = pitch_param
+                        elif(cmd_param == 3):
+                            print("What Depth? (0-30)")
+                            depth_param = input("")
+                            # Stepper
+                            cmd_arr[0] = 3
+                            # Set Depth
+                            cmd_arr[1] = 3
+                            # Depth
+                            cmd_arr[2] = depth_param
+                        elif(cmd_param == 3):
                             print("Returning to menu...\n")
                             continue
 
-                    # Break out of command builder
                     elif(sys_in == 5):
                         break
 
@@ -386,7 +344,7 @@ def interface():
                     csv_writer.writerow(cmd_arr)
                     print("What delay would you like (seconds)?\n")
                     time_del = input("")
-                    csv_writer.writerow([time_del]) 
+                    csv_writer.writerow([time_del])
 
         elif(ui_input == 4):
             print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
@@ -403,8 +361,7 @@ def interface():
                     print("Type 1 to confirm, 2 to deny and reset the buffer")
                     confirm_var = input("")
                     if(confirm_var == 1):
-                        for i in range(8):
-                            writeNumber(cmd_buf[i])
+                        sc.customCommand(cmd_buf)
                         print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
             
                     if(confirm_var == 2):
