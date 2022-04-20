@@ -53,11 +53,7 @@ def interface():
         print("\nHello, welcome to Toucan, the CLI Interface to MOANA\nWhat mode would you like to operate in?")
         print("\t1. Subsystem debug\n\t2. Scripted operations\n\t3. Mission planner\n\t4. Manual Input\n\t5. Exit Program")
 
-        ui_input = input("")
-        try:
-            ui_input = int(ui_input)
-        except Exception:
-            continue
+        ui_input = int(input(""))
 
         if not ui_input:
             continue
@@ -71,7 +67,7 @@ def interface():
             print("\nEntering debug mode...\n")
             print("\nWhat subsystem do you want to test?")
             print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control")
-            cmd_input = input("")
+            cmd_input = int(input(""))
             
             if(cmd_input == 1): 
                 # Build thruster command
@@ -244,17 +240,17 @@ def interface():
                 csv_writer = csv.writer(csv_file, delimiter = ",")
                 while(1):
                     print("What subsystem do you want to command?\n\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t5. Exit")
-                    sys_in = input("")
+                    sys_in = int(input(""))
 
                     if(sys_in == 1):
                         # Build thruster command
                         print("Building thruster command...\nWhat would you like to do with the thruster?")
                         print("\t1. Set Thrust\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
-                        cmd_param = input("")
+                        cmd_param = int(input(""))
                         if(cmd_param == 1):
                             # Turn thruster on to user defined speed
                             print("What speed would you like? (0-100)")
-                            speed_param = input("")
+                            speed_param = int(input(""))
                             # Thrust
                             cmd_arr[0] = 1
                             # Set Thrust
@@ -280,11 +276,11 @@ def interface():
                         # Build rudder command
                         print("Building rudder command...\nWhat would you like to do with it?")
                         print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
-                        cmd_param = input("")
+                        cmd_param = int(input(""))
                         if(cmd_param == 1):
                             # Find what angle
                             print("What angle would you like to set? (-20 to 20)")
-                            ang_param = input("")
+                            ang_param = int(input(""))
                             # Rudder
                             cmd_arr[0] = 2
                             # Set Angle
@@ -294,7 +290,7 @@ def interface():
                         elif(cmd_param == 2):
                             # Find whhat heading
                             print("What heading would you like to set? (0-360)")
-                            heading_param = input("")
+                            heading_param = int(input(""))
                             # Rudder
                             cmd_arr[0] = 2
                             # Set Angle
@@ -309,10 +305,10 @@ def interface():
                         # Build Stepper Command
                         print("Building stepper command...\nWhat would you like to do with it?")
                         print("\t1. Set stepper position\n\tSet pitch angle\n\tSet depth\n\t2. Go back")
-                        cmd_param = input("")
+                        cmd_param = int(input(""))
                         if(cmd_param == 1):
                             print("What position? (-16 to 16)")
-                            step_param = input("")
+                            step_param = int(input(""))
                             # Stepper
                             cmd_arr[0] = 3
                             # Set Position
@@ -321,7 +317,7 @@ def interface():
                             cmd_arr[2] = step_param
                         elif(cmd_param == 2):
                             print("What Pitch? (-12 to 12)")
-                            pitch_param = input("")
+                            pitch_param = int(input(""))
                             # Stepper
                             cmd_arr[0] = 3
                             # Set Pitch
@@ -330,7 +326,7 @@ def interface():
                             cmd_arr[2] = pitch_param
                         elif(cmd_param == 3):
                             print("What Depth? (0-30)")
-                            depth_param = input("")
+                            depth_param = int(input(""))
                             # Stepper
                             cmd_arr[0] = 3
                             # Set Depth
@@ -347,13 +343,13 @@ def interface():
                     # Store command, then store delay
                     csv_writer.writerow(cmd_arr)
                     print("What delay would you like (seconds)?\n")
-                    time_del = input("")
+                    time_del = int(input(""))
                     csv_writer.writerow([time_del])
 
         elif(ui_input == 4):
             print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
             cmd_buf = [None] * 8
-            cmd_input = input("")
+            cmd_input = int(input(""))
             counter = 0
             while(cmd_input != -1):
                 cmd_buf[counter % 8] = cmd_input
@@ -363,7 +359,7 @@ def interface():
                 if((counter) % 8 == 0 and counter != 0):
                     print("Sending command: " + str(cmd_buf[0]) + " " + str(cmd_buf[1]) + " " + str(cmd_buf[2]) + " " + str(cmd_buf[3]) + " " + str(cmd_buf[4]) + " " + str(cmd_buf[5]) + " " + str(cmd_buf[6]) + " " + str(cmd_buf[7]))
                     print("Type 1 to confirm, 2 to deny and reset the buffer")
-                    confirm_var = input("")
+                    confirm_var = int(input(""))
                     if(confirm_var == 1):
                         sc.customCommand(cmd_buf)
                         print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
@@ -372,7 +368,7 @@ def interface():
                         for i in range(8):
                             cmd_buf[i] = [None]
                         print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
-                cmd_input = input("")
+                cmd_input = int(input(""))
                     
         elif(ui_input == 5):
             print("Have a nice day!")
