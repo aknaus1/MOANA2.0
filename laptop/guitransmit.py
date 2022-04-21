@@ -91,7 +91,7 @@ class MYSSH:
     def sendCommand(self, command):
         try: # try to connect
             print("Attempting to connect SSH...")
-            # self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
+            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
             print("SSH connection successful!")
         except Exception as error_message: # if fails to connect
             print("Error connecting to SSH server: " + str(error_message))
@@ -101,22 +101,22 @@ class MYSSH:
                 print("Sending Command...")
                 fullCommand = "cd " + self.JETSON_PATH + " && " + command
                 print(fullCommand)
-                # ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand, timeout=5)
-                # stdin = ssh_stdin.readlines()
-                # stdout = ssh_stdout.readlines()
-                # stderr = ssh_stderr.readlines()
+                ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand, timeout=5)
+                stdin = ssh_stdin.readlines()
+                stdout = ssh_stdout.readlines()
+                stderr = ssh_stderr.readlines()
 
-                # if len(stdin) > 0:
-                #     print("stdin: ")
-                #     print(stdin)
-                # if len(stdout) > 0:
-                #     print("stdout: ")
-                #     for i in stdout:
-                #         print(i)
-                # if len(stderr) > 0:
-                #     print("stderr: ")
-                #     for i in stderr:
-                #         print(i)
+                if len(stdin) > 0:
+                    print("stdin: ")
+                    print(stdin)
+                if len(stdout) > 0:
+                    print("stdout: ")
+                    for i in stdout:
+                        print(i)
+                if len(stderr) > 0:
+                    print("stderr: ")
+                    for i in stderr:
+                        print(i)
                 print("Command Sent!")
             except Exception as error_message:
                 print("Error sending SSH command: " + str(error_message))
