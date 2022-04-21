@@ -1,4 +1,3 @@
-from turtle import pos
 import paramiko
 import ftplib
 

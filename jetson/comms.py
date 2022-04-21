@@ -1,4 +1,3 @@
-import smbus
 import time
 import csv
 import time
@@ -6,46 +5,21 @@ import os
 
 from systemControl import SystemControl
 
-
-bus = smbus.SMBus(0)
-
-# i2c address of the arduino we are writing to
-address = 0x40
-
 sc = SystemControl()
 
-def writeNumber(value):
-    bus.write_byte(address, value)
-    return -1
-
-# # Function to run on thread to listen to anything coming over the I2C Bus
-# def readBus(threadName):
-#     while 1:
-#         # TODO: Format the arduino code to write back the data in readable format
-#         number = bus.read_byte(address)
-#         # TODO: Store each line of CAN communication into array and append to CSV. Print for now
-#         print("Reading CAN data from thread: ")
-#         print(number)
-
-
-
-
-
-
-
-
-print("#########################################################################################")
-print("#        <><     <><          <><              <><           o <><   o          <><     #")
-print("#       ________________________________       o  o                   <><         <><   #")
-print("#      /                                \      o   o     Santa Clara University         #")
-print("#     /  O                               \  o   o        Senior Design 2022   <><       #")
-print("#    < ____/     M O A N A 2 . 0          >X  o         <><                       <><   #")
-print("#     \                                  /  o                     <><     <><           #")
-print("#      \________________________________/       <><       <><          <><              #")
-print("#                  <><       <><           <><          <><      <><      <><   <><     #")
-print("#             <><     <><      <><           <><      <><       <><      <><            #")
-print("#         <><            <><       <><          <><     <><       ><>              <><  #")
-print("#########################################################################################")
+def printascii():
+    print("#########################################################################################")
+    print("#        <><     <><          <><              <><           o <><   o          <><     #")
+    print("#       ________________________________       o  o                   <><         <><   #")
+    print("#      /                                \      o   o     Santa Clara University         #")
+    print("#     /  O                               \  o   o        Senior Design 2022   <><       #")
+    print("#    < ____/     M O A N A 2 . 0          >X  o         <><                       <><   #")
+    print("#     \                                  /  o                     <><     <><           #")
+    print("#      \________________________________/       <><       <><          <><              #")
+    print("#                  <><       <><           <><          <><      <><      <><   <><     #")
+    print("#             <><     <><      <><           <><      <><       <><      <><            #")
+    print("#         <><            <><       <><          <><     <><       ><>              <><  #")
+    print("#########################################################################################")
 
 def interface():
     while True:
@@ -396,4 +370,5 @@ def interface():
             print("\nERROR: Invalid number, please try again with a number between 1 and 5")
 
 if __name__ == '__main__':
+    printascii()
     interface()
