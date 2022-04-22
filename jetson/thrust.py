@@ -1,7 +1,5 @@
 import threading
-import time
 from canbus_comms import CANBUS_COMMS
-import math
 
 class ThrustControl:
     comms = CANBUS_COMMS()

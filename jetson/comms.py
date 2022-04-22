@@ -25,7 +25,7 @@ def interface():
     while True:
         # thread.start_new_thread(readBus)
         print("\nHello, welcome to Toucan, the CLI Interface to MOANA\nWhat mode would you like to operate in?")
-        print("\t1. Subsystem debug\n\t2. Scripted operations\n\t3. Mission planner\n\t4. Manual Input\n\t5. Exit Program")
+        print("\t1. Subsystem debug\n\t2. Sensor Requests\n\t3. Scripted operations\n\t4. Mission planner\n\t5. Manual Input\n\t6. Exit Program")
 
         ui_input = int(input(""))
 
@@ -172,7 +172,34 @@ def interface():
                 else:
                     continue
                     
-        elif(ui_input == 2):
+        # Sensor Requests
+        if(ui_input == 2):
+            print("\nEntering sensor request mode...\n")
+            print("\nWhat sensor would you like to request?")
+            print("\t1. Pitch\n\t2. Heading\n\t3. Depth\n\t4. Temperature\n\t5. Exit")
+            cmd_input = int(input(""))
+            
+            if(cmd_input == 1): 
+                print("Getting Pitch Data...")
+                sc.getPitch()
+
+            elif(cmd_input == 2): 
+                print("Getting Heading Data...")
+                sc.getHeading()
+
+            elif(cmd_input == 3): 
+                print("Getting Depth Data...")
+                sc.getDepth()
+
+            elif(cmd_input == 4): 
+                print("Getting Temperature Data...")
+                sc.getTemperatureData()
+        
+            else:
+                continue
+
+        # Scripted Mission Mode
+        elif(ui_input == 3):
             print("\nEntering scripted mission mode...\n")
             print("Please pick from the current list of missions below: ")
             
@@ -220,7 +247,8 @@ def interface():
             print("Script ended. If the vehicle is unrecoverable at this point, best of luck!")
             #continue
 
-        elif(ui_input == 3):
+        # Mission planner mode
+        elif(ui_input == 4):
             print("\nEntering mission planner mode...\n")
             print("What would you like to name this mission?")
             # In python2, need raw input. Otherwise, tries to run string as python code
@@ -339,7 +367,8 @@ def interface():
                     time_del = int(input(""))
                     csv_writer.writerow([time_del])
 
-        elif(ui_input == 4):
+        # Raw input mode
+        elif(ui_input == 5):
             print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
             cmd_buf = [None] * 8
             cmd_input = int(input(""))
@@ -363,11 +392,12 @@ def interface():
                         print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
                 cmd_input = int(input(""))
                     
-        elif(ui_input == 5):
+        # Exit
+        elif(ui_input == 6):
             print("Have a nice day!")
             exit()
         else:
-            print("\nERROR: Invalid number, please try again with a number between 1 and 5")
+            print("\nERROR: Invalid number, please try again with a number between 1 and 6")
 
 if __name__ == '__main__':
     printascii()

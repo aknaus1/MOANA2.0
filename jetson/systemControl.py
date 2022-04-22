@@ -284,13 +284,14 @@ class SystemControl:
             if t > 0 and start_ts + t > time.time():
                 self.dc_runner.clear()
             else:
-                self.getTemperatureData()
+                temp,depth = self.getTemperatureData()
+                logging.info(str(time.time()) + "\tDepth: " + str(depth) + "\tTemperature: " + str(temp))
                 time.sleep(int(interval))
 
     def getTemperatureData(self):
         data = []
         data.append(8)  # Depth Sensor
-        data.append(6)  # Sensor
+        data.append(6)  # Temperature sensor
         self.lock.acquire()
         self.comms.writeToBus(data)
         bus_data = self.comms.readFromBus()
@@ -300,8 +301,9 @@ class SystemControl:
 
         sign = -1 if bus_data[4] == 1 else 1
         temp = sign * bus_data[5] + bus_data[6] / 100
-
-        logging.info(str(time.time()) + "\tDepth: " + str(depth) + "\tTemperature: " + str(temp))
+        
+        print("Temperature: " + str(temp))
+        return temp, depth
 
     # stop data collection ()
     # stop scientific payload collection

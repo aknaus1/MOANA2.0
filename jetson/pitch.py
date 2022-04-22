@@ -1,5 +1,4 @@
 import threading
-import time
 from canbus_comms import CANBUS_COMMS
 
 class PitchControl:
