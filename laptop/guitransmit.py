@@ -1,5 +1,10 @@
+from ast import arg
+from audioop import mul
+from xxlimited import new
 import paramiko
 import ftplib
+import threading
+import multiprocessing
 
 def is_number(num):
     try:
@@ -53,16 +58,27 @@ class MYSSH:
 
     JETSON_PATH = ""
 
-    def __init__(self, moana_ip="192.168.137.209", moana_user="moana", moana_pass="root", jetson_path="MOANA2.0/jetson"):
+    def __init__(self, moana_ip="192.168.137.209", moana_user="moana", moana_pass="root", jetson_path="MOANA2.0/jetson"):        
         # initialize global variables
         self.MOANA_IP = moana_ip
         self.MOANA_USER = moana_user
         self.MOANA_PASS = moana_pass
         self.JETSON_PATH = jetson_path
 
+        self.rudder_process = multiprocessing.Process()
+        self.stepper_process = multiprocessing.Process()
+        self.data_process = multiprocessing.Process()
+
         # fill out ssh keys and connect
         self.ssh.load_system_host_keys()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        try: # try to connect
+            print("Attempting to connect SSH...")
+            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
+            print("SSH connection successful!")
+        except Exception as error_message: # if fails to connect
+            print("Error connecting to SSH server: " + str(error_message))
 
         # # init ftp and connect
         # self.ftp = ftplib.FTP(self.MOANA_IP)
@@ -88,40 +104,30 @@ class MYSSH:
     # move into working directory
     # send command
     def sendCommand(self, command):
-        try: # try to connect
-            print("Attempting to connect SSH...")
-            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
-            print("SSH connection successful!")
-        except Exception as error_message: # if fails to connect
-            print("Error connecting to SSH server: " + str(error_message))
-            return
-        else:
-            try:
-                print("Sending Command...")
-                fullCommand = "cd " + self.JETSON_PATH + " && " + command
-                print(fullCommand)
-                ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand, timeout=5)
-                stdin = ssh_stdin.readlines()
-                stdout = ssh_stdout.readlines()
-                stderr = ssh_stderr.readlines()
+        try:
+            print("Sending Command...")
+            fullCommand = "cd " + self.JETSON_PATH + " && " + command
+            print(fullCommand)
+            ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand)
+            # stdin = ssh_stdin.readlines()
+            stdout = ssh_stdout.readlines()
+            stderr = ssh_stderr.readlines()
 
-                if len(stdin) > 0:
-                    print("stdin: ")
-                    print(stdin)
-                if len(stdout) > 0:
-                    print("stdout: ")
-                    for i in stdout:
-                        print(i)
-                if len(stderr) > 0:
-                    print("stderr: ")
-                    for i in stderr:
-                        print(i)
-                print("Command Sent!")
-            except Exception as error_message:
-                print("Error sending SSH command: " + str(error_message))
-                return
-        finally:
-            self.ssh.close()          
+            # if len(stdin) > 0:
+            #     print("stdin: ")
+            #     print(stdin)
+            if len(stdout) > 0:
+                print("stdout: ")
+                for i in stdout:
+                    print(i)
+            if len(stderr) > 0:
+                print("stderr: ")
+                for i in stderr:
+                    print(i)
+            print("Command Sent!")
+        except Exception as error_message:
+            print("Error sending SSH command: " + str(error_message))
+            return     
 
     # start mission(bearing, pathLength, pathWidth, pathCount, layerCount)
     # bearing: initial heading
@@ -153,7 +159,12 @@ class MYSSH:
             print("Angle is not valid: -20 to +20")
             return
         command = "python3 guirecieve.py sr " + str(angle)
-        self.sendCommand(command)
+
+        self.rudder_process.terminate()
+        self.rudder_process.join()
+        self.rudder_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
+        self.rudder_process.start()
+        # self.sendCommand(command)
 
     
     # set heading (heading)
@@ -174,7 +185,12 @@ class MYSSH:
             else:
                 print("Ignoring kp... must be numeric")
         command = "python3 guirecieve.py sh " + args
-        self.sendCommand(command)
+
+        self.rudder_process.terminate()
+        self.rudder_process.join()
+        self.rudder_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
+        self.rudder_process.start()
+        # self.sendCommand(command)
 
 
     # get heading
@@ -195,7 +211,12 @@ class MYSSH:
             else:
                 print("Ignoring kp... must be numeric")
         command = "python3 guirecieve.py sp " + args
-        self.sendCommand(command)
+
+        self.stepper_process.terminate()
+        self.stepper_process.join()
+        self.stepper_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
+        self.stepper_process.start()
+        # self.sendCommand(command)
 
     # set depth (depth)
     # depth: range 0 - 30 m
@@ -215,7 +236,12 @@ class MYSSH:
             else:
                 print("Ignoring kpp... must be numeric")
         command = "python3 guirecieve.py sd " + args
-        self.sendCommand(command)
+        
+        self.stepper_process.terminate()
+        self.stepper_process.join()
+        self.stepper_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
+        self.stepper_process.start()
+        # self.sendCommand(command)
 
     # set stepper (position)
     # position is distance from center, 
@@ -225,7 +251,12 @@ class MYSSH:
             print("Position is not valid: -16 to +16")
             return
         command = "python3 guirecieve.py ss " + str(position)
-        self.sendCommand(command)
+        
+        self.stepper_process.terminate()
+        self.stepper_process.join()
+        self.stepper_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
+        self.stepper_process.start()
+        # self.sendCommand(command)
 
     # get pitch
     def getPitch(self):
@@ -256,12 +287,20 @@ class MYSSH:
         if time != 0:
             args = args + " " + str(time)
         command = "python3 guirecieve.py startdc " + args
-        self.sendCommand(command)
+
+        self.data_process.terminate()
+        self.data_process.join()
+        self.data_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
+        self.data_process.start()
+        # self.sendCommand(command)
         
     # stop data collection ()
     # stop scientific payload collection
     def stopDataCollection(self):
         command = "python3 guirecieve.py stopdc"
+
+        self.data_process.terminate()
+        self.data_process.join()
         self.sendCommand(command)
         
     def customCommand(self, data):
@@ -272,3 +311,11 @@ class MYSSH:
                 return
             command = command + " " + i
         self.sendCommand(command)
+
+    def stopAllProcesses(self):
+        self.rudder_process.terminate()
+        self.rudder_process.join()
+        self.stepper_process.terminate()
+        self.stepper_process.join()
+        self.data_process.terminate()
+        self.data_process.join()

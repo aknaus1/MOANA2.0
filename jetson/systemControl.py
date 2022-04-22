@@ -325,3 +325,11 @@ class SystemControl:
             bus_data = self.comms.readFromBus()
             print("Response: " + str(bus_data))
         self.lock.release()
+
+    def stopAllThreads(self):
+        self.rudder_runner.clear()
+        self.rudder_thread.join()
+        self.stepper_runner.clear()
+        self.stepper_thread.join()
+        self.dc_runner.clear()
+        self.dc_thread.join()
