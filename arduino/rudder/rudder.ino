@@ -57,7 +57,6 @@ void CANsend(int ID, int sensor);
 void CANIn();
 void saveType();//saves previous state
 void stateManager();//makes sure state is set correctly after each loop
-void(* resetFunc) (void) = 0;
 
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
@@ -71,13 +70,14 @@ enum sensorSend
   STEP_POS,
   TEMP,
   SLIDER,
-  ACK
+  BOTH,
+  THRUSTER_COMMAND
 };
 
 enum IDs
 {
   JETSON,
-  THRUST,
+  THRUST = 2,
   RUDDER,
   DEPTH_PITCH = 5,
   DATA,
@@ -145,8 +145,8 @@ void loop()
     default:
       break;
   }
-  if(count++ % 5 == 0)
-    resetFunc(); //call reset
+
+    //delay(500);
 }
 
 float getHeading()

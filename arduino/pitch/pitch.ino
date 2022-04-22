@@ -46,7 +46,6 @@ void calibrate();
 
 void CANsend(int ID, int sensor);
 void nudgeStepper();
-void(* resetFunc) (void) = 0;
 
 
 // variables will change:
@@ -79,13 +78,14 @@ enum sensorSend
   STEP_POS,
   TEMP,
   SLIDER,
-  ACK
+  BOTH,
+  THRUSTER_COMMAND
 };
 
 enum IDs
 {
-  JETSON = 1,
-  THRUST,
+  JETSON,
+  THRUST = 2,
   RUDDER,
   DEPTH_PITCH = 5,
   DATA,
@@ -145,14 +145,13 @@ void loop()//main loop, refreshes every
     case 3://sensor request
       CANsend(JETSON, sensorRequest);
       break;
+    case 4:
+      calibrate(); // runs calibration
+      break;
     case IDLE:
       break;
     default:
       break;
-  }
-  if(count++ % 5 == 0) {
-    Serial.println("Resetting Board");
-    resetFunc(); //call reset
   }
   //delay(500);
 }
@@ -302,7 +301,7 @@ void sliderDone()
   Serial.print("Slider done: current Location is ");
   Serial.println(currentLocation);
   type = IDLE;
-  //CANsend(DATA, SLIDER);
+  CANsend(JETSON, SLIDER);
 }
 
 void CANsend(int ID, int sensor)

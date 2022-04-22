@@ -17,6 +17,7 @@
 int i2cAddress = 0x40;
 int i2c_read = 0;
 int counter = 0;
+int count = 0;
 
 // @ANDREW use this
 uint8_t conv_arr[3] = {};
@@ -27,6 +28,7 @@ st_cmd_t Msg;
 // Transmit buffer
 uint8_t Buffer[8] = {};
 void CANin();
+
 
 void setup() 
 { 
@@ -45,7 +47,7 @@ void setup()
 
 void loop() 
 {
-  CANin();
+    CANin();
 }
 
 // This is called when we send a command over I2C to the CAN network
@@ -90,7 +92,7 @@ void sendData(uint8_t *msg)
 
 void sendJetson()
 {
-  Serial.println("Start send Jetson");
+  //Serial.println("Start send Jetson");
  
   counter = 0;
   int i = 0;
@@ -100,7 +102,6 @@ void sendJetson()
     Serial.print(" ");
     Wire.write(Buffer[i++]);
   }
-  clearBuffer(&Buffer[0]); 
   Serial.println("End send Jetson");
 }
 
