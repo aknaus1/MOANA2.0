@@ -1,9 +1,5 @@
-from ast import arg
-from audioop import mul
-from xxlimited import new
 import paramiko
 import ftplib
-import threading
 import multiprocessing
 
 def is_number(num):
@@ -50,8 +46,6 @@ def verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount
             return res
 
 class MYSSH:
-    ssh = paramiko.SSHClient()
-    ftp = ftplib.FTP()
     MOANA_IP = ""
     MOANA_USER = ""
     MOANA_PASS = ""
@@ -69,16 +63,14 @@ class MYSSH:
         self.stepper_process = multiprocessing.Process()
         self.data_process = multiprocessing.Process()
 
+        self.ssh = paramiko.SSHClient()
+        self.ftp = ftplib.FTP()
         # fill out ssh keys and connect
         self.ssh.load_system_host_keys()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        try: # try to connect
-            print("Attempting to connect SSH...")
-            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
-            print("SSH connection successful!")
-        except Exception as error_message: # if fails to connect
-            print("Error connecting to SSH server: " + str(error_message))
+        # connect to ssh server
+        self.ssh_connected = False
+        self.sshConnect()
 
         # # init ftp and connect
         # self.ftp = ftplib.FTP(self.MOANA_IP)
@@ -100,10 +92,25 @@ class MYSSH:
         except Exception as error_message:
             print("error fetching file: " + str(error_message))
 
+    def sshConnect(self):
+        try: # try to connect
+            print("Attempting to connect SSH...")
+            self.ssh.connect(self.MOANA_IP, username=self.MOANA_USER, password=self.MOANA_PASS, look_for_keys=False, timeout=10)
+            print("SSH connection successful!")
+            self.ssh_connected = True
+        except Exception as error_message: # if fails to connect
+            print("Error connecting to SSH server: " + str(error_message))
+            self.ssh_connected = False
+
     # connect to moana over ssh
     # move into working directory
     # send command
     def sendCommand(self, command):
+        if self.ssh_connected == False:
+            self.sshConnect()
+            if self.ssh_connected == False:
+                print("Unable to send command at this time.")
+                return
         try:
             print("Sending Command...")
             fullCommand = "cd " + self.JETSON_PATH + " && " + command
@@ -141,6 +148,7 @@ class MYSSH:
         args = str(bearing) + " " + str(pathLength)  + " " + str(pathCount) + " " + str(initialDepth)  + " " 
         args = args + str(layerCount)  + " " +  str(layerSpacing)  + " " +  str(waterType)  + " " +  str(dataParameter)
         command = "python3 guirecieve.py m " + args
+        self.stopAllProcesses()
         self.sendCommand(command)
 
     # set thrust (thrust)

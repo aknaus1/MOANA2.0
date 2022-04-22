@@ -22,42 +22,59 @@ Connecting to MOANA:
     4) Wait for moana to connect.
         i) moana should auto connect
         ii) you will know that it was successful when the connected devices changes from 0/8 to 1/8
-        iii) additionally moana will be listed among the connected devices with it's ip address
+        iii) additionally moana will be listed among the connected devices alongside it's ip address
         iv) note: the ip-address will be needed later
 
-        Congratulations! You are now connected to MOANA!
+    Congratulations! You are now connected to MOANA!
 
 Testing:
-4 Ways to Run Tests
+    * 4 Ways to Run Tests: GUI, CLI, guirecieve, and python3 shell
 
-1) GUI: MOANA GUI
-    * Source located on control laptop
-    Steps:
-        1) Open command prompt
-        2) cd Desktop/moana/MOANA2.0/laptop
-        3) python3 gui.py
-2) CLI: MOANA CLI
-    * Source located on jetson
-    Steps:
-        1) Open command prompt
-        2) ssh moana@ip-address
-        2) cd MOANA2.0/jetson
-        3) python3 comms.py
-3) guirecieve
-    * Additional documentation can be found in MOANA2.0/jetson/jetson_info.txt
-    Steps:
-        1) Open command prompt
-        2) ssh moana@ip-address
-        2) cd MOANA2.0/jetson
-        3) python3 guirecieve.py [command] {args}
-4) python3 shell
-    * No additonal documentation available
-    Steps:
-        1) Open command prompt
-        2) ssh moana@ip-address
-        2) cd MOANA2.0/jetson
-        3) python3
-        4) from systemControl import SystemControl
-        5) sc = SystemControl()
-            i) No available documentation on usable commands
-            ii) You may refer to SystemControl class to see available function calls
+    1) GUI: MOANA GUI
+        * Easiest way to test
+        Steps:
+            1) On control laptop open command prompt
+            2) cd Desktop/moana/MOANA2.0/laptop
+            3) python3 gui.py
+
+    2) CLI: MOANA CLI
+        * Most reliable way to test
+        * Adapted from 2021 moana senior design project
+        Steps:
+            1) On control laptop open command prompt
+            2) ssh moana@ip-address
+            3) Password: root
+            4) cd MOANA2.0/jetson
+            5) python3 comms.py
+
+    3) guirecieve
+        * Additional documentation can be found in MOANA2.0/jetson/jetson_info.txt
+        * Class was designed to handle incoming messages from MOANA GUI
+        Steps:
+            1) On control laptop open command prompt
+            2) ssh moana@ip-address
+            3) Password: root
+            4) cd MOANA2.0/jetson
+            5) python3 guirecieve.py [command] {args}
+
+    4) python3 shell
+        * No additonal documentation available
+        * Should only be used as last resort
+        * Only use if you know what you are doing
+        * Alternative imports (WARNING: COULD CAUSE ISSUES IF USED INCORRECTLY): 
+            * from pitch import PitchControl
+            * from rudder import RudderControl
+            * from thrust import ThrustControl
+            * from canbus_comms import CANBUS_COMMS
+        Steps:
+            1) On control laptop open command prompt
+            2) ssh moana@ip-address
+            3) Password: root
+            4) cd MOANA2.0/jetson
+            5) python3
+            6) from systemControl import SystemControl
+            7) sc = SystemControl()
+            8) sc.someCommand({params})
+                i) No available documentation on usable commands
+                ii) You may refer to SystemControl class to see available function calls
+                ii) Example: sc.setStepper(10)
