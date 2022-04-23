@@ -45,8 +45,8 @@ class PitchControl:
         data.append(5)  # Write pitch ID
         data.append(2)  # Write stepper command
         data.append(0 if pos < 0 else 1)
-        data.append(abs(pos))  # Write position
-        data.append(abs(pos) - abs(floor(pos)))  # Write position
+        data.append(round(abs(pos)))  # Write position
+        data.append(round((abs(pos) - abs(floor(pos)))*100))  # Write position
 
         self.comms.writeToBus(data) # Write to CAN
         self.cur_pos = pos
