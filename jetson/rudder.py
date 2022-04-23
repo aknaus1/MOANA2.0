@@ -3,7 +3,7 @@ import time
 from canbus_comms import CANBUS_COMMS
 
 class RudderControl:
-    heading_kp = 20/90
+    heading_kp = 1
     heading_kd = .21
 
     MAX_RUDDER_ANGLE = 20
