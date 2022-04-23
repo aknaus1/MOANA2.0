@@ -173,7 +173,7 @@ def interface():
                     continue
                     
         # Sensor Requests
-        if(ui_input == 2):
+        elif(ui_input == 2):
             print("\nEntering sensor request mode...\n")
             print("\nWhat sensor would you like to request?")
             print("\t1. Pitch\n\t2. Heading\n\t3. Depth\n\t4. Temperature\n\t5. Exit")
