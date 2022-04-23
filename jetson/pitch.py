@@ -1,5 +1,6 @@
 import threading
 from canbus_comms import CANBUS_COMMS
+from math import floor
 
 class PitchControl:
     MAINTAIN_DEPTH = 3
@@ -44,7 +45,8 @@ class PitchControl:
         data.append(5)  # Write pitch ID
         data.append(2)  # Write stepper command
         data.append(0 if pos < 0 else 1)
-        data.append(abs(int(pos)))  # Write position
+        data.append(abs(pos))  # Write position
+        data.append(abs(pos) - abs(floor(pos)))  # Write position
 
         self.comms.writeToBus(data) # Write to CAN
         self.cur_pos = pos
@@ -62,7 +64,7 @@ class PitchControl:
         changePos = (pitch - cur_pitch) * self.PITCH_KP
         newPos = self.cur_pos + changePos
 
-        return int(round(newPos))
+        return newPos
 
     def getPitch(self):
         data = []
