@@ -94,9 +94,11 @@ class PitchControl:
         data.append(3)  # Thrust Board
         data.append(3)  # IMU Request
         data.append(1)  # Pitch Request
-        
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 1) and (bus_data[2] == 1 or bus_data[2] == 2):
+                break
 
         sign = -1 if bus_data[2] == 1 else 1
         self.cur_pitch = sign * (bus_data[3] + bus_data[4] / 100)
@@ -130,8 +132,11 @@ class PitchControl:
         data.append(3)  # Sensor Request
         data.append(0)  # Depth Data
 
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 0):
+                break
         
         self.cur_depth = bus_data[2] + bus_data[3]/100
         return self.cur_depth

@@ -1,6 +1,7 @@
 import threading
 import time
 from canbus_comms import CANBUS_COMMS
+from math import floor
 
 class RudderControl:
     heading_kp = 1
@@ -48,26 +49,43 @@ class RudderControl:
         data.append(3)  # IMU Request
         data.append(2)  # Heading Request
 
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 2) and (bus_data[2] == 1 or bus_data[2] == 2):
+                break
+
         self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
 
         return self.cur_heading
 
     def setHeading(self, heading):
+        b1 = floor(heading/10)
+        b2 = heading%10
+        data = []
+        data.append(3)  # Write rudder ID
+        data.append(1)  # Write heading command
+        data.append(b1) # write heading b1
+        data.append(b2) # write heading b2
+
         self.lock.acquire()
-        cur_heading = self.getHeading()
-        print("Set Heading: " + str(heading))        
-        print("Current Heading: " + str(cur_heading))
-
-        newAngle = 0
-        if heading + 180 < self.cur_heading:
-            newAngle = (heading - (self.cur_heading-360)) * self.heading_kp
-        else:
-            newAngle = (heading - self.cur_heading) * self.heading_kp
-
-        self.sendAngle(newAngle)
+        print("Set Heading: " + str(heading))
+        self.comms.writeToBus(data) # Write to CAN
         self.lock.release()
+
+        # self.lock.acquire()
+        # cur_heading = self.getHeading()
+        # print("Set Heading: " + str(heading))        
+        # print("Current Heading: " + str(cur_heading))
+
+        # newAngle = 0
+        # if heading + 180 < self.cur_heading:
+        #     newAngle = (heading - (self.cur_heading-360)) * self.heading_kp
+        # else:
+        #     newAngle = (heading - self.cur_heading) * self.heading_kp
+
+        # self.sendAngle(newAngle)
+        # self.lock.release()
 
     def headingThread(self, heading, runner):
         while runner.is_set():
