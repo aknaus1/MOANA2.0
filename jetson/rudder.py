@@ -52,7 +52,7 @@ class RudderControl:
         while True:
             self.comms.writeToBus(data) # Write to CAN
             bus_data = self.comms.readFromBus() # Read from CAN
-            if (bus_data[0] == 0) and (bus_data[1] == 2) and (bus_data[2] == 1 or bus_data[2] == 2):
+            if (bus_data[0] == 0) and (bus_data[1] == 2):
                 break
 
         self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
