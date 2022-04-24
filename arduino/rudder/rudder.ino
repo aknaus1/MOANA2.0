@@ -223,12 +223,6 @@ void CANIn()
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
       break;
-    // case 5:
-    //   if (!Msg.pt_data[MESSAGE_TYPE + 1]) //heading kp
-    //     heading_kp = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
-    //   else //heading kd
-    //     heading_kd = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
-    //   break;
     case IDLE:
       break;
     default:
