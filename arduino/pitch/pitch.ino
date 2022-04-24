@@ -16,12 +16,11 @@
 
 #define MESSAGE_TYPE 1
 
-#define STEP_KP .0021
+#define STEP_CONST .0021
 #define IDLE 69
 
 float xpos = 0;
 float zpos = 0;
-int counter = 100;
 int type = IDLE;
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
@@ -46,14 +45,11 @@ void calibrate();
 
 void CANsend(int ID, int sensor);
 void nudgeStepper();
-void(* resetFunc) (void) = 0;
 
 
 // variables will change:
 int buttonState1 = 0;
 int buttonState2 = 0; // variable for reading the pushbutton status
-int velocity = 100;
-int x = 1;
 int sensorRequest = 0;
 int water;
 
@@ -62,14 +58,8 @@ float distance = 0; // meters
 int depth = 0;
 float xInput = 0; // input angle for pitch
 float currentLocation = 0;
-int currentDirection = 1; // direction slider is moving 0 = towards stepper, 1 is away from stepper
-float addedSliderMass = 19.62;
-float sliderMass = 23.58 + 4;                //[Newtons] mass on top of batter + battery mass + slider weight
-float totalMass = 728.125 - addedSliderMass; //[Newtons]
-float separation = 1;                        //[inches]
-float Kp = .1;
+float sliderChange=0;                   //[inches]
 int yposArray[3];
-int count = 0;
 
 enum sensorSend
 {
@@ -79,13 +69,14 @@ enum sensorSend
   STEP_POS,
   TEMP,
   SLIDER,
-  ACK
+  BOTH,
+  THRUSTER_COMMAND
 };
 
 enum IDs
 {
-  JETSON = 1,
-  THRUST,
+  JETSON,
+  THRUST = 2,
   RUDDER,
   DEPTH_PITCH = 5,
   DATA,
@@ -121,13 +112,9 @@ void setup()
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
-  pinMode(intPin, INPUT_PULLUP);
 
   Serial.println("Set pins");
-  //initSensors();//prepares sensors to read data
   Serial.println("Initialized sensors");
-  //delay(1000);
-  //attachInterrupt(digitalPinToInterrupt(intPin), CANin, LOW); // start interrupt
   calibrate(); // runs calibration
   
 }
@@ -139,20 +126,22 @@ void loop()//main loop, refreshes every
   Serial.print("State:");
   Serial.println(type);
   switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
+    case 1:
+      changeSliderPosition(sliderChange)
+      break;
     case 2:
       setSliderPosition(distance);
       break;
     case 3://sensor request
       CANsend(JETSON, sensorRequest);
       break;
+    case 4:
+      calibrate(); // runs calibration
+      break;
     case IDLE:
       break;
     default:
       break;
-  }
-  if(count++ % 5 == 0) {
-    Serial.println("Resetting Board");
-    resetFunc(); //call reset
   }
   //delay(500);
 }
@@ -170,18 +159,25 @@ void nudgeStepper() //moves stepper a little bit in the direction it's been set
 void setSliderPosition(float dist)
 {
 
-  stepsToX = dist / STEP_KP - currentLocation;
+  stepsToX = dist / STEP_CONST - currentLocation;
 
+  float change = stepsToX * STEP_CONST;
+
+  changeSliderPosition(change);
+}
+
+void changeSliderPosition(float change) {
   //set direction of stepper motor
+
+  stepsToX = change / STEP_CONST;
   stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
 
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
   Serial.println("About to start slider movement");
-  //delay(2000);
+
   for (int i = 0; i < abs(stepsToX); i++)
   {
-
     currentLocation = currentLocation + stepsToX / abs(stepsToX);
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(400);
@@ -191,12 +187,12 @@ void setSliderPosition(float dist)
     {
       if (digitalRead(buttonPin2) == HIGH)
       {
-        currentLocation = 16 / STEP_KP;
+        currentLocation = 16 / STEP_CONST;
         digitalWrite(dirPin, LOW);
       }
       else
       {
-        currentLocation = -16 / STEP_KP;
+        currentLocation = -16 / STEP_CONST;
         digitalWrite(dirPin, HIGH);
       }
       nudgeStepper();
@@ -209,9 +205,9 @@ void setSliderPosition(float dist)
 
 void calibrate()
 {
+  digitalWrite(dirPin, HIGH);
   if (digitalRead(buttonPin1 == HIGH))
   {
-    digitalWrite(dirPin, HIGH);
     nudgeStepper();
   }
   Serial.println("Running Calibration. Please wait.");
@@ -225,7 +221,7 @@ void calibrate()
       digitalWrite(stepPin, LOW);
       Serial.println("Calibration Complete");
 
-      currentLocation = 16 / STEP_KP;
+      currentLocation = 16 / STEP_CONST;
       distance = 0;
       break;
     }
@@ -255,11 +251,19 @@ void CANin()
   // Data is now available in the message object
 
   int id = Msg.pt_data[0];
-  if (id != MESSAGE_ID) return;  
+  if (id != MESSAGE_ID)  {
+    type = IDLE;
+    return;
+  }
   int dir = 0, angle = 0;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
-
-  if(type == 2)
+  if(type == 1)
+  {
+     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+            ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+            : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
+  }
+  else if(type == 2)
   {
     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
             ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
@@ -302,7 +306,7 @@ void sliderDone()
   Serial.print("Slider done: current Location is ");
   Serial.println(currentLocation);
   type = IDLE;
-  //CANsend(DATA, SLIDER);
+  CANsend(JETSON, SLIDER);
 }
 
 void CANsend(int ID, int sensor)

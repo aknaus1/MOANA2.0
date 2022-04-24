@@ -24,9 +24,12 @@ MS5837 depthSensor;
 #define MESSAGE_TYPE 1
 #define IDLE 69
 
+const int depthTestPin = 14;
+
 
 int sensorRequest = 0;
 
+int fake_depth = 0;
 int type = IDLE;
 int input = 0;
 int counter= 0;
@@ -50,7 +53,8 @@ enum sensorSend
   STEP_POS,
   TEMP,
   SLIDER,
-  ACK
+  BOTH,
+  THRUSTER_COMMAND
 };
 
 enum IDs
@@ -78,6 +82,8 @@ void setup()
   Msg.dlc = MESSAGE_LENGTH;        // Data length: 8 bytes
   Msg.ctrl.rtr = MESSAGE_RTR;      // Set rtr bit
   
+  pinMode(depthTestPin, INPUT);
+
   while (!depthSensor.init()){
     Serial.println("Init failed!");
     Serial.println("Are SDA/SCL connected correctly?");
@@ -111,12 +117,21 @@ void loop()
   }
   //Serial.println(digitalRead(intPin));
 
-  CANsend(DATA, TEMP);
+  //CANsend(DATA, TEMP);
 }
 
 double getTemp()
 {
   return depthSensor.temperature();
+}
+
+double getDepth()
+{
+  //return fake_depth++ %30;
+  Serial.print("Depth potentiometer voltage: ");
+  Serial.println(digitalRead(depthTestPin));
+  return digitalRead(depthTestPin) * 12;
+  //return depthSensor.depth();
 }
 
 void CANIn()
@@ -130,7 +145,10 @@ void CANIn()
   
   int id = 0;
   id = Msg.pt_data[0];
-  if (id != MESSAGE_ID) return;
+  if (id != MESSAGE_ID)   {
+    type = IDLE;
+    return;
+  }
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
   switch (type) {
@@ -139,6 +157,8 @@ void CANIn()
       break;
     case 4: //water density
       water = Msg.pt_data[2];
+      break;
+    case BOTH:
       break;
     case IDLE:
       break;
@@ -180,8 +200,8 @@ void CANsend(int ID, int sensor)
   switch (sensor) {
     case DEPTH:
       Serial.print("Depth: ");
-      Serial.println(depthSensor.depth());
-      convert(depthSensor.depth());
+      Serial.println(getDepth());
+      convert(getDepth());
       
       Buffer[2] = yposArray[1];
       Buffer[3] = yposArray[2];
@@ -192,6 +212,14 @@ void CANsend(int ID, int sensor)
       convert(getTemp());
       for (int i = 0; i < 6; i++)
         Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+      break;
+    case BOTH:
+      convert(getDepth());
+      Buffer[2] = yposArray[1];
+      Buffer[3] = yposArray[2];
+      convert(getTemp());
+      for (int i = 0; i < 4; i++)
+        Buffer[i + 4] = i < 2 ? yposArray[i] : Buffer[i + 4];
       break;
     default:
       break;

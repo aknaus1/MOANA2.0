@@ -20,7 +20,7 @@ enum sensorSend
     STEP_POS,
     TEMP,
     SLIDER,
-    ACK,
+    BOTH,
     THRUSTER_COMMAND
 };
 
@@ -31,7 +31,9 @@ enum IDs
     RUDDER,
     DEPTH_PITCH = 5,
     DATA,
-    MISSION
+    MISSION,
+    DEPTH_TEMP,
+    FAILSAFE
 };
 
 // Function prototypes

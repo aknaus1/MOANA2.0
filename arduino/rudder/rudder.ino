@@ -24,6 +24,8 @@ Servo rudder;
 #define KD .21
 #define MAX_RUDDER_ANGLE 20
 
+#define RUDDER_OFFSET 130
+
 #define BNO055_SAMPLERATE_DELAY_MS 10
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 #define dirPin 8
@@ -57,7 +59,6 @@ void CANsend(int ID, int sensor);
 void CANIn();
 void saveType();//saves previous state
 void stateManager();//makes sure state is set correctly after each loop
-void(* resetFunc) (void) = 0;
 
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
@@ -71,13 +72,14 @@ enum sensorSend
   STEP_POS,
   TEMP,
   SLIDER,
-  ACK
+  BOTH,
+  THRUSTER_COMMAND
 };
 
 enum IDs
 {
   JETSON,
-  THRUST,
+  THRUST = 2,
   RUDDER,
   DEPTH_PITCH = 5,
   DATA,
@@ -128,12 +130,12 @@ void loop()
     case 0:
       Serial.print("Input: ");
       Serial.println(input);
-      if (abs(input - 150) <= MAX_RUDDER_ANGLE)
+      if (abs(input - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
         rudder.write(input);
-      else if(input - 150 > MAX_RUDDER_ANGLE)
-        rudder.write(MAX_RUDDER_ANGLE + 150);
+      else if(input - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
+        rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
       else
-        rudder.write(-MAX_RUDDER_ANGLE + 150);
+        rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
       break;
     case 1:
       float cur_heading = getHeading();
@@ -142,15 +144,15 @@ void loop()
           angle = (input - (self.cur_heading-360)) * heading_kp;
       else
           angle = (input - self.cur_heading) * heading_kp;
-      angle += 150;
+      angle += RUDDER_OFFSET;
       Serial.print("Input: ");
       Serial.println(angle);
-      if (abs(angle - 150) <= MAX_RUDDER_ANGLE)
+      if (abs(angle - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
         rudder.write(angle);
-      else if(angle - 150 > MAX_RUDDER_ANGLE)
-        rudder.write(MAX_RUDDER_ANGLE + 150);
+      else if(angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
+        rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
       else
-        rudder.write(-MAX_RUDDER_ANGLE + 150);
+        rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
       break;
     case 3:
       CANsend(JETSON, sensorRequest);
@@ -162,8 +164,8 @@ void loop()
     default:
       break;
   }
-  if(count++ % 5 == 0)
-    resetFunc(); //call reset
+
+    //delay(500);
 }
 
 float getHeading()
@@ -209,26 +211,24 @@ void CANIn()
   
   int id = 0;
   id = Msg.pt_data[0];
-  if (id != MESSAGE_ID) return;
+  if (id != MESSAGE_ID) 
+  {
+    type = IDLE;
+    return;
+  }
   //saveType();
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
   switch (type) {
     case 0:
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
-      input += 150;// for some reason servo is off by 150 degrees
+      input += RUDDER_OFFSET;// for some reason servo is off by 130 degrees
       break;
     case 1:
       input = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2];
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
       break;
-    // case 5:
-    //   if (!Msg.pt_data[MESSAGE_TYPE + 1]) //heading kp
-    //     heading_kp = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
-    //   else //heading kd
-    //     heading_kd = Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100);
-    //   break;
     case IDLE:
       break;
     default:
