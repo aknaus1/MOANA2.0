@@ -18,6 +18,8 @@ Servo rudder;
 #define MESSAGE_LENGTH 8   // Data length: 8 bytes
 #define MESSAGE_RTR 0      // rtr bit
 
+#define CALIBRATE_SERVO 130
+
 #define MESSAGE_TYPE 1
 #define HEADING_KP .15
 #define KD .21
@@ -129,10 +131,17 @@ void loop()
     case 0:
       Serial.print("Input: ");
       Serial.println(input);
-      if (abs(input - 150) <= MAX_RUDDER_ANGLE)
+      if (abs(input - CALIBRATE_SERVO) <= MAX_RUDDER_ANGLE)
         rudder.write(input);
+<<<<<<< Updated upstream
       else
         Serial.println("Input angle too high!");
+=======
+      else if(input - CALIBRATE_SERVO > MAX_RUDDER_ANGLE)
+        rudder.write(MAX_RUDDER_ANGLE + CALIBRATE_SERVO);
+      else
+        rudder.write(-MAX_RUDDER_ANGLE + CALIBRATE_SERVO);
+>>>>>>> Stashed changes
       break;
     case 1:
       if (direction)//if auv is turning around, need to specify which direction to turn.
@@ -238,15 +247,24 @@ void CANIn()
   
   int id = 0;
   id = Msg.pt_data[0];
+<<<<<<< Updated upstream
   if (id != MESSAGE_ID) return;
   CANsend(JETSON, ACK);
   saveType();
+=======
+  if (id != MESSAGE_ID)
+  { 
+    type = IDLE;
+    return;
+  }
+  //saveType();
+>>>>>>> Stashed changes
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
   switch (type) {
     case 0:
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
-      input += 150;// for some reason servo is off by 150 degrees
+      input += CALIBRATE_SERVO;// for some reason servo is off by 150 degrees
       break;
     case 1:
       direction = Msg.pt_data[4];

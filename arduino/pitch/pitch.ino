@@ -19,6 +19,7 @@
 
 #define MESSAGE_TYPE 1
 
+<<<<<<< Updated upstream
 #define BNO055_SAMPLERATE_DELAY_MS 10
 
 #define MAINTAIN_DEPTH 3
@@ -26,6 +27,9 @@
 #define DEPTH_KP 3
 #define PITCH_KP .1
 #define STEP_KP .002
+=======
+#define STEP_CONST .0021
+>>>>>>> Stashed changes
 #define IDLE 69
 
 float xpos = 0;
@@ -75,7 +79,7 @@ int water;
 
 float stepsToX = 0; // centimeters
 float distance = 0; // meters
-int depth = 0;
+float sliderChange = 0;
 float xInput = 0; // input angle for pitch
 float currentLocation = 0;
 int currentDirection = 1; // direction slider is moving 0 = towards stepper, 1 is away from stepper
@@ -151,12 +155,17 @@ void loop()//main loop, refreshes every
   //CANsend(DATA, DEPTH);
   //CANsend(DATA, TEMP);
   switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
+<<<<<<< Updated upstream
     case 0:
       setPitch(xInput);
       break;
     case 1:
       setDepth(depth);
       break;
+=======
+    case 1:
+      changeSliderPosition(sliderChange);
+>>>>>>> Stashed changes
     case 2:
       setSliderPosition(distance);
       break;
@@ -228,6 +237,7 @@ void nudgeStepper() //moves stepper a little bit in the direction it's been set
   }
 }
 
+<<<<<<< Updated upstream
 void setSliderPosition(float dist)
 {
 
@@ -235,15 +245,18 @@ void setSliderPosition(float dist)
 
   //set direction of stepper motor
   stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
+=======
+void changeSliderPosition(float change) {
+  change >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
+>>>>>>> Stashed changes
 
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
   Serial.println("About to start slider movement");
   //delay(2000);
-  for (int i = 0; i < abs(stepsToX); i++)
+  for (int i = 0; i < abs(change); i++)
   {
-
-    currentLocation = currentLocation + stepsToX / abs(stepsToX);
+    currentLocation = currentLocation + change/ abs(change);
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(400);
     digitalWrite(stepPin, LOW);
@@ -252,12 +265,20 @@ void setSliderPosition(float dist)
     {
       if (digitalRead(buttonPin2) == HIGH)
       {
+<<<<<<< Updated upstream
         currentLocation = 16 / kp[2];
+=======
+        currentLocation = 16 / STEP_CONST;
+>>>>>>> Stashed changes
         digitalWrite(dirPin, LOW);
       }
       else
       {
+<<<<<<< Updated upstream
         currentLocation = -16 / kp[2];
+=======
+        currentLocation = -16 / STEP_CONST;
+>>>>>>> Stashed changes
         digitalWrite(dirPin, HIGH);
       }
       nudgeStepper();
@@ -268,6 +289,7 @@ void setSliderPosition(float dist)
   sliderDone();
 }
 
+<<<<<<< Updated upstream
 void setPitch(float pitch)
 {
   float newPos;
@@ -316,13 +338,24 @@ double getDepth() // reads the depth sensor and returns depth in Meters
 double getTemp()
 {
   return depthSensor.temperature();
+=======
+void setSliderPosition(float absolute_position)
+{
+
+  stepsToX = absolute_position / STEP_CONST - currentLocation;
+  changeSliderPosition(stepsToX);
+>>>>>>> Stashed changes
 }
 
 void calibrate()
 {
+<<<<<<< Updated upstream
   if(digitalRead(buttonPin1 == HIGH))
+=======
+  digitalWrite(dirPin, HIGH);
+  if (digitalRead(buttonPin1 == HIGH))
+>>>>>>> Stashed changes
   {
-    digitalWrite(dirPin, HIGH);
     nudgeStepper();
   } 
   Serial.println("Running Calibration. Please wait.");
@@ -339,7 +372,11 @@ void calibrate()
       digitalWrite(stepPin, LOW);
       Serial.println("Calibration Complete");
 
+<<<<<<< Updated upstream
       currentLocation = 16 / kp[2];
+=======
+      currentLocation = 16 / STEP_CONST;
+>>>>>>> Stashed changes
       distance = 0;
       break;
     }
@@ -400,6 +437,7 @@ void CANin()
   CANsend(JETSON, ACK);//sends an acknowledgment that command was received.
   saveType();//saves the last type that was of a state that should leave once executed
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
+<<<<<<< Updated upstream
 
   switch (type) {
     case 0: // set pitch
@@ -425,6 +463,23 @@ void CANin()
       break;
     default:
       break;
+=======
+  if (type == 1)
+  {
+    sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+            ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+            : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
+  }
+  else if(type == 2)
+  {
+    distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+            ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+            : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
+  }
+  else if(type == 3)
+  {
+    sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
+>>>>>>> Stashed changes
   }
 }
 
