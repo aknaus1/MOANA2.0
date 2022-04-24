@@ -51,25 +51,6 @@ class PitchControl:
         self.comms.writeToBus(data) # Write to CAN
         self.cur_pos = pos
 
-    def sendChange(self, change):
-        if pos > 16:
-            pos = 16
-        elif pos < -16:
-            pos = -16
-
-        print("Send Position: " + str(pos))
-
-        data = []
-        data.append(5)  # Write pitch ID
-        data.append(2)  # Write stepper command
-        data.append(0 if change < 0 else 1)
-        data.append(floor(abs(change)))  # Write position
-        data.append(round(abs(change - floor(change))*100))  # Write position
-
-        self.comms.writeToBus(data) # Write to CAN
-        self.cur_pos = self.cur_pos + change
-    
-    
     # set stepper (position)
     # position is distance from center,
     # position: min max +- 16.5 cm (use int value)
@@ -78,6 +59,19 @@ class PitchControl:
         print("Set Stepper: " + str(position))
         self.sendPos(position)
         self.lock.release() # Release I2C to CAN lock
+
+    def sendChange(self, change):
+        print("Send Change: " + str(change))
+
+        data = []
+        data.append(5)  # Write pitch ID
+        data.append(1)  # Write stepper command
+        data.append(0 if change < 0 else 1)
+        data.append(floor(abs(change)))  # Write position
+        data.append(round(abs(change - floor(change))*100))  # Write position
+
+        self.comms.writeToBus(data) # Write to CAN
+        self.cur_pos = self.cur_pos + change
 
     def positionFromPitch(self, pitch, cur_pitch):
         changePos = (pitch - cur_pitch) * self.PITCH_KP
