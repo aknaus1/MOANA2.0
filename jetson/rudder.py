@@ -114,6 +114,14 @@ class RudderControl:
     def setConstant(self, kpOrkd, kp):
         if kpOrkd == 0:
             self.heading_kp = kp
+            b1 = floor(kp)
+            b2 = floor((kp - floor(kp))*100)
+            data = []
+            data.append(3)
+            data.append(5)
+            data.append(b1)
+            data.append(b2)
+            self.comms.writeToBus(data)
         elif kpOrkd == 1:
             self.heading_kd = kp
         else:
