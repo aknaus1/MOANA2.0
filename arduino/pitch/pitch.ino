@@ -21,7 +21,6 @@
 
 float xpos = 0;
 float zpos = 0;
-int counter = 100;
 int type = IDLE;
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
@@ -51,8 +50,6 @@ void nudgeStepper();
 // variables will change:
 int buttonState1 = 0;
 int buttonState2 = 0; // variable for reading the pushbutton status
-int velocity = 100;
-int x = 1;
 int sensorRequest = 0;
 int water;
 
@@ -61,14 +58,8 @@ float distance = 0; // meters
 int depth = 0;
 float xInput = 0; // input angle for pitch
 float currentLocation = 0;
-int currentDirection = 1; // direction slider is moving 0 = towards stepper, 1 is away from stepper
-float addedSliderMass = 19.62;
-float sliderMass = 23.58 + 4;                //[Newtons] mass on top of batter + battery mass + slider weight
-float totalMass = 728.125 - addedSliderMass; //[Newtons]
-float separation = 1;                        //[inches]
-float Kp = .1;
+float sliderChange=0;                   //[inches]
 int yposArray[3];
-int count = 0;
 
 enum sensorSend
 {
@@ -123,10 +114,7 @@ void setup()
   pinMode(buttonPin2, INPUT);
 
   Serial.println("Set pins");
-  //initSensors();//prepares sensors to read data
   Serial.println("Initialized sensors");
-  //delay(1000);
-  //attachInterrupt(digitalPinToInterrupt(intPin), CANin, LOW); // start interrupt
   calibrate(); // runs calibration
   
 }
@@ -138,6 +126,9 @@ void loop()//main loop, refreshes every
   Serial.print("State:");
   Serial.println(type);
   switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
+    case 1:
+      changeSliderPosition(sliderChange)
+      break;
     case 2:
       setSliderPosition(distance);
       break;
@@ -170,9 +161,9 @@ void setSliderPosition(float dist)
 
   stepsToX = dist / STEP_CONST - currentLocation;
 
+  float change = stepsToX * STEP_CONST;
 
-
-  changeSliderPosition();
+  changeSliderPosition(change);
 }
 
 void changeSliderPosition(float change) {
@@ -184,10 +175,9 @@ void changeSliderPosition(float change) {
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
   Serial.println("About to start slider movement");
-  //delay(2000);
+
   for (int i = 0; i < abs(stepsToX); i++)
   {
-
     currentLocation = currentLocation + stepsToX / abs(stepsToX);
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(400);
@@ -267,8 +257,13 @@ void CANin()
   }
   int dir = 0, angle = 0;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
-
-  if(type == 2)
+  if(type == 1)
+  {
+     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+            ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+            : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
+  }
+  else if(type == 2)
   {
     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
             ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
