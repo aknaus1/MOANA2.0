@@ -21,7 +21,6 @@ Servo rudder;
 
 #define MESSAGE_TYPE 1
 #define HEADING_KP .15
-#define KD .21
 #define MAX_RUDDER_ANGLE 20
 
 #define RUDDER_OFFSET 130
@@ -40,8 +39,6 @@ int counter = 100;
 int type = IDLE;
 int input = 0;
 float heading_kp = HEADING_KP;
-float heading_kd = KD;
-float error_prev = 0;
 int count=0;
 
 enum d {LEFT = 1, RIGHT};
@@ -140,10 +137,10 @@ void loop()
     case 1:
       float cur_heading = getHeading();
       float angle = 0;
-      if (input + 180 < self.cur_heading)
-          angle = (input - (self.cur_heading-360)) * heading_kp;
+      if (input + 180 < cur_heading)
+          angle = (input - (cur_heading-360)) * heading_kp;
       else
-          angle = (input - self.cur_heading) * heading_kp;
+          angle = (input - cur_heading) * heading_kp;
       angle += RUDDER_OFFSET;
       Serial.print("Input: ");
       Serial.println(angle);
@@ -228,6 +225,9 @@ void CANIn()
       input = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2];
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
+      break;
+    case 5:
+      heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;
       break;
     case IDLE:
       break;

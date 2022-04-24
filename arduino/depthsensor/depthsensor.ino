@@ -128,10 +128,10 @@ double getTemp()
 double getDepth()
 {
   //return fake_depth++ %30;
-  Serial.print("Depth potentiometer voltage: ");
-  Serial.println(digitalRead(depthTestPin));
-  return digitalRead(depthTestPin) * 12;
-  //return depthSensor.depth();
+//  Serial.print("Depth potentiometer voltage: ");
+//  Serial.println(digitalRead(depthTestPin));
+//  return digitalRead(depthTestPin) * 12;
+  return depthSensor.depth();
 }
 
 void CANIn()

@@ -127,7 +127,7 @@ void loop()//main loop, refreshes every
   Serial.println(type);
   switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
     case 1:
-      changeSliderPosition(sliderChange)
+      changeSliderPosition(sliderChange);
       break;
     case 2:
       setSliderPosition(distance);
@@ -161,21 +161,29 @@ void setSliderPosition(float dist)
 
   stepsToX = dist / STEP_CONST - currentLocation;
 
-  float change = stepsToX * STEP_CONST;
+  double change = stepsToX * STEP_CONST;
 
   changeSliderPosition(change);
 }
 
-void changeSliderPosition(float change) {
+void changeSliderPosition(double change) {
   //set direction of stepper motor
-
+  Serial.print("Chagne: ");
+  Serial.println(change);
   stepsToX = change / STEP_CONST;
   stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
 
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
   Serial.println("About to start slider movement");
-
+  if(stepsToX + currentLocation > 7620)
+  {
+    stepsToX = 7620 - currentLocation;
+  }
+  else if (stepsToX + currentLocation < -7620)
+  {
+    stepsToX = -7620 - currentLocation;
+  }
   for (int i = 0; i < abs(stepsToX); i++)
   {
     currentLocation = currentLocation + stepsToX / abs(stepsToX);
@@ -190,7 +198,7 @@ void changeSliderPosition(float change) {
         currentLocation = 16 / STEP_CONST;
         digitalWrite(dirPin, LOW);
       }
-      else
+      else if (digitalRead(buttonPin1) == HIGH)
       {
         currentLocation = -16 / STEP_CONST;
         digitalWrite(dirPin, HIGH);
@@ -198,7 +206,6 @@ void changeSliderPosition(float change) {
       nudgeStepper();
       break;
     }
-    //delay(1);
   }
   sliderDone();
 }
@@ -259,7 +266,7 @@ void CANin()
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
   if(type == 1)
   {
-     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+     sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
             ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
             : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
   }
