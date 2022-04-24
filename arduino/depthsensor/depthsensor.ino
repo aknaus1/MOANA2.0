@@ -145,7 +145,10 @@ void CANIn()
   
   int id = 0;
   id = Msg.pt_data[0];
-  if (id != MESSAGE_ID) return;
+  if (id != MESSAGE_ID)   {
+    type = IDLE;
+    return;
+  }
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
   switch (type) {

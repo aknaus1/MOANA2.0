@@ -16,7 +16,7 @@
 
 #define MESSAGE_TYPE 1
 
-#define STEP_KP .0021
+#define STEP_CONST .0021
 #define IDLE 69
 
 float xpos = 0;
@@ -121,7 +121,6 @@ void setup()
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
-  pinMode(intPin, INPUT_PULLUP);
 
   Serial.println("Set pins");
   //initSensors();//prepares sensors to read data
@@ -169,9 +168,17 @@ void nudgeStepper() //moves stepper a little bit in the direction it's been set
 void setSliderPosition(float dist)
 {
 
-  stepsToX = dist / STEP_KP - currentLocation;
+  stepsToX = dist / STEP_CONST - currentLocation;
 
+
+
+  changeSliderPosition();
+}
+
+void changeSliderPosition(float change) {
   //set direction of stepper motor
+
+  stepsToX = change / STEP_CONST;
   stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
 
   Serial.print("Steps To X: ");
@@ -190,12 +197,12 @@ void setSliderPosition(float dist)
     {
       if (digitalRead(buttonPin2) == HIGH)
       {
-        currentLocation = 16 / STEP_KP;
+        currentLocation = 16 / STEP_CONST;
         digitalWrite(dirPin, LOW);
       }
       else
       {
-        currentLocation = -16 / STEP_KP;
+        currentLocation = -16 / STEP_CONST;
         digitalWrite(dirPin, HIGH);
       }
       nudgeStepper();
@@ -208,9 +215,9 @@ void setSliderPosition(float dist)
 
 void calibrate()
 {
+  digitalWrite(dirPin, HIGH);
   if (digitalRead(buttonPin1 == HIGH))
   {
-    digitalWrite(dirPin, HIGH);
     nudgeStepper();
   }
   Serial.println("Running Calibration. Please wait.");
@@ -224,7 +231,7 @@ void calibrate()
       digitalWrite(stepPin, LOW);
       Serial.println("Calibration Complete");
 
-      currentLocation = 16 / STEP_KP;
+      currentLocation = 16 / STEP_CONST;
       distance = 0;
       break;
     }
@@ -254,7 +261,10 @@ void CANin()
   // Data is now available in the message object
 
   int id = Msg.pt_data[0];
-  if (id != MESSAGE_ID) return;  
+  if (id != MESSAGE_ID)  {
+    type = IDLE;
+    return;
+  }
   int dir = 0, angle = 0;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
 
