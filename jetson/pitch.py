@@ -1,5 +1,6 @@
 import threading
 from canbus_comms import CANBUS_COMMS
+from math import floor
 
 class PitchControl:
     MAINTAIN_DEPTH = 3
@@ -44,10 +45,30 @@ class PitchControl:
         data.append(5)  # Write pitch ID
         data.append(2)  # Write stepper command
         data.append(0 if pos < 0 else 1)
-        data.append(abs(int(pos)))  # Write position
+        data.append(floor(abs(pos)))  # Write position
+        data.append(round(abs(pos - floor(pos))*100))  # Write position
 
         self.comms.writeToBus(data) # Write to CAN
         self.cur_pos = pos
+
+    def sendChange(self, change):
+        if pos > 16:
+            pos = 16
+        elif pos < -16:
+            pos = -16
+
+        print("Send Position: " + str(pos))
+
+        data = []
+        data.append(5)  # Write pitch ID
+        data.append(2)  # Write stepper command
+        data.append(0 if change < 0 else 1)
+        data.append(floor(abs(change)))  # Write position
+        data.append(round(abs(change - floor(change))*100))  # Write position
+
+        self.comms.writeToBus(data) # Write to CAN
+        self.cur_pos = self.cur_pos + change
+    
     
     # set stepper (position)
     # position is distance from center,
@@ -62,16 +83,22 @@ class PitchControl:
         changePos = (pitch - cur_pitch) * self.PITCH_KP
         newPos = self.cur_pos + changePos
 
-        return int(round(newPos))
+        return newPos
+
+    def changeFromPitch(self, pitch, cur_pitch):
+        changePos = (pitch - cur_pitch) * self.PITCH_KP
+        return changePos
 
     def getPitch(self):
         data = []
         data.append(3)  # Thrust Board
         data.append(3)  # IMU Request
         data.append(1)  # Pitch Request
-        
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 1) and (bus_data[2] == 1 or bus_data[2] == 2):
+                break
 
         sign = -1 if bus_data[2] == 1 else 1
         self.cur_pitch = sign * (bus_data[3] + bus_data[4] / 100)
@@ -88,8 +115,10 @@ class PitchControl:
         cur_pitch = self.getPitch()
         print("Set Pitch: " + str(pitch))
         print("Current pitch: " + str(cur_pitch))
-        newPos = self.positionFromPitch(pitch, cur_pitch)
-        self.sendPos(newPos)
+        # newPos = self.positionFromPitch(pitch, cur_pitch)
+        # self.sendPos(newPos)
+        changePos = self.changeFromPitch(pitch, cur_pitch)
+        self.sendChange(changePos)
 
         self.lock.release()
 
@@ -103,8 +132,11 @@ class PitchControl:
         data.append(3)  # Sensor Request
         data.append(0)  # Depth Data
 
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 0):
+                break
         
         self.cur_depth = bus_data[2] + bus_data[3]/100
         return self.cur_depth
@@ -121,8 +153,11 @@ class PitchControl:
         print("set depth: " + str(depth))
         print("Current depth: " + str(cur_depth))
         newPitch = (depth - round(cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
-        newPos = self.positionFromPitch(newPitch, cur_pitch)        
-        self.sendPos(newPos)
+
+        # newPos = self.positionFromPitch(newPitch, cur_pitch)        
+        # self.sendPos(newPos)
+        changePos = self.changeFromPitch(newPitch, cur_pitch)
+        self.sendChange(changePos)
         self.lock.release()
 
     def depthThread(self, depth, runner):

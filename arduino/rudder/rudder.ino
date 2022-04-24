@@ -135,6 +135,23 @@ void loop()
       else
         rudder.write(-MAX_RUDDER_ANGLE + 150);
       break;
+    case 1:
+      float cur_heading = getHeading();
+      float angle = 0;
+      if (input + 180 < self.cur_heading)
+          angle = (input - (self.cur_heading-360)) * heading_kp;
+      else
+          angle = (input - self.cur_heading) * heading_kp;
+      angle += 150;
+      Serial.print("Input: ");
+      Serial.println(angle);
+      if (abs(angle - 150) <= MAX_RUDDER_ANGLE)
+        rudder.write(angle);
+      else if(angle - 150 > MAX_RUDDER_ANGLE)
+        rudder.write(MAX_RUDDER_ANGLE + 150);
+      else
+        rudder.write(-MAX_RUDDER_ANGLE + 150);
+      break;
     case 3:
       CANsend(JETSON, sensorRequest);
       break;
@@ -201,6 +218,8 @@ void CANIn()
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
       input += 150;// for some reason servo is off by 150 degrees
       break;
+    case 1:
+      input = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2];
     case 3:
       sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
       break;
