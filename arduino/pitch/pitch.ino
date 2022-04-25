@@ -124,26 +124,25 @@ void loop()//main loop, refreshes every
   //Serial.println("head of loop");
   CANin();
   Serial.print("State:");
-  Serial.println(type);
-  switch (type) {//type is the MESSAGE_TYPE byte of a CAN message
-    case 1:
-      changeSliderPosition(sliderChange)
-      break;
-    case 2:
-      setSliderPosition(distance);
-      break;
-    case 3://sensor request
-      CANsend(JETSON, sensorRequest);
-      break;
-    case 4:
-      calibrate(); // runs calibration
-      break;
-    case IDLE:
-      break;
-    default:
-      break;
+  Serial.println(type);//type is changed in CANin, it's the second byte of the message and dictates what the board does once it receives a message
+
+  //switch statements may make more sense here but in testing we found that the boards were not powerful enough to handle it
+  if(type == 1)
+  {
+    changeSliderPosition(sliderChange);
   }
-  //delay(500);
+  else if(type == 2)
+  {
+    setSliderPosition(distance);
+  }
+  else if(type == 3)
+  {
+    CANsend(JETSON, sensorRequest);
+  }
+  else if(type == 4)
+  {
+    calibrate(); // runs calibration
+  }
 }
 
 void nudgeStepper() //moves stepper a little bit in the direction it's been set
@@ -156,33 +155,44 @@ void nudgeStepper() //moves stepper a little bit in the direction it's been set
   }
 }
 
-void setSliderPosition(float dist)
+void setSliderPosition(float dist) //sets slider position based on an input -16 - 16
 {
 
   stepsToX = dist / STEP_CONST - currentLocation;
 
-  float change = stepsToX * STEP_CONST;
+  double change = stepsToX * STEP_CONST;
 
   changeSliderPosition(change);
 }
 
-void changeSliderPosition(float change) {
+void changeSliderPosition(double change) { //changes slider position based on an input in centimeters- will stop at end if input would be too far
   //set direction of stepper motor
-
-  stepsToX = change / STEP_CONST;
-  stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);
+  Serial.print("Chagne: ");
+  Serial.println(change);
+  stepsToX = change / STEP_CONST;//calculate how much slider will move in a unit that is nice for the stepper
+  stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);//set stepper direction
 
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
   Serial.println("About to start slider movement");
-
-  for (int i = 0; i < abs(stepsToX); i++)
+  if(stepsToX + currentLocation > 7620)//if input would move too far forward
   {
-    currentLocation = currentLocation + stepsToX / abs(stepsToX);
-    digitalWrite(stepPin, HIGH);
+    stepsToX = 7620 - currentLocation;//set new input to be the end on the side it was told to go
+  }
+  else if (stepsToX + currentLocation < -7620)//if input would move too far backward
+  {
+    stepsToX = -7620 - currentLocation;//set new input to be the end
+  }
+
+  for (int i = 0; i < abs(stepsToX); i++)//loop that takes weight to desired positon
+  {
+    currentLocation = currentLocation + stepsToX / abs(stepsToX);//add a step to the currentLocation
+    
+    digitalWrite(stepPin, HIGH);//move a step
     delayMicroseconds(400);
     digitalWrite(stepPin, LOW);
     delayMicroseconds(400);
+
     if (digitalRead(buttonPin2) == HIGH || digitalRead(buttonPin1) == HIGH)//if it hits an edge, recalibrate
     {
       if (digitalRead(buttonPin2) == HIGH)
@@ -190,7 +200,7 @@ void changeSliderPosition(float change) {
         currentLocation = 16 / STEP_CONST;
         digitalWrite(dirPin, LOW);
       }
-      else
+      else if (digitalRead(buttonPin1) == HIGH)
       {
         currentLocation = -16 / STEP_CONST;
         digitalWrite(dirPin, HIGH);
@@ -198,7 +208,6 @@ void changeSliderPosition(float change) {
       nudgeStepper();
       break;
     }
-    //delay(1);
   }
   sliderDone();
 }
@@ -239,7 +248,11 @@ void calibrate()
 
 }
 
-void CANin()
+void CANin() 
+//currently the boards will remain idle until they receive a new message 
+//we wasted A LOT of time trying to interrupt these boards every time a new message was sent
+//Different boards would easily allow for this functionality
+//this would be better because then the jetson would not need separate threads for all of its control loops
 {
   // Clear the message buffer
   clearBuffer( & Buffer[0]); 
@@ -259,7 +272,7 @@ void CANin()
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
   if(type == 1)
   {
-     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+     sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
             ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
             : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
   }
@@ -306,7 +319,7 @@ void sliderDone()
   Serial.print("Slider done: current Location is ");
   Serial.println(currentLocation);
   type = IDLE;
-  CANsend(JETSON, SLIDER);
+  //CANsend(JETSON, SLIDER);
 }
 
 void CANsend(int ID, int sensor)
