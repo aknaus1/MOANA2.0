@@ -43,8 +43,6 @@ int count = 0;
 
 enum d {LEFT = 1, RIGHT};
 
-
-
 int direction;
 // Function prototypes
 void serialPrintData(st_cmd_t *msg);
