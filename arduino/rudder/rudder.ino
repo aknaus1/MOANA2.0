@@ -115,6 +115,16 @@ void setup()
   bno.setExtCrystalUse(true);
 }
 
+void setRudder(float angle)
+{
+  if (abs(angle - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
+    rudder.write(angle);
+  else if (angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
+    rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+  else
+    rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+}
+
 void loop()
 {
   CANIn();
@@ -128,12 +138,7 @@ void loop()
   if (type == 0) {
     Serial.print("Input: ");
     Serial.println(input);
-    if (abs(input - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
-      rudder.write(input);
-    else if (input - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
-      rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
-    else
-      rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+    setRudder(input);
   }
   else if (type == 1) {
     float cur_heading = getHeading();
@@ -143,14 +148,10 @@ void loop()
     else
       angle = (input - cur_heading) * heading_kp;
     angle += RUDDER_OFFSET;
+
     Serial.print("Input: ");
     Serial.println(angle);
-    if (abs(angle - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
-      rudder.write(angle);
-    else if (angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
-      rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
-    else
-      rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+    setRudder(angle);
   }
   else if (type == 3) {
     CANsend(JETSON, sensorRequest);
@@ -209,41 +210,34 @@ void CANIn()
   //saveType();
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
-  switch (type) {
-    case 0:
+
+  if(type == 0) {
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
       input += RUDDER_OFFSET;// for some reason servo is off by 130 degrees
-      break;
-    case 1:
-      input = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2];
-    case 3:
-      sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
-      break;
-    case 5:
-      heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;
-      break;
-    case IDLE:
-      break;
-    default:
-      Serial.println("Not a valid type!");
-      break;
   }
+  else if(type == 1) {
+    input = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2];
+  }
+  else if(type == 3) {
+    sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
+  }
+  else if(type == 5) {
+    heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;
+  }
+
 }
 
 void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
 {
   int whole, fraction;
-  if (testValue < 0.0)
-  {
+  if (testValue < 0.0) {
     yposArray[0] = 1; // 1 is a negative value
     testValue = testValue * -1;
   }
-  else if (testValue > 0.0)
-  {
+  else if (testValue > 0.0) {
     yposArray[0] = 2; // 2 is positive
   }
-  else if (testValue == 0)
-  {
+  else if (testValue == 0) {
     yposArray[0] = 0;
   }
   whole = round(testValue);
@@ -295,8 +289,7 @@ void CANsend(int ID, int sensor)
 void serialPrintData(st_cmd_t *msg)
 {
   char textBuffer[50] = {0};
-  if (msg->ctrl.ide > 0)
-  {
+  if (msg->ctrl.ide > 0) {
     sprintf(textBuffer, "id %d ", msg->id.ext);
   }
   else

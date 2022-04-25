@@ -151,20 +151,13 @@ void CANIn()
   }
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
-  switch (type) {
-    case 3:
-      sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
-      break;
-    case 4: //water density
-      water = Msg.pt_data[2];
-      break;
-    case BOTH:
-      break;
-    case IDLE:
-      break;
-    default:
-      Serial.println("Not a valid type!");
-      break;
+  if(type == 3)
+  {
+    sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
+  }
+  else if(type == 4)
+  {
+    water = Msg.pt_data[2];
   }
 }
 
@@ -197,8 +190,9 @@ void CANsend(int ID, int sensor)
   Msg.id.ext = MESSAGE_ID; // Set message ID
   Buffer[0] = ID;
   Buffer[1] = sensor;
-  switch (sensor) {
-    case DEPTH:
+
+  if(sensor == DEPTH)
+  {
       Serial.print("Depth: ");
       Serial.println(getDepth());
       convert(getDepth());
@@ -207,23 +201,23 @@ void CANsend(int ID, int sensor)
       Buffer[3] = yposArray[2];
       for (int i = 4; i <= 7; i++)
         Buffer[i] = 0;
-      break;
-    case TEMP:
-      convert(getTemp());
-      for (int i = 0; i < 6; i++)
-        Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
-      break;
-    case BOTH:
+  }
+  else if (sensor == TEMP)
+  {
+    convert(getTemp());
+    for (int i = 0; i < 6; i++)
+      Buffer[i + 2] = i < 4 ? yposArray[i] : Buffer[i + 2];
+  }
+  else if (sensor == BOTH)
+  {
       convert(getDepth());
       Buffer[2] = yposArray[1];
       Buffer[3] = yposArray[2];
       convert(getTemp());
       for (int i = 0; i < 4; i++)
         Buffer[i + 4] = i < 2 ? yposArray[i] : Buffer[i + 4];
-      break;
-    default:
-      break;
   }
+  
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
   // Wait for the command to be accepted by the controller
