@@ -80,9 +80,10 @@ class RudderControl:
 
         # newAngle = 0
         # if heading + 180 < self.cur_heading:
-        #     newAngle = (heading - (self.cur_heading-360)) * self.heading_kp
-        # else:
         #     newAngle = (heading - self.cur_heading) * self.heading_kp
+        # else:
+            # newAngle = (heading - (self.cur_heading-360)) * self.heading_kp
+
 
         # self.sendAngle(newAngle)
         # self.lock.release()
