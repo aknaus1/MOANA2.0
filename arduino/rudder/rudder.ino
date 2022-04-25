@@ -39,7 +39,7 @@ int counter = 100;
 int type = IDLE;
 int input = 0;
 float heading_kp = HEADING_KP;
-int count=0;
+int count = 0;
 
 enum d {LEFT = 1, RIGHT};
 
@@ -56,6 +56,7 @@ void CANsend(int ID, int sensor);
 void CANIn();
 void saveType();//saves previous state
 void stateManager();//makes sure state is set correctly after each loop
+float getHeading();
 
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
@@ -103,6 +104,7 @@ void setup()
   Msg.ctrl.rtr = MESSAGE_RTR;      // Set rtr bit
   // IMU Code
   Serial.println("Orientation Sensor Test");
+  delay(3000);
   if (!bno.begin())
   {
     /* There was a problem detecting the BNO055 ... check your connections */
@@ -122,47 +124,38 @@ void loop()
   Serial.println(type);
   Serial.print("Servo:");
   Serial.println(rudder.read());
-  switch (type)
-  {
-    case 0:
-      Serial.print("Input: ");
-      Serial.println(input);
-      if (abs(input - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
-        rudder.write(input);
-      else if(input - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
-        rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
-      else
-        rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
-      break;
-    case 1:
-      float cur_heading = getHeading();
-      float angle = 0;
-      if (input + 180 < cur_heading)
-          angle = (input - (cur_heading-360)) * heading_kp;
-      else
-          angle = (input - cur_heading) * heading_kp;
-      angle += RUDDER_OFFSET;
-      Serial.print("Input: ");
-      Serial.println(angle);
-      if (abs(angle - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
-        rudder.write(angle);
-      else if(angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
-        rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
-      else
-        rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
-      break;
-    case 3:
-      CANsend(JETSON, sensorRequest);
-      break;
-    case 5://set heading_kp in  CANin
-      break;
-    case IDLE:
-      break;
-    default:
-      break;
-  }
 
-    //delay(500);
+  if (type == 0) {
+    Serial.print("Input: ");
+    Serial.println(input);
+    if (abs(input - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
+      rudder.write(input);
+    else if (input - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
+      rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+    else
+      rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+  }
+  else if (type == 1) {
+    float cur_heading = getHeading();
+    float angle = 0;
+    if (input + 180 < cur_heading)
+      angle = (input - (cur_heading - 360)) * heading_kp;
+    else
+      angle = (input - cur_heading) * heading_kp;
+    angle += RUDDER_OFFSET;
+    Serial.print("Input: ");
+    Serial.println(angle);
+    if (abs(angle - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
+      rudder.write(angle);
+    else if (angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
+      rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+    else
+      rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+  }
+  else if (type == 3) {
+    CANsend(JETSON, sensorRequest);
+  }
+    
 }
 
 float getHeading()
@@ -199,16 +192,16 @@ void turn(int dir)//this solution is kind of janky but basically turn function g
 void CANIn()
 {
   Serial.println("CANin");
-  clearBuffer(&Buffer[0]); 
+  clearBuffer(&Buffer[0]);
   Msg.cmd = CMD_RX_DATA;   // Send command to the CAN port controller
-  
+
   // Wait for the command to be accepted by the controller
   while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
-  
+
   int id = 0;
   id = Msg.pt_data[0];
-  if (id != MESSAGE_ID) 
+  if (id != MESSAGE_ID)
   {
     type = IDLE;
     return;
@@ -270,25 +263,25 @@ void CANsend(int ID, int sensor)
   Serial.print("sensor: ");
   Serial.println(sensor);
 
-  if(sensor == PITCH) {
-      Serial.println("Pitch");
-      float pitch = getPitch();
-      Buffer[MESSAGE_TYPE+1] = pitch < 0 ? 1 : 2;
-      pitch = abs(pitch);
-      Buffer[MESSAGE_TYPE+2] = round(floor(pitch));
-      Buffer[MESSAGE_TYPE+3] = round((pitch - floor(pitch)) * 100);
-      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
+  if (sensor == PITCH) {
+    Serial.println("Pitch");
+    float pitch = getPitch();
+    Buffer[MESSAGE_TYPE + 1] = pitch < 0 ? 1 : 2;
+    pitch = abs(pitch);
+    Buffer[MESSAGE_TYPE + 2] = round(floor(pitch));
+    Buffer[MESSAGE_TYPE + 3] = round((pitch - floor(pitch)) * 100);
+    for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
   }
   else if (sensor == YAW) {
-      Serial.println("Yaw");
-      float head = getHeading();
-      Buffer[MESSAGE_TYPE+1] = round(floor(head / 10));
-      Buffer[MESSAGE_TYPE+2] = round(floor(head)) % 10;
-      Buffer[MESSAGE_TYPE+3] = round((head - floor(head)) * 100);
-      for (int i = MESSAGE_TYPE+4; i < 8; i++) Buffer[i];
+    Serial.println("Yaw");
+    float head = getHeading();
+    Buffer[MESSAGE_TYPE + 1] = round(floor(head / 10));
+    Buffer[MESSAGE_TYPE + 2] = round(floor(head)) % 10;
+    Buffer[MESSAGE_TYPE + 3] = round((head - floor(head)) * 100);
+    for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
   }
   else {
-      Serial.println("default for sonme reason");
+    Serial.println("default for sonme reason");
   }
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
