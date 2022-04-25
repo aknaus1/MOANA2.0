@@ -175,10 +175,9 @@ float getPitch() // reads pitch from sensor
   Serial.println("Outside ypos : ");
   Serial.println(ypos);
   return ypos;
-
 }
 
-void turn(int dir)//this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
+void turn(int dir)//this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that getHeading will definitely go the direction intended
 {
   if (dir == LEFT)
     rudder.write(MAX_RUDDER_ANGLE);
@@ -200,14 +199,12 @@ void CANIn()
 
   int id = 0;
   id = Msg.pt_data[0];
-  if (id != MESSAGE_ID)
-  {
+  if (id != MESSAGE_ID) {
     type = IDLE;
     return;
   }
   //saveType();
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
-
 
   if(type == 0) {
       input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
@@ -272,9 +269,7 @@ void CANsend(int ID, int sensor)
     Buffer[MESSAGE_TYPE + 3] = round((head - floor(head)) * 100);
     for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
   }
-  else {
-    Serial.println("default for sonme reason");
-  }
+
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
   // Wait for the command to be accepted by the controller
