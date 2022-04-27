@@ -1,11 +1,9 @@
 // Code for slider with the bang bang control that guides the linear slider to the position based on an angle input into the serial command.
 
 #include <ASTCanLib.h>
-//#include <AltSoftSerial.h>
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
 
-#include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 #include <Wire.h>
 
@@ -13,52 +11,31 @@
 #define MESSAGE_PROTOCOL 1 // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
 #define MESSAGE_LENGTH 8   // Data length: 8 bytes
 #define MESSAGE_RTR 0      // rtr bit
-
 #define MESSAGE_TYPE 1
 
 #define STEP_CONST .0021
 #define IDLE 69
 
-float xpos = 0;
-float zpos = 0;
+const int dirPin = 8;
+const int stepPin = 7;
+const int buttonPin1 = 6; // pin at -16/STEP_CONST
+const int buttonPin2 = 5; //pin at 16/STEP_CONST
 int type = IDLE;
-
-Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 
 // CAN message object
 st_cmd_t Msg;
 
 // Transmit buffer
 uint8_t Buffer[8] = {};
-
-#define dirPin 8
-#define stepPin 7
-
-char inputBuffer[5];
-int number = 0; // constants won't change. They're used here to set pin numbers:
-
-const int buttonPin1 = 6; // pin at -16/kd[2]
-const int buttonPin2 = 5; //pin at 16/kd[2]
-const int ledPin = 13; // the number of the LED pin
-const int intPin = 3;//pin for interrupt
 void calibrate();
-
 void CANsend(int ID, int sensor);
 void nudgeStepper();
-
-
-// variables will change:
-int buttonState1 = 0;
-int buttonState2 = 0; // variable for reading the pushbutton status
 int sensorRequest = 0;
-int water;
 
 float stepsToX = 0; // centimeters
 float distance = 0; // meters
-int depth = 0;
-float xInput = 0; // input angle for pitch
 float currentLocation = 0;
-float sliderChange=0;                   //[inches]
+float sliderChange = 0;//[inches]
 int yposArray[3];
 
 enum sensorSend
@@ -104,10 +81,6 @@ void setup()
   pinMode(stepPin, OUTPUT);
   // Initializes the direction Pin
   pinMode(dirPin, OUTPUT);
-  // Sets an initial direction
-  digitalWrite(dirPin, HIGH);
-  // initialize the LED pin as an output:
-  pinMode(ledPin, OUTPUT);
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
@@ -115,7 +88,6 @@ void setup()
   Serial.println("Set pins");
   Serial.println("Initialized sensors");
   calibrate(); // runs calibration
-  
 }
 
 void loop()//main loop, refreshes every
@@ -157,9 +129,7 @@ void nudgeStepper() //moves stepper a little bit in the direction it's been set
 void setSliderPosition(float dist) //sets slider position based on an input -16 - 16
 {
   stepsToX = dist / STEP_CONST - currentLocation;
-
   double change = stepsToX * STEP_CONST;
-
   changeSliderPosition(change);
 }
 
@@ -242,7 +212,6 @@ void calibrate()
   digitalWrite(dirPin, LOW);
   nudgeStepper();
   setSliderPosition(distance);
-
 }
 
 void CANin() 
