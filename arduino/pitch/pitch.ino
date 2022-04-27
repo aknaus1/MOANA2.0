@@ -189,7 +189,7 @@ void calibrate()
   Serial.println("Running Calibration. Please wait.");
   while (true)
   {
-    if ((digitalRead(buttonPin1) == HIGH) || (digitalRead(buttonPin2) == HIGH))//if at end, it is now calibrated- return to middle
+    if ((digitalRead(buttonPin1) == HIGH) || (digitalRead(buttonPin2) == HIGH))//if at end, it is now calibrated
     {
       digitalWrite(stepPin, LOW);
       Serial.println("Calibration Complete");
@@ -205,7 +205,7 @@ void calibrate()
       delayMicroseconds(400);
     }
   }
-  digitalWrite(dirPin, LOW);
+  digitalWrite(dirPin, LOW);//return to middle
   nudgeStepper();
   setSliderPosition(distance);
 }
