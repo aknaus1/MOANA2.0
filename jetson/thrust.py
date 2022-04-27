@@ -22,8 +22,8 @@ class ThrustControl:
 
         print("Send Thrust: " + str(thrust))
         data = []
-        data.append(self.THRUST_ID)  # Write thruster ID
-        data.append(self.NEGATIVE if thrust < 0 else self.POSITIVE)
+        data.append(2)  # Write thruster ID
+        data.append(0 if thrust < 0 else 1)
         data.append(abs(thrust))  # Write thruster speed
         data.append(255)  # Write time to run (255 - run until stop)
     
