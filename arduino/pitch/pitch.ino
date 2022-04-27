@@ -87,7 +87,6 @@ enum IDs
 
 void setup()
 {
-
   canInit(500000);       // Initialise CAN port. must be before Serial.begin
   Serial.begin(1000000); // start serial port
   Serial.println("Starting up");
@@ -157,7 +156,6 @@ void nudgeStepper() //moves stepper a little bit in the direction it's been set
 
 void setSliderPosition(float dist) //sets slider position based on an input -16 - 16
 {
-
   stepsToX = dist / STEP_CONST - currentLocation;
 
   double change = stepsToX * STEP_CONST;
@@ -167,7 +165,7 @@ void setSliderPosition(float dist) //sets slider position based on an input -16 
 
 void changeSliderPosition(double change) { //changes slider position based on an input in centimeters- will stop at end if input would be too far
   //set direction of stepper motor
-  Serial.print("Chagne: ");
+  Serial.print("Change: ");
   Serial.println(change);
   stepsToX = change / STEP_CONST;//calculate how much slider will move in a unit that is nice for the stepper
   stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);//set stepper direction
@@ -186,7 +184,8 @@ void changeSliderPosition(double change) { //changes slider position based on an
 
   for (int i = 0; i < abs(stepsToX); i++)//loop that takes weight to desired positon
   {
-    currentLocation = currentLocation + stepsToX / abs(stepsToX);//add a step to the currentLocation
+    currentLocation += stepsToX > 0 ? 1 : -1; 
+    //currentLocation + stepsToX / abs(stepsToX);//add a step to the currentLocation
     
     digitalWrite(stepPin, HIGH);//move a step
     delayMicroseconds(400);
@@ -215,26 +214,24 @@ void changeSliderPosition(double change) { //changes slider position based on an
 void calibrate()
 {
   digitalWrite(dirPin, HIGH);
-  if (digitalRead(buttonPin1 == HIGH))
+  if (digitalRead(buttonPin1 == HIGH))//if it starts all the way at the back
   {
-    nudgeStepper();
+    nudgeStepper();// move it off the back
   }
   Serial.println("Running Calibration. Please wait.");
   while (true)
   {
     buttonState1 = digitalRead(buttonPin1); // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
     buttonState2 = digitalRead(buttonPin2);
-    if ((buttonState1 == HIGH) || (buttonState2 == HIGH))
+    if ((buttonState1 == HIGH) || (buttonState2 == HIGH))//if at end, it is now calibrated- return to middle
     {
-      // turn LED on:
       digitalWrite(stepPin, LOW);
       Serial.println("Calibration Complete");
-
       currentLocation = 16 / STEP_CONST;
       distance = 0;
       break;
     }
-    else
+    else // keep moving towards front until reaches a push button
     {
       digitalWrite(stepPin, HIGH);
       delayMicroseconds(400);
