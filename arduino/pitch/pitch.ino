@@ -3,8 +3,6 @@
 #include <ASTCanLib.h>
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
-
-#include <utility/imumaths.h>
 #include <Wire.h>
 
 #define MESSAGE_ID 5       // Message ID
@@ -191,9 +189,7 @@ void calibrate()
   Serial.println("Running Calibration. Please wait.");
   while (true)
   {
-    buttonState1 = digitalRead(buttonPin1); // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-    buttonState2 = digitalRead(buttonPin2);
-    if ((buttonState1 == HIGH) || (buttonState2 == HIGH))//if at end, it is now calibrated- return to middle
+    if ((digitalRead(buttonPin1) == HIGH) || (digitalRead(buttonPin2) == HIGH))//if at end, it is now calibrated- return to middle
     {
       digitalWrite(stepPin, LOW);
       Serial.println("Calibration Complete");

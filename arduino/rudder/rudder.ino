@@ -189,7 +189,6 @@ void CANIn()
 
 void fillRollPitch(float rollPitch) //sets up CAN message for roll and pitch sensor readings
 {
-  float rollPitch = getRoll();
   Buffer[MESSAGE_TYPE + 1] = rollPitch < 0 ? 1 : 2;
   rollPitch = abs(rollPitch);
   Buffer[MESSAGE_TYPE + 2] = round(floor(rollPitch));
