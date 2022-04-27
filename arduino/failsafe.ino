@@ -7,11 +7,6 @@
 #include <ASTCanLib.h>
 #include <Servo.h>
 #include <Wire.h>
-#include <MS5837.h>
-
-#include <Adafruit_Sensor.h>
-
-MS5837 depthSensor;
 
 #define MESSAGE_ID 9       // Message ID
 #define MESSAGE_PROTOCOL 1 // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
@@ -24,8 +19,6 @@ MS5837 depthSensor;
 int sensorRequest = 0;
 
 int type = IDLE;
-int input = 0;
-int counter= 0;
 
 // CAN message object
 st_cmd_t Msg;
@@ -37,8 +30,7 @@ void massDrop();
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
 
-//
-
+Servo failSafe;
 
 enum sensorSend
 {
@@ -48,13 +40,14 @@ enum sensorSend
   STEP_POS,
   TEMP,
   SLIDER,
-  ACK
+  BOTH,
+  THRUSTER_COMMAND
 };
 
 enum IDs
 {
   JETSON,
-  THRUST,
+  THRUST = 2,
   RUDDER,
   DEPTH_PITCH = 5,
   DATA,
@@ -65,6 +58,8 @@ enum IDs
 
 void setup()
 {
+  // Assign PIN 6 to servo, with range between 850ms and 2350ms
+  failSafe.attach(6, 850, 2350);
   canInit(500000);          // Initialise CAN port. must be before Serial.begin
   Serial.begin(1000000);    // start serial port
   Msg.pt_data = &Buffer[0]; // reference message data to buffer
@@ -82,14 +77,14 @@ void setup()
 void loop()
 {
   CANIn();
-  switch (type)
-  {
-    case 1:
+  if(type == 1) {
         massDrop();
-        break;
-    default:
-      break;
   }
+}
+
+void massDrop()
+{
+  failSafe.write(50);
 }
 
 void CANIn()
@@ -106,14 +101,8 @@ void CANIn()
   if (id != MESSAGE_ID) return;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
-  switch (type) {
-    default:
-      Serial.println("Not a valid type!");
-      break;
-  }
 }
  
-
 void CANsend(int ID, int sensor)
 {
   clearBuffer(&Buffer[0]);

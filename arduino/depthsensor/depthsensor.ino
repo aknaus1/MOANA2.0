@@ -60,7 +60,7 @@ enum sensorSend
 enum IDs
 {
   JETSON,
-  THRUST,
+  THRUST=2,
   RUDDER,
   DEPTH_PITCH = 5,
   DATA,
