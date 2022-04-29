@@ -11,7 +11,7 @@ class CANBUS_COMMS:
         self.bus_out = smbus.SMBus(0)
         self.bus_in = smbus.SMBus(1)
 
-        timestamp = time()
+        timestamp = time.time()
         value = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
         name = f"logs/CAN{value}.log"
         logging.basicConfig(filename=name, filemode="w", format='%(asctime)s,%(message)s', datefmt="%H:%M:%S", level=logging.INFO)
