@@ -89,26 +89,26 @@ void setup()
 }
 
 void loop()//main loop, refreshes every
-{  
+{
   //Serial.println("head of loop");
   CANin();
   Serial.print("State:");
   Serial.println(type);//type is changed in CANin, it's the second byte of the message and dictates what the board does once it receives a message
 
   //switch statements may make more sense here but in testing we found that the boards were not powerful enough to handle it
-  if(type == 1)
+  if (type == 1)
   {
     changeSliderPosition(sliderChange);
   }
-  else if(type == 2)
+  else if (type == 2)
   {
     setSliderPosition(distance);
   }
-  else if(type == 3)
+  else if (type == 3)
   {
     CANsend(JETSON, sensorRequest);
   }
-  else if(type == 4)
+  else if (type == 4)
   {
     calibrate(); // runs calibration
   }
@@ -143,7 +143,7 @@ void changeSliderPosition(double change) { //changes slider position based on an
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
   Serial.println("About to start slider movement");
-  if(stepsToX + currentLocation > 7620)//if input would move too far forward
+  if (stepsToX + currentLocation > 7620) //if input would move too far forward
   {
     stepsToX = 7620 - currentLocation;//set new input to be the end on the side it was told to go
   }
@@ -154,9 +154,9 @@ void changeSliderPosition(double change) { //changes slider position based on an
 
   for (int i = 0; i < abs(stepsToX); i++)//loop that takes weight to desired positon
   {
-    currentLocation += stepsToX > 0 ? 1 : -1; 
+    currentLocation += stepsToX > 0 ? 1 : -1;
     //currentLocation + stepsToX / abs(stepsToX);//add a step to the currentLocation
-    
+
     digitalWrite(stepPin, HIGH);//move a step
     delayMicroseconds(400);
     digitalWrite(stepPin, LOW);
@@ -212,14 +212,14 @@ void calibrate()
   setSliderPosition(0);
 }
 
-void CANin() 
-//currently the boards will remain idle until they receive a new message 
+void CANin()
+//currently the boards will remain idle until they receive a new message
 //we wasted A LOT of time trying to interrupt these boards every time a new message was sent
 //Different boards would easily allow for this functionality
 //this would be better because then the jetson would not need separate threads for all of its control loops
 {
   // Clear the message buffer
-  clearBuffer( & Buffer[0]); 
+  clearBuffer( & Buffer[0]);
   // Send command to the CAN port controller
   Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
   while (can_cmd( & Msg) != CAN_CMD_ACCEPTED);
@@ -234,19 +234,19 @@ void CANin()
   }
   int dir = 0, angle = 0;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a change in pitch or change in depth
-  if(type == 1)
+  if (type == 1)
   {
-     sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
-            ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
-            : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
+    sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
+                   ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+                   : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
   }
-  else if(type == 2)
+  else if (type == 2)
   {
     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1 // if direction is positive
-            ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
-            : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
+               ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) //distance = positive of input
+               : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));//else distance = negative of input
   }
-  else if(type == 3)
+  else if (type == 3)
   {
     sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
   }
@@ -293,16 +293,16 @@ void CANsend(int ID, int sensor)
   Buffer[0] = ID;
   Buffer[1] = sensor;
 
-  if(sensor == SLIDER)
+  if (sensor == SLIDER)
   {
-      convert(currentLocation);
-      //fills out the message array with a 3 byte representation of currentLocation, followed by a 3 byte representation of stepsToX since they are both floats
-      for (int i = MESSAGE_TYPE + 1; i < 8; i++) {
-        if (i == 5) convert(stepsToX); //on 5th bit of array switch to stepsToX
-        Buffer[i] = yposArray[(i + 1) % 3];// (i+1)%3 = 0 1 2, 0 1 2 when running
-      }
+    convert(currentLocation);
+    //fills out the message array with a 3 byte representation of currentLocation, followed by a 3 byte representation of stepsToX since they are both floats
+    for (int i = MESSAGE_TYPE + 1; i < 8; i++) {
+      if (i == 5) convert(stepsToX); //on 5th bit of array switch to stepsToX
+      Buffer[i] = yposArray[(i + 1) % 3];// (i+1)%3 = 0 1 2, 0 1 2 when running
+    }
   }
-  else{
+  else {
     Serial.println("Please pick a valid sensor!");
   }
 
