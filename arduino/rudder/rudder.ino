@@ -220,7 +220,7 @@ void CANsend(int ID, int sensor)
     Serial.println("Roll");
     fillRollPitch(getRoll());
   }
-  else if (sensor == BOTH)
+  else if (sensor == BOTH)//sends both pitch and heading
   {
     Serial.println("Pitch");
     fillRollPitch(getPitch());
