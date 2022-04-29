@@ -1,3 +1,4 @@
+from re import I
 import time
 import datetime
 import threading
@@ -282,9 +283,11 @@ class SystemControl:
         data = []
         data.append(8)  # Depth Board
         data.append(6)  # Depth and Temp request
-
-        self.comms.writeToBus(data)
-        bus_data = self.comms.readFromBus()
+        while 1:
+            self.comms.writeToBus(data)
+            bus_data = self.comms.readFromBus()
+            if bus_data[0] == 0:
+                break
 
         # Convert CAN to depth
         depth = bus_data[2] + bus_data[3]/100
