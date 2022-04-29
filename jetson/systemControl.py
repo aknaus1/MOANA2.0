@@ -282,7 +282,8 @@ class SystemControl:
     def getTemperatureData(self):
         data = []
         data.append(8)  # Depth Board
-        data.append(6)  # Depth and Temp request
+        data.append(3)  # Sensor Request
+        data.append(6)  # Depth Data
         while 1:
             self.comms.writeToBus(data)
             bus_data = self.comms.readFromBus()
@@ -302,6 +303,7 @@ class SystemControl:
     def getIMUData(self):
         data = []
         data.append(3)  # Rudder Board
+        data.append(3)  # Sensor Request
         data.append(6)  # Pitch and Heading request
 
         self.comms.writeToBus(data) # Write to CAN
