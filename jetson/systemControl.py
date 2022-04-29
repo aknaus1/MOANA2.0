@@ -264,7 +264,7 @@ class SystemControl:
                 self.lock.acquire()
 
                 # Update sensor values
-                temp,depth = self.getTemperatureData()
+                temp,depth = self.getTempAndDepth()
                 pitch,heading = self.getIMUData()
 
                 self.lock.release()
@@ -279,7 +279,7 @@ class SystemControl:
                 # Sleep for interval
                 time.sleep(int(interval))
 
-    def getTemperatureData(self):
+    def getTempAndDepth(self):
         data = []
         data.append(8)  # Depth Board
         data.append(3)  # Sensor Request
@@ -317,6 +317,23 @@ class SystemControl:
         heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
         print(f"Pitch: {pitch}\tHeading: {heading}")
         return pitch, heading
+
+    def getTemp(self):
+        data = []
+        data.append(8)  # Rudder Board
+        data.append(3)  # Sensor Request
+        data.append(4)  # Get roll
+
+        self.lock.acquire()
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+        self.lock.release()
+
+        # Convert CAN to temp
+        sign = -1 if bus_data[2] == 1 else 1
+        temp = sign * bus_data[3] + bus_data[4] / 100
+        print(f"Temp: {temp}")
+        return temp
 
     def getRoll(self):
         data = []
