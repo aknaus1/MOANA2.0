@@ -1,5 +1,4 @@
 import threading
-from turtle import pos
 from canbus_comms import CANBUS_COMMS
 from math import floor
 
