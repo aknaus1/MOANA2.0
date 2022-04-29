@@ -1,4 +1,5 @@
 import threading
+from turtle import pos
 from canbus_comms import CANBUS_COMMS
 from math import floor
 
@@ -39,7 +40,7 @@ class PitchControl:
         elif pos < -16:
             pos = -16
 
-        print("Send Position: " + str(pos))
+        print(f"Send Position: {pos}")
 
         data = []
         data.append(5)  # Write pitch ID
@@ -56,12 +57,12 @@ class PitchControl:
     # position: min max +- 16.5 cm (use int value)
     def setStepper(self, position):
         self.lock.acquire() # Get lock
-        print("Set Stepper: " + str(position))
+        print(f"Set Stepper: {position}")
         self.sendPos(position)
         self.lock.release() # Release I2C to CAN lock
 
     def sendChange(self, change):
-        print("Send Change: " + str(change))
+        print(f"Send Change: {change}")
 
         data = []
         data.append(5)  # Write pitch ID
@@ -107,10 +108,8 @@ class PitchControl:
         self.lock.acquire()
 
         cur_pitch = self.getPitch()
-        print("Set Pitch: " + str(pitch))
-        print("Current pitch: " + str(cur_pitch))
-        # newPos = self.positionFromPitch(pitch, cur_pitch)
-        # self.sendPos(newPos)
+        print(f"Set Pitch: {pitch}")
+        print(f"Current pitch: {cur_pitch}")
         changePos = self.changeFromPitch(pitch, cur_pitch)
         self.sendChange(changePos)
 
@@ -144,9 +143,9 @@ class PitchControl:
 
         cur_depth = self.getDepth()
         cur_pitch = self.getPitch()
-        print("set depth: " + str(depth))
-        print("Current depth: " + str(cur_depth))
-        newPitch = (depth - round(cur_depth)) * self.DEPTH_KP + self.MAINTAIN_DEPTH
+        print(f"set depth: {depth}")
+        print(f"Current depth: {cur_depth}")
+        newPitch = (depth - cur_depth) * self.DEPTH_KP + self.MAINTAIN_DEPTH
 
         # newPos = self.positionFromPitch(newPitch, cur_pitch)        
         # self.sendPos(newPos)

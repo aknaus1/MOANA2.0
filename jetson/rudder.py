@@ -25,7 +25,7 @@ class RudderControl:
         elif angle < -20:
             angle = -20
 
-        print("Send Angle: " + str(angle))
+        print(f"Send Angle: {angle}")
 
         data = []
         data.append(3)  # Write rudder ID
@@ -39,7 +39,7 @@ class RudderControl:
     # angle: min max +- 20
     def setRudder(self, angle):
         self.lock.acquire() # Get lock
-        print("Set Rudder: " + str(angle))
+        print(f"Set Rudder: {angle}")
         self.sendAngle(angle)
         self.lock.release() # Release lock
 
@@ -69,24 +69,9 @@ class RudderControl:
         data.append(b2) # write heading b2
 
         self.lock.acquire()
-        print("Set Heading: " + str(heading))
+        print(f"Set Heading: {heading}")
         self.comms.writeToBus(data) # Write to CAN
         self.lock.release()
-
-        # self.lock.acquire()
-        # cur_heading = self.getHeading()
-        # print("Set Heading: " + str(heading))        
-        # print("Current Heading: " + str(cur_heading))
-
-        # newAngle = 0
-        # if heading + 180 < self.cur_heading:
-        #     newAngle = (heading - self.cur_heading) * self.heading_kp
-        # else:
-            # newAngle = (heading - (self.cur_heading-360)) * self.heading_kp
-
-
-        # self.sendAngle(newAngle)
-        # self.lock.release()
 
     def headingThread(self, heading, runner):
         while runner.is_set():

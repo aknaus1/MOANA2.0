@@ -20,7 +20,7 @@ class ThrustControl:
         elif thrust < 0:
             thrust = 0
 
-        print("Send Thrust: " + str(thrust))
+        print(f"Send Thrust: {thrust}")
         data = []
         data.append(2)  # Write thruster ID
         data.append(0 if thrust < 0 else 1)
@@ -31,6 +31,6 @@ class ThrustControl:
 
     def setThrust(self, thrust):
         self.lock.acquire()
-        print("Set Thrust: " + str(thrust))
+        print(f"Set Thrust: {thrust}")
         self.sendThrust(thrust)
         self.lock.release()

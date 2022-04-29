@@ -1,4 +1,5 @@
 import time
+import datetime
 import threading
 import logging
 from canbus_comms import CANBUS_COMMS
@@ -43,44 +44,13 @@ def verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount
             return res
 
 class SystemControl:
-    # CAN IDs
-    THRUST_ID = 2
-    RUDDER_ID = 3
-    DEPTH_ID = 4
-    PITCH_ID = 5
-    LOGGER_ID = 6
-    SENSOR_ID = 7
-    DEPTH_SENSOR_ID = 8
-
-    # Command Types
-    SENSOR_REQUEST = 3
-    KP_COMMAND = 5
-    # yaw v heading command
-    RUDDER_COMMAND = 0
-    HEADING_COMMAND = 1
-    # pitch v depth v stepper command v water type
-    PITCH_COMMAND = 0
-    DEPTH_COMMAND = 1
-    STEPPER_COMMAND = 2
-    WATER_TYPE_COMMAND = 4
-    # Universal IDLE
-    IDLE_COMMAND = 69
-
-    # POS v NEG
-    NEGATIVE = 0
-    POSITIVE = 1
-
-    # LEFT v RIGHT
-    LEFT = 1
-    RIGHT = 2
-
     # SALT v FRESH
     FRESH_WATER = 0
     SALT_WATER = 1
 
     def __init__(self):
-        logging.basicConfig(filename="temperature.log", filemode="a", format='%(message)s', level=logging.INFO)
         self.lock = threading.Lock()
+        
         self.pc = PitchControl(self.lock)
         self.rc = RudderControl(self.lock)
         self.tc = ThrustControl(self.lock)
@@ -88,10 +58,8 @@ class SystemControl:
 
         self.rudder_runner = threading.Event()
         self.rudder_thread = threading.Thread()
-
         self.stepper_runner = threading.Event()
         self.stepper_thread = threading.Thread()
-
         self.dc_runner = threading.Event()
         self.dc_thread = threading.Thread()
 
@@ -157,24 +125,28 @@ class SystemControl:
     # time: (optional) time > 0
     # time: 255 = indefinite
     def setThrust(self, thrust, t=255):
-        print("Set Thrust: " + str(thrust))
+        print(f"Set Thrust: {thrust}")
         self.tc.setThrust(thrust)
 
     # set rudder (angle)
     # angle: min max +- 20
     def setRudder(self, angle):
-        print("Set Rudder: " + str(angle))
+        print(f"Set Rudder: {angle}")
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
             self.rudder_thread.join()
 
         self.rc.setRudder(angle)  # set rudder angle
+        # self.rudder_thread = threading.Thread(target=self.rc.setRudder, args=(angle,))
+        # self.rudder_runner.set()
+        # self.rudder_thread.start()
 
     # turn to heading (heading, direction, radius)
     # heading range: 0-360 degrees relative to North
     # direction: left(1) or right(2)
     # radius: turn radius
     def turnToHeading(self, heading, direction, t=None):
+        print(f"Turn To Heading, Heading: {heading}, Direction: {direction}")
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
             self.rudder_thread.join()
@@ -186,7 +158,7 @@ class SystemControl:
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
     def setHeading(self, heading, kp=None, t=None):
-        print("Set Heading: " + str(heading))
+        print(f"Set Heading: {heading}")
         if kp is not None:
             self.rc.setConstant(0, kp)
 
@@ -203,14 +175,14 @@ class SystemControl:
     def getHeading(self):
         print("Get Heading...")
         heading = self.rc.getHeading()
-        print("Heading: " + str(heading))
+        print(f"Current Heading: {heading}")
         return heading
 
     # set stepper (position)
     # position is distance from center,
     # position: min max +- 16.5 cm (use int value)
     def setStepper(self, position):
-        print("Set Stepper: " + str(position))
+        print(f"Set Stepper: {position}")
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
             self.stepper_thread.join()
@@ -220,7 +192,7 @@ class SystemControl:
     # set pitch (pitch)
     # pitch: min max +- 12 degrees
     def setPitch(self, pitch, kp=None, t=None):
-        print("Set Pitch: " + str(pitch))
+        print(f"Set Pitch: {pitch}")
         if kp != None:
             self.pc.setConstant(0, kp)
 
@@ -235,7 +207,7 @@ class SystemControl:
     # set depth (depth)
     # depth: range 0 - 30 m
     def setDepth(self, depth, kpp=None, kpd=None, t=None):
-        print("Set Depth: " + str(depth))
+        print(f"Set Depth: {depth}")
         if kpp != None:
             self.pc.setConstant(0, kpp)
         if kpd != None:
@@ -251,59 +223,123 @@ class SystemControl:
 
     def getDepth(self):
         print("Get Depth...")
+        self.lock.acquire()
         depth = self.pc.getDepth()
-        print("Depth: " + str(depth))
+        self.lock.release()
+        print(f"Current Depth: {depth}")
         return depth
 
     def getPitch(self):
         print("Get Pitch...")
         pitch = self.pc.getPitch()
-        print("Pitch: " + str(pitch))
+        print(f"Pitch: {pitch}")
         return pitch
-
-    # pitch sensor request (sensor type)
-    # sensor type: Depth(0), IMU(1)
-    def pitchSensorRequest(self, type):
-        if type == 0:
-            return self.getDepth()
-        elif type == 1:
-            return self.getPitch()
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
     def setWaterType(self, type):
-        print("Set Water Type: " + str(type))
+        type_str = "Fresh Water" if type == 0 else "Salt Water"
+        print(f"Set Water Type: {type_str}({type})")
         self.pc.setWaterType(type)
 
     # start data collection (interval, time)
     # interval: time between readings
     # time: length to run (default: 0 = run until told to stop)
     def startDataCollection(self, interval=1, t=-1):
+        # Create Name From Time Stamp
         start_ts = time.time()
+        value = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
+        name = f"logs/SENSORS{value}.csv"
+
+        # Create New Log File
+        logging.basicConfig(filename=name, filemode="w", format='%(message)s', level=logging.INFO)
+        log = "Time,Depth,Temperature,Pitch,Heading"
+        logging.info(log)
+
         while self.dc_runner.is_set():
             if t > 0 and start_ts + t > time.time():
                 self.dc_runner.clear()
             else:
+                self.lock.acquire()
+
+                # Update sensor values
                 temp,depth = self.getTemperatureData()
-                logging.info(str(time.time()) + "\tDepth: " + str(depth) + "\tTemperature: " + str(temp))
+                pitch,heading = self.getIMUData()
+
+                self.lock.release()
+
+                # Get current time
+                timestamp = time.time()-start_ts
+
+                # Log data
+                log_entry = f"{timestamp},{depth},{temp},{pitch},{heading}"
+                logging.info(log_entry)
+
+                # Sleep for interval
                 time.sleep(int(interval))
 
     def getTemperatureData(self):
         data = []
-        data.append(8)  # Depth Sensor
-        data.append(6)  # Temperature sensor
-        self.lock.acquire()
+        data.append(8)  # Depth Board
+        data.append(6)  # Depth and Temp request
+
         self.comms.writeToBus(data)
         bus_data = self.comms.readFromBus()
-        self.lock.release()
 
+        # Convert CAN to depth
         depth = bus_data[2] + bus_data[3]/100
 
+        # Convert CAN to temp
         sign = -1 if bus_data[4] == 1 else 1
         temp = sign * bus_data[5] + bus_data[6] / 100
         
-        print("Temperature: " + str(temp))
+        print(f"Depth: {depth}\tTemperature: {temp}")
         return temp, depth
+
+    def getIMUData(self):
+        data = []
+        data.append(3)  # Rudder Board
+        data.append(6)  # Pitch and Heading request
+
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+
+        # Convert CAN to pitch
+        sign = -1 if bus_data[2] == 1 else 1
+        pitch = sign * (bus_data[3] + bus_data[4] / 100)
+
+        # Convert CAN to heading
+        heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
+        print(f"Pitch: {pitch}\tHeading: {heading}")
+        return pitch, heading
+
+    def getRoll(self):
+        data = []
+        data.append(3)  # Rudder Board
+        data.append(8)  # Roll Request
+
+        self.lock.acquire()
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+        self.lock.release()
+
+        # Convert CAN to roll
+        sign = -1 if bus_data[2] == 1 else 1
+        roll = sign * (bus_data[3] + bus_data[4] / 100)
+        return roll
+
+    def depthTest(self):
+        # Create New Log File
+        logging.basicConfig(filename="logs/depth_test.log", filemode="w", format='%(message)s', level=logging.INFO)
+        log = "Time,Depth"
+        logging.info(log)
+        start_ts = time.time()
+        while 1:
+            elapsed_ts = time.time() - start_ts
+            if elapsed_ts > 60:
+                break
+            logging.info(f"{elapsed_ts},{self.getDepth()}")
+            
 
     # stop data collection ()
     # stop scientific payload collection
@@ -313,17 +349,23 @@ class SystemControl:
 
     
     def customCommand(self, data, re = None):
-        # if data[0] == 3:
-        #     self.rudder_runner.clear()
-        #     self.rudder_thread.join()
-        # elif data[0] == 5:
-        #     self.stepper_runner.clear()
-        #     self.stepper_thread.join()
+        # If Command is Rudder Command
+        if data[0] == 3 and (data[1] == 0 or data[1] == 1):
+            self.rudder_runner.clear()
+            self.rudder_thread.join()
+        # If Command is Stepper Command
+        elif data[0] == 5 and (data[1] == 1 or data[1] == 2 or data[1] == 4):
+            self.stepper_runner.clear()
+            self.stepper_thread.join()
+
         self.lock.acquire()
         self.comms.writeToBus(data)
+
+        # If expecting a reply
         if re != None:
             bus_data = self.comms.readFromBus()
-            print("Response: " + str(bus_data))
+            print(f"Response: {bus_data}")
+
         self.lock.release()
 
     def stopAllThreads(self):
