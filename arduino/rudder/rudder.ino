@@ -1,9 +1,4 @@
 
-/*
-   CAN port receiver example
-   Receives data on the CAN buss and prints to the serial port
-*/
-
 #include <ASTCanLib.h>
 #include <Servo.h>
 #include <Wire.h>
@@ -18,47 +13,31 @@ Servo rudder;
 #define MESSAGE_PROTOCOL 1 // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
 #define MESSAGE_LENGTH 8   // Data length: 8 bytes
 #define MESSAGE_RTR 0      // rtr bit
-
 #define MESSAGE_TYPE 1
-#define HEADING_KP .15
-#define MAX_RUDDER_ANGLE 20
 
+#define HEADING_KP .4
+
+#define MAX_RUDDER_ANGLE 20
 #define RUDDER_OFFSET 130
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
-#define dirPin 8
-#define stepPin 7
 #define IDLE 69
 
 int sensorRequest = 0;
-float xpos = 0;
-float ypos = 0;
-float zpos = 0;
-int counter = 100;
 int type = IDLE;
 int input = 0;
 float heading_kp = HEADING_KP;
-int count = 0;
-
-enum d {LEFT = 1, RIGHT};
-
-int direction;
-// Function prototypes
-void serialPrintData(st_cmd_t *msg);
 
 // CAN message object
 st_cmd_t Msg;
 
 void CANsend(int ID, int sensor);
 void CANIn();
-void saveType();//saves previous state
-void stateManager();//makes sure state is set correctly after each loop
 float getHeading();
 
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
-int yposArray[3];
 
 enum sensorSend
 {
@@ -69,7 +48,8 @@ enum sensorSend
   TEMP,
   SLIDER,
   BOTH,
-  THRUSTER_COMMAND
+  THRUSTER_COMMAND,
+  ROLL
 };
 
 enum IDs
@@ -111,31 +91,26 @@ void setup()
       ;
   }
   bno.setExtCrystalUse(true);
+  //rudder.write(RUDDER_OFFSET);
 }
 
 void setRudder(float angle)
 {
+  angle+=RUDDER_OFFSET;// servo needs a const offset ~140 degrees in order to be lined up properly
+  Serial.print("Angle before limitation: ");
+  Serial.println(angle - RUDDER_OFFSET);
   if (abs(angle - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
     rudder.write(angle);
-  else if (angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)
+  else if (angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)//if new rudder angle would be over the max rudder angle
     rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
   else
-    rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+    rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);//if new rudder angle would be over the max rudder angle
 }
 
 void loop()
 {
   CANIn();
-  //convert input
-  //CANsend(DATA, HEADING_SENSOR); // data to data logger
-  Serial.print("type:");
-  Serial.println(type);
-  Serial.print("Servo:");
-  Serial.println(rudder.read());
-
   if (type == 0) {
-    Serial.print("Input: ");
-    Serial.println(input);
     setRudder(input);
   }
   else if (type == 1) {
@@ -145,24 +120,19 @@ void loop()
       angle = (input - (cur_heading - 360)) * heading_kp;
     else
       angle = (input - cur_heading) * heading_kp;
-    angle += RUDDER_OFFSET;
-
-    Serial.print("Input: ");
-    Serial.println(angle);
     setRudder(angle);
   }
   else if (type == 3) {
     CANsend(JETSON, sensorRequest);
   }
-    
 }
 
 float getHeading()
 {
   sensors_event_t event;
   bno.getEvent(&event);
-  xpos = event.orientation.x;
-  Serial.println("Orientation: ");
+  float xpos = event.orientation.x;
+  Serial.print("Orientation: ");
   Serial.println(xpos);
   return xpos;
 }
@@ -171,20 +141,20 @@ float getPitch() // reads pitch from sensor
 {
   sensors_event_t event;
   bno.getEvent(&event);
-  float ypos = event.orientation.z;
-  Serial.println("Outside ypos : ");
-  Serial.println(ypos);
-  return ypos;
+  float zpos = event.orientation.z;
+  Serial.print("Pitch: ");
+  Serial.println(zpos);
+  return zpos;
 }
 
-void turn(int dir)//this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that getHeading will definitely go the direction intended
+float getRoll() // reads roll from sensor
 {
-  if (dir == LEFT)
-    rudder.write(MAX_RUDDER_ANGLE);
-  else//dir == RIGHT
-    rudder.write(-MAX_RUDDER_ANGLE);
-  delay(4000);
-  direction = 0;
+  sensors_event_t event;
+  bno.getEvent(&event);
+  float ypos = event.orientation.y;
+  Serial.print("Roll: ");
+  Serial.println(ypos);
+  return ypos;
 }
 
 void CANIn()
@@ -206,40 +176,24 @@ void CANIn()
   //saveType();
   type = Msg.pt_data[MESSAGE_TYPE]; // determines whether message indicates a direct rudder write or a heading command
 
-  if(type == 0) {
-      input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
-      input += RUDDER_OFFSET;// for some reason servo is off by 130 degrees
-  }
-  else if(type == 1) {
-    input = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2];
-  }
-  else if(type == 3) {
-    sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
-  }
-  else if(type == 5) {
-    heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;
-  }
+  if(type == 0)
+    input = Msg.pt_data[MESSAGE_TYPE + 1] == 1 ? Msg.pt_data[MESSAGE_TYPE + 2] : -Msg.pt_data[MESSAGE_TYPE + 2]; // return rudder angle
+  else if(type == 1)
+    input = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2];//return heading
+  else if(type == 3)
+    sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];//tell board to send a sensor request
+  else if(type == 5)
+    heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;//set heading kp with laptop
 
 }
 
-void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
+void fillRollPitch(float rollPitch) //sets up CAN message for roll and pitch sensor readings
 {
-  int whole, fraction;
-  if (testValue < 0.0) {
-    yposArray[0] = 1; // 1 is a negative value
-    testValue = testValue * -1;
-  }
-  else if (testValue > 0.0) {
-    yposArray[0] = 2; // 2 is positive
-  }
-  else if (testValue == 0) {
-    yposArray[0] = 0;
-  }
-  whole = round(testValue);
-  yposArray[1] = whole;
-  fraction = testValue * 100;
-  fraction = fraction - (whole * 100);
-  yposArray[2] = fraction;
+  Buffer[MESSAGE_TYPE + 1] = rollPitch < 0 ? 1 : 2;
+  rollPitch = abs(rollPitch);
+  Buffer[MESSAGE_TYPE + 2] = round(floor(rollPitch));
+  Buffer[MESSAGE_TYPE + 3] = round((rollPitch - floor(rollPitch)) * 100);
+  for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
 }
 
 void CANsend(int ID, int sensor)
@@ -249,17 +203,10 @@ void CANsend(int ID, int sensor)
   Msg.id.ext = MESSAGE_ID; // Set message ID
   Buffer[0] = ID;
   Buffer[1] = sensor;
-  Serial.print("sensor: ");
-  Serial.println(sensor);
 
   if (sensor == PITCH) {
     Serial.println("Pitch");
-    float pitch = getPitch();
-    Buffer[MESSAGE_TYPE + 1] = pitch < 0 ? 1 : 2;
-    pitch = abs(pitch);
-    Buffer[MESSAGE_TYPE + 2] = round(floor(pitch));
-    Buffer[MESSAGE_TYPE + 3] = round((pitch - floor(pitch)) * 100);
-    for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
+    fillRollPitch(getPitch());
   }
   else if (sensor == YAW) {
     Serial.println("Yaw");
@@ -269,6 +216,21 @@ void CANsend(int ID, int sensor)
     Buffer[MESSAGE_TYPE + 3] = round((head - floor(head)) * 100);
     for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
   }
+  else if (sensor == ROLL){
+    Serial.println("Roll");
+    fillRollPitch(getRoll());
+  }
+  else if (sensor == BOTH)
+  {
+    Serial.println("Pitch");
+    fillRollPitch(getPitch());
+
+    Serial.println("Yaw");
+    float head = getHeading();
+    Buffer[MESSAGE_TYPE + 4] = round(floor(head / 10));
+    Buffer[MESSAGE_TYPE + 5] = round(floor(head)) % 10;
+    Buffer[MESSAGE_TYPE + 6] = round((head - floor(head)) * 100);
+  }
 
   // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
@@ -277,37 +239,4 @@ void CANsend(int ID, int sensor)
   // Wait for command to finish executing
   while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
   clearBuffer(&Buffer[0]);
-}
-
-void serialPrintData(st_cmd_t *msg)
-{
-  char textBuffer[50] = {0};
-  if (msg->ctrl.ide > 0) {
-    sprintf(textBuffer, "id %d ", msg->id.ext);
-  }
-  else
-  {
-    sprintf(textBuffer, "id %04x ", msg->id.std);
-  }
-  Serial.print(textBuffer);
-
-  //  IDE
-  sprintf(textBuffer, "ide %d ", msg->ctrl.ide);
-  Serial.print(textBuffer);
-  //  RTR
-  sprintf(textBuffer, "rtr %d ", msg->ctrl.rtr);
-  Serial.print(textBuffer);
-  //  DLC
-  sprintf(textBuffer, "dlc %d ", msg->dlc);
-  Serial.print(textBuffer);
-  //  Data
-  sprintf(textBuffer, "data ");
-  Serial.print(textBuffer);
-
-  for (int i = 0; i < msg->dlc; i++)
-  {
-    sprintf(textBuffer, "%02X ", msg->pt_data[i]);
-    Serial.print(textBuffer);
-  }
-  Serial.print("\r\n");
 }
