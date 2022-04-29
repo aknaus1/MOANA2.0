@@ -128,6 +128,8 @@ void setSliderPosition(float dist) //sets slider position based on an input -16 
 {
   stepsToX = dist / STEP_CONST - currentLocation;
   double change = stepsToX * STEP_CONST;
+  Serial.print("Change: ");
+  Serial.println(change);
   changeSliderPosition(change);
 }
 
@@ -136,7 +138,7 @@ void changeSliderPosition(double change) { //changes slider position based on an
   Serial.print("Change: ");
   Serial.println(change);
   stepsToX = change / STEP_CONST;//calculate how much slider will move in a unit that is nice for the stepper
-  stepsToX >= 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);//set stepper direction
+  stepsToX > 0 ? digitalWrite(dirPin, HIGH) : digitalWrite(dirPin, LOW);//set stepper direction
 
   Serial.print("Steps To X: ");
   Serial.println(stepsToX);
@@ -207,7 +209,7 @@ void calibrate()
   }
   digitalWrite(dirPin, LOW);//return to middle
   nudgeStepper();
-  setSliderPosition(distance);
+  setSliderPosition(0);
 }
 
 void CANin() 
