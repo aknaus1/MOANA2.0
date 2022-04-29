@@ -319,7 +319,8 @@ class SystemControl:
     def getRoll(self):
         data = []
         data.append(3)  # Rudder Board
-        data.append(8)  # Roll Request
+        data.append(3)  # Sensor Request
+        data.append(8)  # Get roll
 
         self.lock.acquire()
         self.comms.writeToBus(data) # Write to CAN
