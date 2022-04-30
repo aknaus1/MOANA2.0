@@ -160,6 +160,9 @@ class SystemControl:
 
         print("Should now be at the surface or returning to the surface.")
         print("If the vehicle is unrecoverable at this point, best of luck!")
+    
+    def downloadFile(self):
+        self.comms.readFromFile()
 
     # set thrust (thrust, time)
     # thrust: range speed 0-100

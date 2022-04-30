@@ -25,7 +25,7 @@ def interface():
     while True:
         # thread.start_new_thread(readBus)
         print("\nHello, welcome to Toucan, the CLI Interface to MOANA\nWhat mode would you like to operate in?")
-        print("\t1. Subsystem debug\n\t2. Sensor Requests\n\t3. Scripted operations\n\t4. Mission planner\n\t5. Manual Input\n\t6. Exit Program")
+        print("\t1. Subsystem debug\n\t2. Sensor Requests\n\t3. Scripted operations\n\t4. Mission planner\n\t5. Manual Input\n\t6. File Request\n\t7. Exit Program")
 
         ui_input = int(input(""))
 
@@ -408,9 +408,14 @@ def interface():
                             cmd_buf[i] = [None]
                         print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
                 cmd_input = int(input(""))
+        
+        elif(ui_input == 6):
+            print("Downloading file. Please wait...")
+            sc.downloadFile()
+            print("File download complete.")
                     
         # Exit
-        elif(ui_input == 6):
+        elif(ui_input == 7):
             print("Have a nice day!")
             exit()
         else:

@@ -24,7 +24,7 @@ class CANBUS_COMMS:
     def init_log(self):
         time_ts = datetime.datetime.fromtimestamp(time.time())
         strtime = time_ts.strftime('%Y-%m-%d|%H:%M:%S')
-        handler = logging.FileHandler(f'can{strtime}.csv')        
+        handler = logging.FileHandler(f'logs/can{strtime}.csv')        
         handler.setFormatter(logging.Formatter('%(message)s'))
         self.logger = logging.getLogger('canlog')
         self.logger.setLevel(logging.INFO)
@@ -37,7 +37,7 @@ class CANBUS_COMMS:
     def init_file_log(self):
         time_ts = datetime.datetime.fromtimestamp(time.time())
         strtime = time_ts.strftime('%Y-%m-%d|%H:%M:%S')
-        handler = logging.FileHandler(f'file{strtime}.csv')        
+        handler = logging.FileHandler(f'logs/file{strtime}.csv')        
         handler.setFormatter(logging.Formatter('%(message)s'))
         logger = logging.getLogger('filelog')
         logger.setLevel(logging.INFO)
