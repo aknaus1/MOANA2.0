@@ -125,6 +125,7 @@ void loop()
   else if (type == 3) {
     CANsend(JETSON, sensorRequest);
   }
+  CANsend(DATA, BOTH);
 }
 
 float getHeading()

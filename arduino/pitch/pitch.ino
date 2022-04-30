@@ -116,7 +116,6 @@ void loop() // main loop, refreshes every
   CANin();
   //  Serial.print("State:");
   //  Serial.println(type);//type is changed in CANin, it's the second byte of the message and dictates what the board does once it receives a message
-
   // switch statements may make more sense here but in testing we found that the boards were not powerful enough to handle it
 
   if (type == 1)
@@ -180,8 +179,7 @@ void setSliderPosition(float dist) // sets slider position based on an input -16
 
 void changeSliderPosition(double change)
 { // changes slider position based on an input in centimeters- will stop at end if input would be too far
-  if ((currentLocation >= 7620 && change > 0) || (currentLocation <= -7620 && change < 0))
-    return;
+  if ((currentLocation >= 7620 && change > 0) || (currentLocation <= -7620 && change < 0)) return;
   // set direction of stepper motor
   Serial.print("Change: ");
   Serial.println(change);
@@ -269,11 +267,9 @@ void CANin()
   clearBuffer(&Buffer[0]);
   // Send command to the CAN port controller
   Msg.cmd = CMD_RX_DATA; // Wait for the command to be accepted by the controller
-  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED)
-    ;
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   // Wait for command to finish executing
-  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED)
-    ;
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
   // Data is now available in the message object
 
   int id = Msg.pt_data[0];
@@ -290,15 +286,15 @@ void CANin()
   }
   else if (type == 1) // stepper change
   {
-    sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                              // if direction is positive
-                       ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100))   // distance = positive of input
-                       : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)); // else distance = negative of input
+    sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                        // if direction is positive
+                 ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100))   // distance = positive of input
+                 : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)); // else distance = negative of input
   }
   else if (type == 2) // stepper position
   {
-    distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                              // if direction is positive
-                   ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100))   // distance = positive of input
-                   : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)); // else distance = negative of input
+    distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                       // if direction is positive
+             ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100))  // distance = positive of input
+             : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));// else distance = negative of input
   }
   else if (type == 3) // sensor request
   {
@@ -341,8 +337,8 @@ void CANin()
   else if (type == 7) // pitch command
   {
     pitch_cmd = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                            // if direction is positive
-                    ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) // distance = positive of input
-                    : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));
+              ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) // distance = positive of input
+              : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));
   }
   clearBuffer(&Buffer[0]);
 }
@@ -396,8 +392,7 @@ void CANsend(int ID, int sensor)
       Buffer[i] = yposArray[(i + 1) % 3]; // (i+1)%3 = 0 1 2, 0 1 2 when running
     }
   }
-  else
-  {
+  else {
     Serial.println("Please pick a valid sensor!");
   }
 
