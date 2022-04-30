@@ -254,7 +254,7 @@ class SystemControl:
         logging.info(log)
 
         while self.dc_runner.is_set():
-            if t > 0 and start_ts + t > time.time():
+            if t > 0 and start_ts + t <= time.time():
                 print("Time limit reached")
                 return
             else:
