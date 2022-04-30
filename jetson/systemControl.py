@@ -289,7 +289,7 @@ class SystemControl:
                 break
 
         # Convert CAN to depth
-        depth = bus_data[2] + bus_data[3]/100
+        depth = round(bus_data[2] + bus_data[3]/100, 2)
 
         # Convert CAN to temp
         sign = -1 if bus_data[4] == 1 else 1
