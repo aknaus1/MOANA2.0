@@ -129,7 +129,7 @@ def interface():
                 # Build stepper command
                 while 1:
                     print("Building stepper command...\nWhat would you like to do with it?")
-                    print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth\n\t4. Go back")
+                    print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth\n\t4. Stepper Change\n\t5. Go back")
                     cmd_param = int(input(""))
                     if(cmd_param == 1):
                         print("What position would you like to set (-16 to 16)")
@@ -173,6 +173,13 @@ def interface():
                                     break
                                 except Exception as e:
                                     print("Stop Failed: " + str(e))
+                    elif(cmd_param == 4):
+                        print("What change would you like (-32 to 32)")
+                        change_param = input("")
+                        try:
+                            sc.stepperChange(int(change_param))
+                        except Exception as e:
+                            print("Set Stepper Failed: " + str(e))
                     else:
                         break
                 continue

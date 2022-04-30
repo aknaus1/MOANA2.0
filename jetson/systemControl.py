@@ -6,6 +6,7 @@ from canbus_comms import CANBUS_COMMS
 from pitch import PitchControl
 from rudder import RudderControl
 from thrust import ThrustControl
+from depth import DepthBoard
 
 def verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
         res = True
@@ -54,6 +55,7 @@ class SystemControl:
         self.pc = PitchControl(self.lock)
         self.rc = RudderControl(self.lock)
         self.tc = ThrustControl(self.lock)
+        self.db = DepthBoard(self.lock)
         self.comms = CANBUS_COMMS()
 
         self.rudder_runner = threading.Event()
@@ -62,6 +64,33 @@ class SystemControl:
         self.stepper_thread = threading.Thread()
         self.dc_runner = threading.Event()
         self.dc_thread = threading.Thread()
+    
+    # fname = file name
+    # lname = log name
+    def init_log(self, fname, lname):
+        handler = logging.FileHandler(fname)        
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        logger = logging.getLogger(lname)
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+        return logger
+
+    # fname = file name
+    # lname = log name
+    def init_mission_log():
+        time_dt = datetime.datetime.fromtimestamp(time.time())
+        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
+        fname = f'logs/mission{strtime}.log'
+        lname = 'missionlog'
+        handler = logging.FileHandler(fname)        
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        logger = logging.getLogger(lname)
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S')
+        logger.info(f"MISSION LOG {strtime}")
+        handler.setFormatter(logging.Formatter('%(asctime)s %(message)s', datefmt='%H:%M:%S'))
+        return logger
 
     # start mission(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType)
     # bearing: initial heading
@@ -82,14 +111,20 @@ class SystemControl:
         bearingOpposite = bearing + 180 if bearing < 180 else bearing - 180
         turnRight = True  # next turn should be right
 
+        logger = self.init_mission_log()
+
         # set water type
-        self.setWaterType(self.FRESH_WATER if waterType ==
-                          0 else self.SALT_WATER)
+        wt = self.FRESH_WATER if waterType == 0 else self.SALT_WATER
+        self.setWaterType(wt)
+        logger.info(f"Set Water Type: {wt}")
+
         # start data collection
-        self.startDataCollection(dataParameter)
+        # self.startDataCollection(dataParameter)
+        # logger.info(f"Start Data Collection Interval: {dataParameter}")
 
         # turn thruster to high
         self.setThrust(100)
+        logger.info(f"Set Thrust: {100}")
 
         for _ in range(layerCount):
             if initDepth:
@@ -98,6 +133,7 @@ class SystemControl:
             else:
                 currentDepth = currentDepth + layerSpacing
             self.setDepth(currentDepth)
+            logger.info(f"Set Depth: {currentDepth}")
 
             for dummy in range(pathCount):
                 direction = 2 if turnRight else 1
@@ -105,6 +141,7 @@ class SystemControl:
                 turnRight = not turnRight
 
                 self.turnToHeading(heading, direction)
+                logger.info(f"Turn To Heading: {heading}, Direction: {direction}")
 
                 time.sleep(int(pathLength)) # sleep for path length
 
@@ -113,10 +150,14 @@ class SystemControl:
 
         # return to surface
         self.setDepth(0)
+        logger.info(f"Set Depth: {0}")
         # turn off thruster
         self.setThrust(0)
+        logger.info(f"Set Thrust: {0}")
         # stop data collection
-        self.stopDataCollection()
+        # self.stopDataCollection()
+        # logger.info(f"Stop Data Collection")
+
         print("Should now be at the surface or returning to the surface.")
         print("If the vehicle is unrecoverable at this point, best of luck!")
 
@@ -186,6 +227,17 @@ class SystemControl:
 
         self.pc.setStepper(position)  # set stepper position
 
+    # stepper change (change)
+    # position is distance from center,
+    # position: min max +- 16.5 cm (use int value)
+    def stepperChange(self, change):
+        print(f"Stepper Change: {change}")
+        if self.stepper_runner.is_set():
+            self.stepper_runner.clear()
+            self.stepper_thread.join()
+
+        self.pc.sendChange(change)  # set stepper position
+
     # set pitch (pitch)
     # pitch: min max +- 12 degrees
     def setPitch(self, pitch, kp=None, t=None):
@@ -220,9 +272,7 @@ class SystemControl:
 
     def getDepth(self):
         print("Get Depth...")
-        self.lock.acquire()
-        depth = self.pc.getDepth()
-        self.lock.release()
+        depth = self.db.getDepth()
         print(f"Depth: {depth} m")
         return depth
 
@@ -243,94 +293,45 @@ class SystemControl:
     # interval: time between readings
     # time: length to run (default: 0 = run until told to stop)
     def startDataCollection(self, interval=1, t=-1):
-        # Create Name From Time Stamp
-        start_ts = time.time()
-        value = datetime.datetime.fromtimestamp(start_ts).strftime('%Y-%m-%d %H:%M:%S')
-        name = f"logs/SENSORS{value}.csv"
-
-        # Create New Log File
-        logging.basicConfig(filename=name, filemode="w", format='%(message)s', level=logging.INFO)
-        log = "Time,Depth,Temperature,Pitch,Heading"
-        logging.info(log)
+        time_ts = time.time()
+        time_dt = datetime.datetime.fromtimestamp(time_ts)
+        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
+        logger = self.init_log(f'logs/sensor{strtime}.csv', 'sensorlog')
+        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S')
+        logger.info(f"SENSOR LOG {strtime}")
+        logger.info("Time,Temperature(C),Depth(m),Heading,Pitch")
 
         while self.dc_runner.is_set():
-            if t > 0 and start_ts + t <= time.time():
-                print(t)
+            if t > 0 and time_ts + t <= time.time():
                 print("Time limit reached")
                 return
             else:
-                self.lock.acquire()
-
                 # Update sensor values
-                temp,depth = self.getTempAndDepth()
+                temp,depth = self.db.getTempAndDepth()
                 pitch,heading = self.getIMUData()
 
-                self.lock.release()
-
                 # Get current time
-                timestamp = round(time.time()-start_ts, 2)
+                elapsed = round(time.time()-time_ts, 2)
 
                 # Log data
-                log_entry = f"{timestamp},{depth},{temp},{pitch},{heading}"
-                logging.info(log_entry)
+                log_entry = f"{elapsed},{depth},{temp},{pitch},{heading}"
+                logger.info(log_entry)
 
                 # Sleep for interval
                 time.sleep(int(interval))
 
     def getTempAndDepth(self):
-        data = []
-        data.append(8)  # Depth Board
-        data.append(3)  # Sensor Request
-        data.append(6)  # Depth Data
-        while 1:
-            self.comms.writeToBus(data)
-            bus_data = self.comms.readFromBus()
-            if bus_data[0] == 0:
-                break
-
-        # Convert CAN to depth
-        depth = round(bus_data[2] + bus_data[3]/100, 2)
-
-        # Convert CAN to temp
-        sign = -1 if bus_data[4] == 1 else 1
-        temp = sign * bus_data[5] + bus_data[6] / 100
-        
+        temp, depth = self.db.getTempAndDepth()
         print(f"Depth: {depth} m\tTemperature: {temp} C")
         return temp, depth
 
     def getIMUData(self):
-        data = []
-        data.append(3)  # Rudder Board
-        data.append(3)  # Sensor Request
-        data.append(6)  # Pitch and Heading request
-
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
-
-        # Convert CAN to pitch
-        sign = -1 if bus_data[2] == 1 else 1
-        pitch = sign * (bus_data[3] + bus_data[4] / 100)
-
-        # Convert CAN to heading
-        heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
+        pitch, heading = self.rc.getIMUData()
         print(f"Pitch: {pitch} degrees\tHeading: {heading} degrees")
         return pitch, heading
 
     def getTemp(self):
-        data = []
-        data.append(8)  # Rudder Board
-        data.append(3)  # Sensor Request
-        data.append(4)  # Get roll
-
-        self.lock.acquire()
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
-        self.lock.release()
-
-        # Convert CAN to temp
-        sign = -1 if bus_data[2] == 1 else 1
-        temp = sign * bus_data[3] + bus_data[4] / 100
-
+        temp = self.db.getTemp()
         print(f"Temperature: {temp} C")
         return temp
 
@@ -352,18 +353,8 @@ class SystemControl:
         print(f"Roll: {roll} degrees")
         return roll
 
-    def depthTest(self):
-        # Create New Log File
-        logging.basicConfig(filename="logs/depth_test.log", filemode="w", format='%(message)s', level=logging.INFO)
-        log = "Time,Depth"
-        logging.info(log)
-        start_ts = time.time()
-        while 1:
-            elapsed_ts = time.time() - start_ts
-            if elapsed_ts > 60:
-                break
-            logging.info(f"{elapsed_ts},{self.getDepth()}")
-            
+    def depthTest(self, t=60):
+        self.db.depthTest()
 
     # stop data collection ()
     # stop scientific payload collection

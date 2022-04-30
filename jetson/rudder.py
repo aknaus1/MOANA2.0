@@ -11,13 +11,13 @@ class RudderControl:
 
     cur_heading = 0 # current heading
 
-    comms = CANBUS_COMMS()
-
     def __init__(self, lock = None):
         if lock == None:
             self.lock = threading.Lock()
         else:
             self.lock = lock
+
+        self.comms = CANBUS_COMMS()
 
     def sendAngle(self, angle):
         if angle > 20:
@@ -58,6 +58,25 @@ class RudderControl:
         self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
 
         return self.cur_heading
+
+    def getIMUData(self):
+        data = []
+        data.append(3)  # Rudder Board
+        data.append(3)  # Sensor Request
+        data.append(6)  # Pitch and Heading request
+
+        self.lock.acquire()
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+        self.lock.release()
+
+        # Convert CAN to pitch
+        sign = -1 if bus_data[2] == 1 else 1
+        pitch = sign * (bus_data[3] + bus_data[4] / 100)
+
+        # Convert CAN to heading
+        heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
+        return pitch, heading
 
     def setHeading(self, heading):
         b1 = floor(heading/10)

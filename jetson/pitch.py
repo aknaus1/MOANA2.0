@@ -1,6 +1,7 @@
 import threading
 from canbus_comms import CANBUS_COMMS
 from math import floor
+from depth import DepthBoard
 
 class PitchControl:
     MAINTAIN_DEPTH = 3
@@ -11,17 +12,18 @@ class PitchControl:
     MAX_ANGLE = 12
     MAX_DEPTH = 30
 
-    cur_pos = 0
-    cur_pitch = 0
-    cur_depth = 0
-
-    comms = CANBUS_COMMS()
-
     def __init__(self, lock = None):
         if lock == None:
             self.lock = threading.Lock()
         else:
             self.lock = lock
+
+        self.comms = CANBUS_COMMS()
+        self.db = DepthBoard(lock)
+
+        self.cur_pos = 0
+        self.cur_pitch = 0
+        self.cur_depth = 0
 
     def calibrate(self):
         print("Calibrating...")
@@ -100,19 +102,6 @@ class PitchControl:
         return self.cur_pitch
 
     def setPitch(self, pitch):
-        # sign = -1 if pitch < 0 else 1
-        # if abs(pitch) > self.MAX_ANGLE:
-        #     pitch = self.MAX_ANGLE * sign
-
-        # self.lock.acquire()
-
-        # cur_pitch = self.getPitch()
-        # print(f"Set Pitch: {pitch}")
-        # print(f"Current pitch: {cur_pitch}")
-        # changePos = self.changeFromPitch(pitch, cur_pitch)
-        # self.sendChange(changePos)
-
-        # self.lock.release()
         if pitch > 12:
             pitch = 12
         elif pitch < -12:
@@ -134,39 +123,11 @@ class PitchControl:
         while runner.is_set():
             self.setPitch(pitch)
 
-    def getDepth(self): # reads the depth sensor and returns depth in Meters
-        data = []
-        data.append(8)  # Depth Sensor Board
-        data.append(3)  # Sensor Request
-        data.append(0)  # Depth Data
-
-        while True:
-            self.comms.writeToBus(data) # Write to CAN
-            bus_data = self.comms.readFromBus() # Read from CAN
-            if (bus_data[0] == 0) and (bus_data[1] == 0):
-                break
-
-        self.cur_depth = bus_data[2] + bus_data[3]/100
+    def getDepth(self):
+        self.cur_depth = self.db.getDepth()
         return self.cur_depth
     
     def setDepth(self, depth):
-        # if depth > self.MAX_DEPTH:
-        #     print("Command exceeds depth limit of 30M")
-        #     return
-
-        # self.lock.acquire()
-
-        # cur_depth = self.getDepth()
-        # cur_pitch = self.getPitch()
-        # print(f"set depth: {depth}")
-        # print(f"Current depth: {cur_depth}")
-        # newPitch = (depth - cur_depth) * self.DEPTH_KP + self.MAINTAIN_DEPTH
-
-        # # newPos = self.positionFromPitch(newPitch, cur_pitch)        
-        # # self.sendPos(newPos)
-        # changePos = self.changeFromPitch(newPitch, cur_pitch)
-        # self.sendChange(changePos)
-        # self.lock.release()
         if depth > 30:
             depth = 30
         elif depth < 0:
@@ -189,17 +150,7 @@ class PitchControl:
     # set water type (type)
     # type: freshwater (0), saltwater (1)
     def setWaterType(self, type):
-        if int(type) == 0 or int(type) == 1:
-            data = []
-            data.append(8)  # Depth sensor ID
-            data.append(4)  # Set water type
-            data.append(int(type)) # Water type
-
-            self.lock.acquire() # Get I2C to CAN lock
-            self.comms.writeToBus(data) # Write to CAN
-            self.lock.release() # Release I2C to CAN lock
-        else:
-            print("Invalid water type: freshwater (0), saltwater (1)")
+        self.db.setWaterType(int(type))
 
     # set constant(kind, kp)
     # kind: pitch (0), depth (1)
