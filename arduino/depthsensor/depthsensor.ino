@@ -122,15 +122,17 @@ void loop()
 
 double getTemp()
 {
+  depthSensor.read();
+  Serial.print("Temp: ");
+  Serial.println(depthSensor.temperature());  
   return depthSensor.temperature();
 }
 
 double getDepth()
 {
-  //return fake_depth++ %30;
-//  Serial.print("Depth potentiometer voltage: ");
-//  Serial.println(digitalRead(depthTestPin));
-//  return digitalRead(depthTestPin) * 12;
+  depthSensor.read();
+  Serial.print("Depth: ");
+  Serial.println(depthSensor.depth());
   return depthSensor.depth();
 }
 
@@ -177,11 +179,17 @@ void convert(float testValue) // converts a float or double into an array that c
   {
     yposArray[0] = 0;
   }
-  whole = round(testValue);
+  whole = floor(round(testValue));
   yposArray[1] = whole;
-  fraction = testValue * 100;
-  fraction = fraction - (whole * 100);
+  fraction = (testValue - whole) * 100;
   yposArray[2] = fraction;
+  Serial.print("Ypos array: ");
+  for(int i = 0; i < 3; i++)
+  {
+    Serial.print(yposArray[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
 }
 
 void CANsend(int ID, int sensor)
@@ -193,8 +201,7 @@ void CANsend(int ID, int sensor)
 
   if(sensor == DEPTH)
   {
-      Serial.print("Depth: ");
-      Serial.println(getDepth());
+
       convert(getDepth());
       
       Buffer[2] = yposArray[1];

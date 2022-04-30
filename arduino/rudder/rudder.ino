@@ -18,7 +18,7 @@ Servo rudder;
 #define HEADING_KP .4
 
 #define MAX_RUDDER_ANGLE 20
-#define RUDDER_OFFSET 130
+#define RUDDER_OFFSET 102
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
@@ -91,7 +91,7 @@ void setup()
       ;
   }
   bno.setExtCrystalUse(true);
-  //rudder.write(RUDDER_OFFSET);
+  rudder.write(RUDDER_OFFSET);
 }
 
 void setRudder(float angle)
@@ -120,7 +120,7 @@ void loop()
       angle = (input - (cur_heading - 360)) * heading_kp;
     else
       angle = (input - cur_heading) * heading_kp;
-    setRudder(angle);
+    setRudder(-angle);
   }
   else if (type == 3) {
     CANsend(JETSON, sensorRequest);
@@ -205,11 +205,11 @@ void CANsend(int ID, int sensor)
   Buffer[1] = sensor;
 
   if (sensor == PITCH) {
-    Serial.println("Pitch");
+    //Serial.println("Pitch");
     fillRollPitch(getPitch());
   }
   else if (sensor == YAW) {
-    Serial.println("Yaw");
+    //Serial.println("Yaw");
     float head = getHeading();
     Buffer[MESSAGE_TYPE + 1] = round(floor(head / 10));
     Buffer[MESSAGE_TYPE + 2] = round(floor(head)) % 10;
@@ -217,15 +217,15 @@ void CANsend(int ID, int sensor)
     for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
   }
   else if (sensor == ROLL){
-    Serial.println("Roll");
+    //Serial.println("Roll");
     fillRollPitch(getRoll());
   }
   else if (sensor == BOTH)//sends both pitch and heading
   {
-    Serial.println("Pitch");
+    //Serial.println("Pitch");
     fillRollPitch(getPitch());
 
-    Serial.println("Yaw");
+    //Serial.println("Yaw");
     float head = getHeading();
     Buffer[MESSAGE_TYPE + 4] = round(floor(head / 10));
     Buffer[MESSAGE_TYPE + 5] = round(floor(head)) % 10;
