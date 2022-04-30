@@ -268,7 +268,7 @@ class SystemControl:
                 self.lock.release()
 
                 # Get current time
-                timestamp = time.time()-start_ts
+                timestamp = round(time.time()-start_ts, 2)
 
                 # Log data
                 log_entry = f"{timestamp},{depth},{temp},{pitch},{heading}"
