@@ -1,3 +1,4 @@
+from re import I
 import time
 import datetime
 import threading
@@ -137,9 +138,6 @@ class SystemControl:
             self.rudder_thread.join()
 
         self.rc.setRudder(angle)  # set rudder angle
-        # self.rudder_thread = threading.Thread(target=self.rc.setRudder, args=(angle,))
-        # self.rudder_runner.set()
-        # self.rudder_thread.start()
 
     # turn to heading (heading, direction, radius)
     # heading range: 0-360 degrees relative to North
@@ -175,7 +173,7 @@ class SystemControl:
     def getHeading(self):
         print("Get Heading...")
         heading = self.rc.getHeading()
-        print(f"Current Heading: {heading}")
+        print(f"Heading: {heading} degrees")
         return heading
 
     # set stepper (position)
@@ -226,13 +224,13 @@ class SystemControl:
         self.lock.acquire()
         depth = self.pc.getDepth()
         self.lock.release()
-        print(f"Current Depth: {depth}")
+        print(f"Depth: {depth} m")
         return depth
 
     def getPitch(self):
         print("Get Pitch...")
         pitch = self.pc.getPitch()
-        print(f"Pitch: {pitch}")
+        print(f"Pitch: {pitch} degrees")
         return pitch
 
     # set water type (type)
@@ -258,12 +256,13 @@ class SystemControl:
 
         while self.dc_runner.is_set():
             if t > 0 and start_ts + t > time.time():
-                self.dc_runner.clear()
+                print("Time limit reached")
+                return
             else:
                 self.lock.acquire()
 
                 # Update sensor values
-                temp,depth = self.getTemperatureData()
+                temp,depth = self.getTempAndDepth()
                 pitch,heading = self.getIMUData()
 
                 self.lock.release()
@@ -278,27 +277,31 @@ class SystemControl:
                 # Sleep for interval
                 time.sleep(int(interval))
 
-    def getTemperatureData(self):
+    def getTempAndDepth(self):
         data = []
         data.append(8)  # Depth Board
-        data.append(6)  # Depth and Temp request
-
-        self.comms.writeToBus(data)
-        bus_data = self.comms.readFromBus()
+        data.append(3)  # Sensor Request
+        data.append(6)  # Depth Data
+        while 1:
+            self.comms.writeToBus(data)
+            bus_data = self.comms.readFromBus()
+            if bus_data[0] == 0:
+                break
 
         # Convert CAN to depth
-        depth = bus_data[2] + bus_data[3]/100
+        depth = round(bus_data[2] + bus_data[3]/100, 2)
 
         # Convert CAN to temp
         sign = -1 if bus_data[4] == 1 else 1
         temp = sign * bus_data[5] + bus_data[6] / 100
         
-        print(f"Depth: {depth}\tTemperature: {temp}")
+        print(f"Depth: {depth} m\tTemperature: {temp} C")
         return temp, depth
 
     def getIMUData(self):
         data = []
         data.append(3)  # Rudder Board
+        data.append(3)  # Sensor Request
         data.append(6)  # Pitch and Heading request
 
         self.comms.writeToBus(data) # Write to CAN
@@ -310,13 +313,32 @@ class SystemControl:
 
         # Convert CAN to heading
         heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
-        print(f"Pitch: {pitch}\tHeading: {heading}")
+        print(f"Pitch: {pitch} degrees\tHeading: {heading} degrees")
         return pitch, heading
+
+    def getTemp(self):
+        data = []
+        data.append(8)  # Rudder Board
+        data.append(3)  # Sensor Request
+        data.append(4)  # Get roll
+
+        self.lock.acquire()
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+        self.lock.release()
+
+        # Convert CAN to temp
+        sign = -1 if bus_data[2] == 1 else 1
+        temp = sign * bus_data[3] + bus_data[4] / 100
+
+        print(f"Temperature: {temp} C")
+        return temp
 
     def getRoll(self):
         data = []
         data.append(3)  # Rudder Board
-        data.append(8)  # Roll Request
+        data.append(3)  # Sensor Request
+        data.append(8)  # Get roll
 
         self.lock.acquire()
         self.comms.writeToBus(data) # Write to CAN
@@ -326,6 +348,8 @@ class SystemControl:
         # Convert CAN to roll
         sign = -1 if bus_data[2] == 1 else 1
         roll = sign * (bus_data[3] + bus_data[4] / 100)
+
+        print(f"Roll: {roll} degrees")
         return roll
 
     def depthTest(self):

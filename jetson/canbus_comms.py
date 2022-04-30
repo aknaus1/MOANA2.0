@@ -11,12 +11,12 @@ class CANBUS_COMMS:
         self.bus_out = smbus.SMBus(0)
         self.bus_in = smbus.SMBus(1)
 
-        timestamp = time()
-        value = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = time.time()
+        value = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
         name = f"logs/CAN{value}.log"
-        logging.basicConfig(filename=name, filemode="w", format='%(asctime)s,%(message)s', datefmt="%H:%M:%S", level=logging.INFO)
+        # logging.basicConfig(filename=name, filemode="w", format='%(asctime)s,%(message)s', datefmt="%H:%M:%S", level=logging.INFO)
         log = "Time,R/W,B0,B1,B2,B3,B4,B5,B6,B7"
-        logging.info(log)
+        # logging.info(log)
         return
         
     # Read from bus
@@ -27,7 +27,7 @@ class CANBUS_COMMS:
             log = "R"
             for i in range(len(block)):
                 log = log + f",{block[i]}"
-            logging.info(log)
+            # logging.info(log)
             
             print(f"Read: {block}")
             return block
@@ -53,7 +53,7 @@ class CANBUS_COMMS:
             log = "W"
             for i in range(len(data)):
                 log = log + f",{data[i]}"
-            logging.info(log)
+            # logging.info(log)
 
             print(f"Sent: {data}")
         except Exception as error_message:
