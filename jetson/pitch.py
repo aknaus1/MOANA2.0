@@ -129,7 +129,7 @@ class PitchControl:
             bus_data = self.comms.readFromBus() # Read from CAN
             if (bus_data[0] == 0) and (bus_data[1] == 0):
                 break
-        
+
         self.cur_depth = bus_data[2] + bus_data[3]/100
         return self.cur_depth
     

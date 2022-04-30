@@ -176,25 +176,29 @@ def interface():
         elif(ui_input == 2):
             print("\nEntering sensor request mode...\n")
             print("\nWhat sensor would you like to request?")
-            print("\t1. Pitch\n\t2. Heading\n\t3. Depth\n\t4. Temperature\n\t5. Exit")
+            print("1. Depth\n\t2. Temperature\n\tt3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Exit")
             cmd_input = int(input(""))
             
             if(cmd_input == 1): 
-                print("Getting Pitch Data...")
-                sc.getPitch()
-
-            elif(cmd_input == 2): 
-                print("Getting Heading Data...")
-                sc.getHeading()
-
-            elif(cmd_input == 3): 
                 print("Getting Depth Data...")
                 sc.getDepth()
 
-            elif(cmd_input == 4): 
+            elif(cmd_input == 2): 
                 print("Getting Temperature Data...")
-                sc.getTemperatureData()
+                sc.getTemp()
+
+            elif(cmd_input == 3): 
+                print("Getting Heading Data...")
+                sc.getHeading()
+
+            elif(cmd_input == 4): 
+                print("Getting Pitch Data...")
+                sc.getPitch()
         
+            elif(cmd_input == 5): 
+                print("Getting Roll Data...")
+                sc.getRoll()
+                
             else:
                 continue
 
