@@ -14,7 +14,7 @@ class CANBUS_COMMS:
         timestamp = time.time()
         value = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
         name = f"logs/CAN{value}.log"
-        logging.basicConfig(filename=name, filemode="w", format='%(asctime)s,%(message)s', datefmt="%H:%M:%S", level=logging.INFO)
+        # logging.basicConfig(filename=name, filemode="w", format='%(asctime)s,%(message)s', datefmt="%H:%M:%S", level=logging.INFO)
         log = "Time,R/W,B0,B1,B2,B3,B4,B5,B6,B7"
         # logging.info(log)
         return
