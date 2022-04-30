@@ -44,163 +44,169 @@ def interface():
             cmd_input = int(input(""))
             
             if(cmd_input == 1): 
-                # Build thruster command
-                print("Building thruster command...\nWhat would you like to do with the thruster?")
-                print("\t1. Turn on at set speed\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
-                cmd_param = int(input(""))
-                if(cmd_param == 1):
-                    # Turn thruster on to user defined speed
-                    print("What speed would you like? (0-100)")
-                    speed_param = input("")
-                    try:
-                        sc.setThrust(int(speed_param))
-                    except Exception as e:
-                        print("Set Thrust Failed: " + str(e))
-                elif(cmd_param == 2):
-                    # Turn thruster off
-                    print("Sending shutoff command...\n")
-                    try:
-                        sc.setThrust(0)
-                    except Exception as e:
-                        print("Set Thrust Failed: " + str(e))  
-                elif(cmd_param == 3):
-                    # TODO: Implement duration command for thruster
-                    # Turn thruster on to user defined speed for user defined duration
-                    print("What speed would you like? (0-100)")
-                    speed_param = input("")
-                    print("What duration would you like? (TODO: not sure how kambe is implementing this yet)")
-                    dur_param = input("")
-                    try:
-                        sc.setThrust(int(speed_param))
-                        time.sleep(int(dur_param))
-                        sc.setThrust(0)
-                    except Exception as e:
-                        print("Set Thrust Failed: " + str(e))
-                    except KeyboardInterrupt:
-                        print("Ctrl-c interrupt")
+                while 1:
+                    # Build thruster command
+                    print("Building thruster command...\nWhat would you like to do with the thruster?")
+                    print("\t1. Turn on at set speed\n\t2. Turn off\n\t3. Turn on at set speed for set time\n\t4. Go back")
+                    cmd_param = int(input(""))
+                    if(cmd_param == 1):
+                        # Turn thruster on to user defined speed
+                        print("What speed would you like? (0-100)")
+                        speed_param = input("")
+                        try:
+                            sc.setThrust(int(speed_param))
+                        except Exception as e:
+                            print("Set Thrust Failed: " + str(e))
+                    elif(cmd_param == 2):
+                        # Turn thruster off
+                        print("Sending shutoff command...\n")
                         try:
                             sc.setThrust(0)
-                            continue
                         except Exception as e:
-                            print("Stop Failed: " + str(e))
-                else:
-                    # Skip back to start of loop
-                    continue
+                            print("Set Thrust Failed: " + str(e))  
+                    elif(cmd_param == 3):
+                        # TODO: Implement duration command for thruster
+                        # Turn thruster on to user defined speed for user defined duration
+                        print("What speed would you like? (0-100)")
+                        speed_param = input("")
+                        print("What duration would you like? (TODO: not sure how kambe is implementing this yet)")
+                        dur_param = input("")
+                        try:
+                            sc.setThrust(int(speed_param))
+                            time.sleep(int(dur_param))
+                            sc.setThrust(0)
+                        except Exception as e:
+                            print("Set Thrust Failed: " + str(e))
+                        except KeyboardInterrupt:
+                            print("Ctrl-c interrupt")
+                            try:
+                                sc.setThrust(0)
+                                continue
+                            except Exception as e:
+                                print("Stop Failed: " + str(e))
+                    else:
+                        # Skip back to start of loop
+                        break
+                continue
 
             elif(cmd_input == 2):
-                # Build rudder command
-                print("Building rudder command...\nWhat would you like to do with it?")
-                print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
-                cmd_param = int(input(""))
-                if(cmd_param == 1):
-                    # Find whhat angle
-                    print("What angle would you like to set? (-20 to 20)")
-                    ang_param = input("")
-                    try:
-                        sc.setRudder(int(ang_param))
-                    except Exception as e:
-                        print("Set Rudder Failed: " + str(e))
-                elif(cmd_param == 2):
-                    # Find whhat heading
-                    print("What heading would you like to set? (0-360)")
-                    heading_param = input("")
-                    try:
-                        sc.setHeading(int(heading_param))
-                    except Exception as e:
-                        print("Set Heading Failed: " + str(e))
-                    while(1):
+                while 1:
+                    # Build rudder command
+                    print("Building rudder command...\nWhat would you like to do with it?")
+                    print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
+                    cmd_param = int(input(""))
+                    if(cmd_param == 1):
+                        # Find whhat angle
+                        print("What angle would you like to set? (-20 to 20)")
+                        ang_param = input("")
                         try:
-                            time.sleep(1)
-                        except KeyboardInterrupt:
-                            print("Ctrl-c interrupt")
+                            sc.setRudder(int(ang_param))
+                        except Exception as e:
+                            print("Set Rudder Failed: " + str(e))
+                    elif(cmd_param == 2):
+                        # Find whhat heading
+                        print("What heading would you like to set? (0-360)")
+                        heading_param = input("")
+                        try:
+                            sc.setHeading(int(heading_param))
+                        except Exception as e:
+                            print("Set Heading Failed: " + str(e))
+                        while(1):
                             try:
-                                sc.setRudder(0)
-                                break
-                            except Exception as e:
-                                print("Stop Failed: " + str(e))
-                else:
-                    # Return to main menu
-                    continue
-            
+                                time.sleep(1)
+                            except KeyboardInterrupt:
+                                print("Ctrl-c interrupt")
+                                try:
+                                    sc.setRudder(0)
+                                    break
+                                except Exception as e:
+                                    print("Stop Failed: " + str(e))
+                    else:
+                        # Return to main menu
+                        break
+                continue
             elif(cmd_input == 3):
                 # Build stepper command
-                print("Building stepper command...\nWhat would you like to do with it?")
-                print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth")
-                cmd_param = int(input(""))
-                if(cmd_param == 1):
-                    print("What position would you like to set (-16 to 16)")
-                    step_param = input("")
-                    try:
-                        sc.setStepper(int(step_param))
-                    except Exception as e:
-                        print("Set Stepper Failed: " + str(e))
-                elif(cmd_param == 2):
-                    print("What Pitch would you like to set (-12 to 12)")
-                    pitch_param = input("")
-                    try:
-                        sc.setPitch(int(pitch_param))
-                    except Exception as e:
-                        print("Set Pitch Failed: " + str(e))
-                    while(1):
+                while 1:
+                    print("Building stepper command...\nWhat would you like to do with it?")
+                    print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth")
+                    cmd_param = int(input(""))
+                    if(cmd_param == 1):
+                        print("What position would you like to set (-16 to 16)")
+                        step_param = input("")
                         try:
-                            time.sleep(1)
-                        except KeyboardInterrupt:
-                            print("Ctrl-c interrupt")
-                            try:
-                                sc.setStepper(0)
-                                break
-                            except Exception as e:
-                                print("Stop Failed: " + str(e))
-                elif(cmd_param == 3):
-                    print("What depth would you like to set (0-30m)")
-                    depth_param = input("")
-                    try:
-                        sc.setDepth(int(depth_param))
-                        # sc.setThrust(100)
-                    except Exception as e:
-                        print("Set Depth Failed: " + str(e))
-                    while(1):
+                            sc.setStepper(int(step_param))
+                        except Exception as e:
+                            print("Set Stepper Failed: " + str(e))
+                    elif(cmd_param == 2):
+                        print("What Pitch would you like to set (-12 to 12)")
+                        pitch_param = input("")
                         try:
-                            time.sleep(1)
-                        except KeyboardInterrupt:
-                            print("Ctrl-c interrupt")
+                            sc.setPitch(int(pitch_param))
+                        except Exception as e:
+                            print("Set Pitch Failed: " + str(e))
+                        while(1):
                             try:
-                                sc.setStepper(0)
-                                break
-                            except Exception as e:
-                                print("Stop Failed: " + str(e))
-                else:
-                    continue
-                    
+                                time.sleep(1)
+                            except KeyboardInterrupt:
+                                print("Ctrl-c interrupt")
+                                try:
+                                    sc.setStepper(0)
+                                    break
+                                except Exception as e:
+                                    print("Stop Failed: " + str(e))
+                    elif(cmd_param == 3):
+                        print("What depth would you like to set (0-30m)")
+                        depth_param = input("")
+                        try:
+                            sc.setDepth(int(depth_param))
+                            # sc.setThrust(100)
+                        except Exception as e:
+                            print("Set Depth Failed: " + str(e))
+                        while(1):
+                            try:
+                                time.sleep(1)
+                            except KeyboardInterrupt:
+                                print("Ctrl-c interrupt")
+                                try:
+                                    sc.setStepper(0)
+                                    break
+                                except Exception as e:
+                                    print("Stop Failed: " + str(e))
+                    else:
+                        break
+                continue
+                 
         # Sensor Requests
         elif(ui_input == 2):
-            print("\nEntering sensor request mode...\n")
-            print("\nWhat sensor would you like to request?")
-            print("1. Depth\n\t2. Temperature\n\tt3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Exit")
-            cmd_input = int(input(""))
-            
-            if(cmd_input == 1): 
-                print("Getting Depth Data...")
-                sc.getDepth()
-
-            elif(cmd_input == 2): 
-                print("Getting Temperature Data...")
-                sc.getTemp()
-
-            elif(cmd_input == 3): 
-                print("Getting Heading Data...")
-                sc.getHeading()
-
-            elif(cmd_input == 4): 
-                print("Getting Pitch Data...")
-                sc.getPitch()
-        
-            elif(cmd_input == 5): 
-                print("Getting Roll Data...")
-                sc.getRoll()
+            while 1:
+                print("\nEntering sensor request mode...\n")
+                print("\nWhat sensor would you like to request?")
+                print("\t1. Depth\n\t2. Temperature\n\tt3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Exit")
+                cmd_input = int(input(""))
                 
-            else:
-                continue
+                if(cmd_input == 1): 
+                    print("Getting Depth Data...")
+                    sc.getDepth()
+
+                elif(cmd_input == 2): 
+                    print("Getting Temperature Data...")
+                    sc.getTemp()
+
+                elif(cmd_input == 3): 
+                    print("Getting Heading Data...")
+                    sc.getHeading()
+
+                elif(cmd_input == 4): 
+                    print("Getting Pitch Data...")
+                    sc.getPitch()
+            
+                elif(cmd_input == 5): 
+                    print("Getting Roll Data...")
+                    sc.getRoll()
+                else:
+                    break
+            continue
 
         # Scripted Mission Mode
         elif(ui_input == 3):
@@ -249,7 +255,7 @@ def interface():
                     # Increment line number
                     line_no = line_no + 1 
             print("Script ended. If the vehicle is unrecoverable at this point, best of luck!")
-            #continue
+            continue
 
         # Mission planner mode
         elif(ui_input == 4):
