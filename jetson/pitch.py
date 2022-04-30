@@ -100,18 +100,34 @@ class PitchControl:
         return self.cur_pitch
 
     def setPitch(self, pitch):
-        sign = -1 if pitch < 0 else 1
-        if abs(pitch) > self.MAX_ANGLE:
-            pitch = self.MAX_ANGLE * sign
+        # sign = -1 if pitch < 0 else 1
+        # if abs(pitch) > self.MAX_ANGLE:
+        #     pitch = self.MAX_ANGLE * sign
 
+        # self.lock.acquire()
+
+        # cur_pitch = self.getPitch()
+        # print(f"Set Pitch: {pitch}")
+        # print(f"Current pitch: {cur_pitch}")
+        # changePos = self.changeFromPitch(pitch, cur_pitch)
+        # self.sendChange(changePos)
+
+        # self.lock.release()
+        if pitch > 12:
+            pitch = 12
+        elif pitch < -12:
+            pitch = -12
+
+        print(f"Send Pitch: {pitch}")
+        absPitch = abs(pitch)
+        data = []
+        data.append(5)  # Write pitch ID
+        data.append(7)  # Write pitch command
+        data.append(0 if pitch < 0 else 1) # write sign
+        data.append(floor(absPitch))  # Write pitch
+        data.append(round(absPitch - floor(absPitch)*100))  # Write pitch 2
         self.lock.acquire()
-
-        cur_pitch = self.getPitch()
-        print(f"Set Pitch: {pitch}")
-        print(f"Current pitch: {cur_pitch}")
-        changePos = self.changeFromPitch(pitch, cur_pitch)
-        self.sendChange(changePos)
-
+        self.comms.writeToBus(data) # Write to CAN
         self.lock.release()
 
     def pitchThread(self, pitch, runner):
@@ -134,22 +150,36 @@ class PitchControl:
         return self.cur_depth
     
     def setDepth(self, depth):
-        if depth > self.MAX_DEPTH:
-            print("Command exceeds depth limit of 30M")
-            return
+        # if depth > self.MAX_DEPTH:
+        #     print("Command exceeds depth limit of 30M")
+        #     return
 
+        # self.lock.acquire()
+
+        # cur_depth = self.getDepth()
+        # cur_pitch = self.getPitch()
+        # print(f"set depth: {depth}")
+        # print(f"Current depth: {cur_depth}")
+        # newPitch = (depth - cur_depth) * self.DEPTH_KP + self.MAINTAIN_DEPTH
+
+        # # newPos = self.positionFromPitch(newPitch, cur_pitch)        
+        # # self.sendPos(newPos)
+        # changePos = self.changeFromPitch(newPitch, cur_pitch)
+        # self.sendChange(changePos)
+        # self.lock.release()
+        if depth > 30:
+            depth = 30
+        elif depth < 0:
+            depth = 0
+
+        print(f"Send Depth: {depth}")
+
+        data = []
+        data.append(5)  # Write pitch ID
+        data.append(6)  # Write pitch command
+        data.append(depth)  # Write pitch
         self.lock.acquire()
-
-        cur_depth = self.getDepth()
-        cur_pitch = self.getPitch()
-        print(f"set depth: {depth}")
-        print(f"Current depth: {cur_depth}")
-        newPitch = (depth - cur_depth) * self.DEPTH_KP + self.MAINTAIN_DEPTH
-
-        # newPos = self.positionFromPitch(newPitch, cur_pitch)        
-        # self.sendPos(newPos)
-        changePos = self.changeFromPitch(newPitch, cur_pitch)
-        self.sendChange(changePos)
+        self.comms.writeToBus(data) # Write to CAN
         self.lock.release()
 
     def depthThread(self, depth, runner):

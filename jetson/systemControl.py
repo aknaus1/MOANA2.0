@@ -1,4 +1,3 @@
-from re import I
 import time
 import datetime
 import threading
@@ -255,7 +254,8 @@ class SystemControl:
         logging.info(log)
 
         while self.dc_runner.is_set():
-            if t > 0 and start_ts + t > time.time():
+            if t > 0 and start_ts + t <= time.time():
+                print(t)
                 print("Time limit reached")
                 return
             else:
@@ -268,7 +268,7 @@ class SystemControl:
                 self.lock.release()
 
                 # Get current time
-                timestamp = time.time()-start_ts
+                timestamp = round(time.time()-start_ts, 2)
 
                 # Log data
                 log_entry = f"{timestamp},{depth},{temp},{pitch},{heading}"

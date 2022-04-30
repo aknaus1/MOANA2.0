@@ -93,7 +93,7 @@ def interface():
                 while 1:
                     # Build rudder command
                     print("Building rudder command...\nWhat would you like to do with it?")
-                    print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
+                    print("\t1. Set angle\n\t2. Set Heading\n\t3. Go back")
                     cmd_param = int(input(""))
                     if(cmd_param == 1):
                         # Find whhat angle
@@ -129,7 +129,7 @@ def interface():
                 # Build stepper command
                 while 1:
                     print("Building stepper command...\nWhat would you like to do with it?")
-                    print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth")
+                    print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth\n\t4. Go back")
                     cmd_param = int(input(""))
                     if(cmd_param == 1):
                         print("What position would you like to set (-16 to 16)")
@@ -182,7 +182,7 @@ def interface():
             while 1:
                 print("\nEntering sensor request mode...\n")
                 print("\nWhat sensor would you like to request?")
-                print("\t1. Depth\n\t2. Temperature\n\tt3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Exit")
+                print("\t1. Depth\n\t2. Temperature\n\t3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Exit")
                 cmd_input = int(input(""))
                 
                 if(cmd_input == 1): 
@@ -270,7 +270,7 @@ def interface():
             with open("missions/" + str(name_input) + ".csv", mode='w') as csv_file:
                 csv_writer = csv.writer(csv_file, delimiter = ",")
                 while(1):
-                    print("What subsystem do you want to command?\n\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t5. Exit")
+                    print("What subsystem do you want to command?\n\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Exit")
                     sys_in = int(input(""))
 
                     if(sys_in == 1):
