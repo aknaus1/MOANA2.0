@@ -117,7 +117,7 @@ void loop()
   }
   //Serial.println(digitalRead(intPin));
 
-  //CANsend(DATA, TEMP);
+  CANsend(DATA, BOTH);
 }
 
 double getTemp()
@@ -201,9 +201,7 @@ void CANsend(int ID, int sensor)
 
   if(sensor == DEPTH)
   {
-
       convert(getDepth());
-      
       Buffer[2] = yposArray[1];
       Buffer[3] = yposArray[2];
       for (int i = 4; i <= 7; i++)

@@ -42,6 +42,7 @@ void setup()
   Msg.ctrl.rtr = MESSAGE_RTR;  
   // Init I2C line
   Wire.begin(i2cAddress);                // join i2c bus with address #0x40
+  Wire.onReceive(receiveEvent); // register event
   Wire.onRequest(sendJetson);
 }
 
