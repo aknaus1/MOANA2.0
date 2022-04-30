@@ -128,8 +128,6 @@ void setSliderPosition(float dist) //sets slider position based on an input -16 
 {
   stepsToX = dist / STEP_CONST - currentLocation;
   double change = stepsToX * STEP_CONST;
-  Serial.print("Change: ");
-  Serial.println(change);
   changeSliderPosition(change);
 }
 
@@ -155,7 +153,6 @@ void changeSliderPosition(double change) { //changes slider position based on an
   for (int i = 0; i < abs(stepsToX); i++)//loop that takes weight to desired positon
   {
     currentLocation += stepsToX > 0 ? 1 : -1;
-    //currentLocation + stepsToX / abs(stepsToX);//add a step to the currentLocation
 
     digitalWrite(stepPin, HIGH);//move a step
     delayMicroseconds(400);
