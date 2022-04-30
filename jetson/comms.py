@@ -93,7 +93,7 @@ def interface():
                 while 1:
                     # Build rudder command
                     print("Building rudder command...\nWhat would you like to do with it?")
-                    print("\t1. Set angle\n\t2. Set Heading\n\t2. Go back")
+                    print("\t1. Set angle\n\t2. Set Heading\n\t3. Go back")
                     cmd_param = int(input(""))
                     if(cmd_param == 1):
                         # Find whhat angle
