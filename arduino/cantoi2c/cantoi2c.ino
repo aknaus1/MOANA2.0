@@ -27,6 +27,7 @@ st_cmd_t Msg;
 
 // Transmit buffer
 uint8_t Buffer[8] = {};
+uint8_t data[8] = {};
 void CANin();
 
 
@@ -61,21 +62,23 @@ void receiveEvent(int bytes) {
 void CANin()
 {
   Serial.println("CANin");
-
+  clearBuffer(&Buffer[0]);
   Msg.cmd = CMD_RX_DATA;   // Send command to the CAN port controller
   
   // Wait for the command to be accepted by the controller
   while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
   while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
   if(Msg.pt_data[0] !=0) return;
-//  if(Msg.id == 0) return;
+
   for(int i =0;i<8;i++)
   {
     Serial.print(Buffer[i]);
     Serial.print(" ");
   }
   Serial.println("");
-  //sendJetson();
+  for(int i= 0;i<8;i++)
+    data[i] = Buffer[i];
+  
 }
 
 // This is called when we need to send data back to the jetson from the CAN network over I2C
@@ -99,9 +102,9 @@ void sendJetson()
   int i = 0;
   while(i < 8)
   {
-    Serial.print(Buffer[i]);
+    Serial.print(data[i]);
     Serial.print(" ");
-    Wire.write(Buffer[i++]);
+    Wire.write(data[i++]);
   }
   Serial.println("End send Jetson");
 }

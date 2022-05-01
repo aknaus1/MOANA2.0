@@ -17,12 +17,16 @@ int type = IDLE;
 st_cmd_t Msg;
 void CANIn();   // recieve message
 int start_time = 0;
-int i2cAddress = 0x40;
+int tempSend = 0;
+int jetsonSendType = 0;
+char fileName[10];
+int i2cAddress = 0x39;
 int i2c_read = 0;
 int jetsonRequest =0;
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
-File file_in;
+uint8_t dataArr[8] = {};
+unsigned long filePosition = 0;
 
 enum sensorSend
 {
@@ -53,17 +57,12 @@ void setup()
     canInit(500000);          // Initialise CAN port. must be before Serial.begin
     Serial.begin(1000000);    // start serial port
     Msg.pt_data = &Buffer[0]; // reference message data to buffer
-    Wire.begin();
     // Initialise CAN packet.
     // All of these will be overwritten by a received packet
     Msg.ctrl.ide = MESSAGE_PROTOCOL; // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
     Msg.id.ext = MESSAGE_ID;         // Set message ID
     Msg.dlc = MESSAGE_LENGTH;        // Data length: 8 bytes
     Msg.ctrl.rtr = MESSAGE_RTR;      // Set rtr bit
-
-    Wire.begin(i2cAddress);                // join i2c bus with address #0x40
-    Wire.onReceive(receiveEvent); // register event
-    Wire.onRequest(sendJetson);
     
     Serial.print("Initializing SD card...");
     // see if the card is present and can be initialized:
@@ -72,7 +71,9 @@ void setup()
         Serial.println("initialization failed!");
         while (1);
     }
-    file_in = SD.open(start_time, FILE_READ);
+    // Init I2C line
+    Wire.begin(i2cAddress);                // join i2c bus with address #0x40
+    Wire.onRequest(sendJetson);
     Serial.print("Time");
     Serial.print(",");
     Serial.print("ID");
@@ -99,6 +100,7 @@ void setup()
 void loop()
 {
     CANIn();
+    jetsonSendType = tempSend;
 }
 
 void CANIn()
@@ -117,59 +119,44 @@ void CANIn()
     type = Msg.pt_data[MESSAGE_TYPE];
     
     //write Can data to file
-    int dataArr[8];
     id = Msg.id.ext;
     for(int i = 0;i<8;i++){
         dataArr[i] = Msg.pt_data[i];
     }
-    File file_out = SD.open(start_time, FILE_WRITE);
-    if (start_time == 0)
-      start_time == millis();
-    // if the file is available, write to it:
-    if (file_out) {
-        file_out.print(millis() - start_time);file_out.print(",");file_out.print(id,DEC);file_out.print(",");
-        file_out.print(dataArr[0],DEC);file_out.print(",");file_out.print(dataArr[1],DEC);file_out.print(",");
-        file_out.print(dataArr[2],DEC);file_out.print(",");file_out.print(dataArr[3],DEC);file_out.print(",");
-        file_out.print(dataArr[4],DEC);file_out.print(",");file_out.print(dataArr[5],DEC);file_out.print(",");
-        file_out.print(dataArr[5,DEC]);file_out.print(",");file_out.print(dataArr[6],DEC);file_out.print(",");
-        file_out.println(dataArr[7],DEC);
     
-        file_out.close();
-        Serial.println("Saved");
+    if (start_time == 0)
+    {
+      start_time == millis();
+      
     }
-    // if the file isn't open, pop up an error:
-    else {
-        Serial.println("error opening data.txt");
-    }
+    File file_out = SD.open("data.csv", FILE_WRITE);
+    // if the file is available, write to it:
+    file_out.print(millis() - start_time);file_out.print(",");file_out.print(id,DEC);file_out.print(",");
+    file_out.print(dataArr[0],DEC);file_out.print(",");file_out.print(dataArr[1],DEC);file_out.print(",");
+    file_out.print(dataArr[2],DEC);file_out.print(",");file_out.print(dataArr[3],DEC);file_out.print(",");
+    file_out.print(dataArr[4],DEC);file_out.print(",");file_out.print(dataArr[5],DEC);file_out.print(",");
+    file_out.print(dataArr[5,DEC]);file_out.print(",");file_out.print(dataArr[6],DEC);file_out.print(",");
+    file_out.println(dataArr[7],DEC);
+    file_out.close();
+    Serial.println("Saved");
 
 }
+
 
 void sendJetson()
 {
-    if(jetsonRequest == 0){
-        int i = 0;
-        while(i < 8)
-        {
-            Serial.print(Buffer[i]);
-            Serial.print(" ");
-            Wire.write(Buffer[i++]);
-        }
-        Serial.println("End send Jetson");
-        return;
-    }
-    else if (jetsonRequest == 1){
-        char Buffer[50];
-        
-        if(file_in.read(Buffer, 50) == -1) 
-        {
-          Buffer[0] = '\0';
-        }
-
-        Wire.write(Buffer, 50);
-    }
-}
-
-void receiveEvent()
-{
-    jetsonRequest = Wire.read();
+    char data[32];
+    //opoenm file
+    //read file starting at global current location
+    //save current location of file
+    //send info
+    //close file
+    File file_in = SD.open("data.csv", FILE_READ);
+    file_in = file_in.seek(filePosition);
+    file_in.read(data, 32);
+    filePosition = file_in.position();
+    file_in.close();
+    Serial.print("Bytes sent: ");
+    Serial.println(Wire.write(data, 32));
+    
 }

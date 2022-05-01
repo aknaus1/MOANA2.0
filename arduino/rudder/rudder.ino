@@ -25,6 +25,7 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 #define IDLE 69
 
 int sensorRequest = 0;
+unsigned long lastSend = 0;
 int type = IDLE;
 int input = 0;
 float heading_kp = HEADING_KP;
@@ -125,7 +126,12 @@ void loop()
   else if (type == 3) {
     CANsend(JETSON, sensorRequest);
   }
-  CANsend(DATA, BOTH);
+  
+  if((millis() - lastSend) >= 500)
+  {
+    CANsend(DATA, BOTH);
+    lastSend = millis();
+  }
 }
 
 float getHeading()
