@@ -24,10 +24,6 @@ class PitchControl:
 
         self.db = DepthBoard(lock)
 
-        self.cur_pos = 0
-        self.cur_pitch = 0
-        self.cur_depth = 0
-
     def calibrate(self):
         print("Calibrating...")
 
@@ -36,7 +32,6 @@ class PitchControl:
         data.append(4)  # Write Calibrate Command
 
         self.comms.writeToBus(data) # Write to CAN
-        self.cur_pos = 0
             
     def sendPos(self, pos):
         if pos > 16:
@@ -54,7 +49,6 @@ class PitchControl:
         data.append(round(abs(pos - floor(pos))*100))  # Write position
 
         self.comms.writeToBus(data) # Write to CAN
-        self.cur_pos = pos
 
     # set stepper (position)
     # position is distance from center,
@@ -76,17 +70,6 @@ class PitchControl:
         data.append(round(abs(change - floor(change))*100))  # Write position
 
         self.comms.writeToBus(data) # Write to CAN
-        self.cur_pos = self.cur_pos + change
-
-    def positionFromPitch(self, pitch, cur_pitch):
-        changePos = (pitch - cur_pitch) * self.PITCH_KP
-        newPos = self.cur_pos + changePos
-
-        return newPos
-
-    def changeFromPitch(self, pitch, cur_pitch):
-        changePos = (pitch - cur_pitch) * self.PITCH_KP
-        return changePos
 
     def getPitch(self):
         data = []
@@ -100,9 +83,9 @@ class PitchControl:
                 break
 
         sign = -1 if bus_data[2] == 1 else 1
-        self.cur_pitch = sign * (bus_data[3] + bus_data[4] / 100)
+        pitch = sign * (bus_data[3] + bus_data[4] / 100)
 
-        return self.cur_pitch
+        return pitch
 
     def setPitch(self, pitch):
         if pitch > 12:
@@ -127,8 +110,8 @@ class PitchControl:
             self.setPitch(pitch)
 
     def getDepth(self):
-        self.cur_depth = self.db.getDepth()
-        return self.cur_depth
+        depth = self.db.getDepth()
+        return depth
     
     def setDepth(self, depth):
         if depth > 30:
@@ -149,25 +132,6 @@ class PitchControl:
     def depthThread(self, depth, runner):
         while runner.is_set():
             self.setDepth(depth)
-
-    def getIMUData(self):
-        data = []
-        data.append(5)  # Rudder Board
-        data.append(3)  # Sensor Request
-        data.append(6)  # Pitch and Heading request
-
-        self.lock.acquire()
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
-        self.lock.release()
-
-        # Convert CAN to pitch
-        sign = -1 if bus_data[2] == 1 else 1
-        pitch = sign * (bus_data[3] + bus_data[4] / 100)
-
-        # Convert CAN to heading
-        heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
-        return pitch, heading
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)

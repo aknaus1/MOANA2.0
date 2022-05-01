@@ -361,8 +361,35 @@ class SystemControl:
         print(f"Roll: {roll} degrees")
         return roll
 
+    # fname = file name
+    # lname = log name
+    def init_depth_log(self, fname, lname):
+        handler = logging.FileHandler(fname)        
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        logger = logging.getLogger(lname)
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+        return logger
+
     def depthTest(self, t=60):
-        self.db.depthTest()
+        # Create New Log File
+        time_ts = time.time()
+        time_dt = datetime.datetime.fromtimestamp(time_ts)
+        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
+        logger = self.init_depth_log(f'logs/depth{strtime}.csv', 'depthtest')
+        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S')
+        logger.info(f"DEPTH TEST {strtime}")
+        logger.info("Time,Depth (m)")
+
+        self.setDepth(30)
+
+        while 1:
+            elapsed_ts = time.time() - time_ts
+            if elapsed_ts > t:
+                break
+            logger.info(f"{elapsed_ts},{self.getDepth()}")
+
+        self.setStepper(0)
 
     # stop data collection ()
     # stop scientific payload collection
