@@ -334,11 +334,13 @@ class SystemControl:
         return pitch, heading
 
     def getTemp(self):
+        print("Get Temp...")
         temp = self.db.getTemp()
         print(f"Temperature: {temp} C")
         return temp
 
     def getRoll(self):
+        print("Get Roll...")
         data = []
         data.append(3)  # Rudder Board
         data.append(3)  # Sensor Request

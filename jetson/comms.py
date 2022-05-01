@@ -412,7 +412,6 @@ def interface():
         elif(ui_input == 6):
             print("Downloading file. Please wait...")
             sc.downloadFile()
-            print("File download complete.")
                     
         # Exit
         elif(ui_input == 7):

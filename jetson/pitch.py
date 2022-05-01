@@ -117,7 +117,7 @@ class PitchControl:
         data.append(7)  # Write pitch command
         data.append(0 if pitch < 0 else 1) # write sign
         data.append(floor(absPitch))  # Write pitch
-        data.append(round(absPitch - floor(absPitch)*100))  # Write pitch 2
+        data.append(round((absPitch - floor(absPitch))*100))  # Write pitch 2
         self.lock.acquire()
         self.comms.writeToBus(data) # Write to CAN
         self.lock.release()

@@ -57,6 +57,7 @@ class CANBUS_COMMS:
                 block = self.bus_in.read_i2c_block_data(self.address, 0, 50)
                 if block[0] == '\0':
                     logger.info(block[1:])
+                    print("Download complete")
                     return
                 logger.info(block)
             except Exception as error_message:
