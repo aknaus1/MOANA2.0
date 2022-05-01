@@ -44,12 +44,13 @@ class CANBUS_COMMS:
     # Read from bus
     def readFromFile(self):
         logger = self.init_file_log()
-        if self.requestType == 0:
-            self.bus_in.write_byte(self.address, 1)
-            self.requestType = 1
+        # if self.requestType == 0:
+        #     self.bus_in.write_byte(self.address, 1)
+        #     self.requestType = 1
         while(1):
             try:
                 time.sleep(1) # needed to give boards time
+                # address, offset, number of bytes
                 block = self.bus_in.read_i2c_block_data(self.address, 0, 32)
                 if block[0] == '\0':
                     logger.info(block[1:])
@@ -62,9 +63,9 @@ class CANBUS_COMMS:
         
     # Read from bus
     def readFromBus(self):
-        if self.requestType == 1:
-            self.bus_in.write_byte(self.address, 0)
-            self.requestType = 0
+        # if self.requestType == 1:
+        #     self.bus_in.write_byte(self.address, 0)
+        #     self.requestType = 0
         try:
             time.sleep(1) # needed to give boards time
             block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
