@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <ASTCanLib.h>
+#include <Wire.h>
 
 #define MESSAGE_ID 6       // Message ID
 #define MESSAGE_PROTOCOL 1 // CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
@@ -16,13 +17,16 @@ int type = IDLE;
 st_cmd_t Msg;
 void CANIn();   // recieve message
 int start_time = 0;
+int tempSend = 0;
+int jetsonSendType = 0;
 char fileName[10];
-int i2cAddress = 0x40;
+int i2cAddress = 0x39;
 int i2c_read = 0;
 int jetsonRequest =0;
 // Buffer for CAN data
 uint8_t Buffer[8] = {};
-File file_out;
+uint8_t dataArr[8] = {};
+unsigned long filePosition = 0;
 
 enum sensorSend
 {
@@ -67,7 +71,9 @@ void setup()
         Serial.println("initialization failed!");
         while (1);
     }
-
+    // Init I2C line
+    Wire.begin(i2cAddress);                // join i2c bus with address #0x40
+    Wire.onRequest(sendJetson);
     Serial.print("Time");
     Serial.print(",");
     Serial.print("ID");
@@ -94,6 +100,7 @@ void setup()
 void loop()
 {
     CANIn();
+    jetsonSendType = tempSend;
 }
 
 void CANIn()
@@ -112,7 +119,6 @@ void CANIn()
     type = Msg.pt_data[MESSAGE_TYPE];
     
     //write Can data to file
-    int dataArr[8];
     id = Msg.id.ext;
     for(int i = 0;i<8;i++){
         dataArr[i] = Msg.pt_data[i];
@@ -121,8 +127,9 @@ void CANIn()
     if (start_time == 0)
     {
       start_time == millis();
+      
     }
-    file_out = SD.open("data.csv", FILE_WRITE);
+    File file_out = SD.open("data.csv", FILE_WRITE);
     // if the file is available, write to it:
     file_out.print(millis() - start_time);file_out.print(",");file_out.print(id,DEC);file_out.print(",");
     file_out.print(dataArr[0],DEC);file_out.print(",");file_out.print(dataArr[1],DEC);file_out.print(",");
@@ -133,4 +140,23 @@ void CANIn()
     file_out.close();
     Serial.println("Saved");
 
+}
+
+
+void sendJetson()
+{
+    char data[32];
+    //opoenm file
+    //read file starting at global current location
+    //save current location of file
+    //send info
+    //close file
+    File file_in = SD.open("data.csv", FILE_READ);
+    file_in = file_in.seek(filePosition);
+    file_in.read(data, 32);
+    filePosition = file_in.position();
+    file_in.close();
+    Serial.print("Bytes sent: ");
+    Serial.println(Wire.write(data, 32));
+    
 }
