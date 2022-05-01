@@ -177,7 +177,7 @@ def interface():
                         print("What change would you like (-32 to 32)")
                         change_param = input("")
                         try:
-                            sc.stepperChange(int(change_param))
+                            sc.setStepperChange(int(change_param))
                         except Exception as e:
                             print("Set Stepper Failed: " + str(e))
                     elif(cmd_param == 5):
