@@ -64,20 +64,12 @@ class SystemControl:
         self.stepper_thread = threading.Thread()
         self.dc_runner = threading.Event()
         self.dc_thread = threading.Thread()
-    
-    # fname = file name
-    # lname = log name
-    def init_log(self, fname, lname):
-        handler = logging.FileHandler(fname)        
-        handler.setFormatter(logging.Formatter('%(message)s'))
-        logger = logging.getLogger(lname)
-        logger.setLevel(logging.INFO)
-        logger.addHandler(handler)
-        return logger
+
+        # Global Logger
 
     # fname = file name
     # lname = log name
-    def init_mission_log():
+    def mission_log_init(self):
         time_dt = datetime.datetime.fromtimestamp(time.time())
         strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
         fname = f'logs/mission{strtime}.log'
@@ -111,7 +103,7 @@ class SystemControl:
         bearingOpposite = bearing + 180 if bearing < 180 else bearing - 180
         turnRight = True  # next turn should be right
 
-        logger = self.init_mission_log()
+        logger = self.mission_log_init()
 
         # set water type
         wt = self.FRESH_WATER if waterType == 0 else self.SALT_WATER
@@ -219,10 +211,14 @@ class SystemControl:
         print(f"Heading: {heading} degrees")
         return heading
 
+    # calibrate stepper
+    def calibrateStepper(self):
+        self.pc.calibrate()
+
     # set stepper (position)
     # position is distance from center,
-    # position: min max +- 16.5 cm (use int value)
-    def setStepper(self, position):
+    # position: min max +- 16 cm (use int value)
+    def setStepperPos(self, position):
         print(f"Set Stepper: {position}")
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
@@ -231,9 +227,8 @@ class SystemControl:
         self.pc.setStepper(position)  # set stepper position
 
     # stepper change (change)
-    # position is distance from center,
-    # position: min max +- 16.5 cm (use int value)
-    def stepperChange(self, change):
+    # change: min max +- 32 cm (use int value)
+    def setStepperChange(self, change):
         print(f"Stepper Change: {change}")
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
@@ -292,17 +287,25 @@ class SystemControl:
         print(f"Set Water Type: {type_str}({type})")
         self.pc.setWaterType(type)
 
+    def dc_log_init(self, time_ts):
+        time_dt = datetime.datetime.fromtimestamp(time_ts) # Convert epoch to datetime
+        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S') # Format datetime as string
+        handler = logging.FileHandler(f'logs/sensor{strtime}.csv') # Create new log file
+        handler.setFormatter(logging.Formatter('%(message)s')) # Set log format
+        logger = logging.getLogger('sensorlog') # Open sensor log
+        logger.setLevel(logging.INFO) # Set min message level
+        logger.addHandler(handler) # Add handler to log
+        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S') # Reformat datetime string
+        logger.info(f"SENSOR LOG {strtime}") # First line of log
+        logger.info("Time,Temperature(C),Depth(m),Heading,Pitch") # Second line of log
+        return logger
+
     # start data collection (interval, time)
     # interval: time between readings
     # time: length to run (default: 0 = run until told to stop)
     def startDataCollection(self, interval=1, t=-1):
-        time_ts = time.time()
-        time_dt = datetime.datetime.fromtimestamp(time_ts)
-        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
-        logger = self.init_log(f'logs/sensor{strtime}.csv', 'sensorlog')
-        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"SENSOR LOG {strtime}")
-        logger.info("Time,Temperature(C),Depth(m),Heading,Pitch")
+        time_ts = time.time() # Get current epoch time
+        logger = self.dc_log_init(time_ts)
 
         while self.dc_runner.is_set():
             if t > 0 and time_ts + t <= time.time():
@@ -347,8 +350,11 @@ class SystemControl:
         data.append(8)  # Get roll
 
         self.lock.acquire()
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 8):
+                break
         self.lock.release()
 
         # Convert CAN to roll
@@ -358,8 +364,35 @@ class SystemControl:
         print(f"Roll: {roll} degrees")
         return roll
 
+    # fname = file name
+    # lname = log name
+    def init_depth_log(self, fname, lname):
+        handler = logging.FileHandler(fname)        
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        logger = logging.getLogger(lname)
+        logger.setLevel(logging.INFO)
+        logger.addHandler(handler)
+        return logger
+
     def depthTest(self, t=60):
-        self.db.depthTest()
+        # Create New Log File
+        time_ts = time.time()
+        time_dt = datetime.datetime.fromtimestamp(time_ts)
+        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
+        logger = self.init_depth_log(f'logs/depth{strtime}.csv', 'depthtest')
+        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S')
+        logger.info(f"DEPTH TEST {strtime}")
+        logger.info("Time,Depth (m)")
+
+        self.setDepth(30)
+
+        while 1:
+            elapsed_ts = time.time() - time_ts
+            if elapsed_ts > t:
+                break
+            logger.info(f"{elapsed_ts},{self.getDepth()}")
+
+        self.setStepper(0)
 
     # stop data collection ()
     # stop scientific payload collection
