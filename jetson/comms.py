@@ -40,7 +40,7 @@ def interface():
         if(ui_input == 1):
             print("\nEntering debug mode...\n")
             print("\nWhat subsystem do you want to test?")
-            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control")
+            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Go Back")
             cmd_input = int(input(""))
             
             if(cmd_input == 1): 
@@ -189,7 +189,7 @@ def interface():
             while 1:
                 print("\nEntering sensor request mode...\n")
                 print("\nWhat sensor would you like to request?")
-                print("\t1. Depth\n\t2. Temperature\n\t3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Exit")
+                print("\t1. Depth\n\t2. Temperature\n\t3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Go Back")
                 cmd_input = int(input(""))
                 
                 if(cmd_input == 1): 
@@ -230,8 +230,11 @@ def interface():
                     counter = counter + 1
 
             # Ask user to select which file they want to execute
-            print("\nWhich script would you like to execute?")
+            print("\nWhich script would you like to execute? (-1 to go back)")
             script_input = int(input(""))
+
+            if script_input == -1:
+                continue
 
             # Open file at that index
             # TODO: this is temp until I can run on the jetson, find out how to open file index and build path out to open
@@ -267,9 +270,12 @@ def interface():
         # Mission planner mode
         elif(ui_input == 4):
             print("\nEntering mission planner mode...\n")
-            print("What would you like to name this mission?")
+            print("What would you like to name this mission? (-1 to go back)")
             # In python2, need raw input. Otherwise, tries to run string as python code
             name_input = input("")
+
+            if name_input == "-1":
+                continue
 
             cmd_arr = [None] * 8
 
