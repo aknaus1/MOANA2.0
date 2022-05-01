@@ -56,7 +56,7 @@ class CANBUS_COMMS:
                     logger.info(block[1:])
                     print("Download complete")
                     return
-                logger.info(block)
+                logger.info(block + '\n')
             except Exception as error_message:
                 print(f"Error reading from bus: {error_message}")
                 return [0,0,0,0,0,0,0,0]
