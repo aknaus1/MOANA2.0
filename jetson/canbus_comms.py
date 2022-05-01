@@ -16,11 +16,6 @@ class CANBUS_COMMS:
         self.init_log()
         return
 
-    # 0 to recieve normally
-    # 1 to recieve log file
-    def nextRequestType(self, type):
-        self.bus_in.write_byte(self.address, type)
-
     def init_log(self):
         time_ts = datetime.datetime.fromtimestamp(time.time())
         strtime = time_ts.strftime('%Y-%m-%d|%H:%M:%S')
@@ -50,7 +45,8 @@ class CANBUS_COMMS:
     def readFromFile(self):
         logger = self.init_file_log()
         if self.requestType == 0:
-            self.nextRequestType(1)
+            self.bus_in.write_byte(self.address, 1)
+            self.requestType = 1
         while(1):
             try:
                 time.sleep(1) # needed to give boards time
@@ -67,7 +63,8 @@ class CANBUS_COMMS:
     # Read from bus
     def readFromBus(self):
         if self.requestType == 1:
-            self.nextRequestType(0)
+            self.bus_in.write_byte(self.address, 0)
+            self.requestType = 0
         try:
             time.sleep(1) # needed to give boards time
             block = self.bus_in.read_i2c_block_data(self.address, 0, 8)
