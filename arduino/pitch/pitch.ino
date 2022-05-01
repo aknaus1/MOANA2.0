@@ -343,8 +343,8 @@ void CANin()
 void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
 {
   yposArray[0] = testValue >= 0 ? 2 : 1;
-  yposArray[1] = round(floor(testValue));
-  yposArray[2] = yposArray[1] - (yposArray[1] * 100);
+  yposArray[1] = round(floor(abs(testValue)));
+  yposArray[2] = (abs(testValue) - yposArray[1]) * 100;
 }
 
 void CANsend(int ID, int sensor)
