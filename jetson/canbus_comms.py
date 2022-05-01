@@ -53,7 +53,7 @@ class CANBUS_COMMS:
             self.nextRequestType(1)
         while(1):
             try:
-                # time.sleep(1) # needed to give boards time
+                time.sleep(1) # needed to give boards time
                 block = self.bus_in.read_i2c_block_data(self.address, 0, 50)
                 if block[0] == '\0':
                     logger.info(block[1:])
