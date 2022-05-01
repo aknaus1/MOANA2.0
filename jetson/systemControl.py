@@ -211,10 +211,14 @@ class SystemControl:
         print(f"Heading: {heading} degrees")
         return heading
 
+    # calibrate stepper
+    def calibrateStepper(self):
+        self.pc.calibrate()
+
     # set stepper (position)
     # position is distance from center,
-    # position: min max +- 16.5 cm (use int value)
-    def setStepper(self, position):
+    # position: min max +- 16 cm (use int value)
+    def setStepperPos(self, position):
         print(f"Set Stepper: {position}")
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
@@ -223,9 +227,8 @@ class SystemControl:
         self.pc.setStepper(position)  # set stepper position
 
     # stepper change (change)
-    # position is distance from center,
-    # position: min max +- 16.5 cm (use int value)
-    def stepperChange(self, change):
+    # change: min max +- 32 cm (use int value)
+    def setStepperChange(self, change):
         print(f"Stepper Change: {change}")
         if self.stepper_runner.is_set():
             self.stepper_runner.clear()
