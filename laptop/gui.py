@@ -1,7 +1,8 @@
+from ast import Global
 import sys
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import *
 from PySide6.QtWidgets import *
-from turtle import *
+from PySide6.QtCore import *
 from guitransmit import MYSSH
 
 # to print to text box on manual command tab, use:
@@ -11,6 +12,42 @@ from guitransmit import MYSSH
 # only change the {...}_label_values array by adding or removing.
 # the fields will be automatically adjusted.
 
+class Preview(QWidget):
+    def __init__(self, path_length, path_width, path_count, layer_count):
+        super().__init__()
+        self.path_length = path_length
+        self.path_width = path_width
+        self.path_count = path_count
+        self.layer_count = layer_count
+
+        self.side_margin = 140
+        self.height_margin = 100
+
+        self.window_width = (self.path_count - 1) * self.path_width + 2 * self.side_margin
+        self.window_height = self.path_length + 2 * self.height_margin
+
+        self.x = []
+        for i in range(self.path_count):
+            self.x.append(self.side_margin + i * self.path_width)
+
+        self.y = [self.height_margin, self.height_margin + self.path_length]
+        
+        self.init_ui()
+
+    def init_ui(self):
+        self.setGeometry(400, 400, self.window_width, self.window_height)
+        self.setWindowTitle('Preview')
+        self.show()
+
+    def paintEvent(self, event):
+        qp = QPainter()
+        qp.begin(self)
+        qp.setPen(QColor(Qt.blue))
+
+        for i, iv in enumerate(self.x):
+            for j, jv in enumerate(self.y):
+                qp.drawEllipse(QPoint(iv, jv), 10, 10)
+        
 class Window(QWidget):
     ssh = MYSSH()
 
@@ -285,60 +322,32 @@ class Window(QWidget):
 
     # preview mission
     def preview(self):
+        if self.mission_fields[1].text() == '' or self.mission_fields[2].text() == '' or self.mission_fields[4].text() == '' or self.mission_fields[5].text() == '':
+            dlg = QDialog(self)
+            dlg.setWindowTitle('MOANA Path Preview')
+            
+            message = QLabel('Path length, path count, layer count, and layer spacing are required to preview path.')
+            
+            button = QDialogButtonBox.Ok
+            button_box = QDialogButtonBox(button)
+            button_box.accepted.connect(dlg.accept)
+
+            layout = QVBoxLayout()
+            layout.addWidget(message)
+            layout.addWidget(button_box)
+            dlg.setLayout(layout)
+
+            dlg.exec()
+            return
+
+        # parameters
         path_length = int(self.mission_fields[1].text())
         path_width = 100
         path_count = int(self.mission_fields[2].text())
         layer_count = int(self.mission_fields[4].text())
 
-        wd = Screen()
-        wd.title('MOANA Path Preview')
-
-        w = path_width * (path_count - 1) + 200
-        h = path_length + 200
-
-        wd.screensize(w - 50, h - 50)
-        wd.setup(w, h)
-
-        turtle = Turtle()
-
-        turtle.penup()
-        turtle.setposition(100 - w / 2, 100 - h / 2)
-        turtle.pendown()
-
-        turtle.speed(3)
-
-        turtle.pensize(10)
-
-        turtle.setheading(90)
-
-        g_value = 255
-        wd.colormode(255)
-        turtle.pencolor((0, g_value, 255))
-
-        dir = -1
-
-        turtle.forward(path_length)
-        turtle.circle(path_width * dir / 2, 180)
-        turtle.forward(path_length)
-
-        for l in range(layer_count):
-            for i in range(path_count - 1):
-                if i < path_count - 2:
-                    dir = dir * -1
-                else:
-                    if l == layer_count - 1:
-                        break
-                    turtle.pencolor((255, 0, 0))
-
-                turtle.circle(path_width * dir / 2, 180)
-
-                turtle.forward(path_length)
-
-                if i == path_count - 2:
-                    g_value -= 50
-                    turtle.pencolor((0, g_value, 255))    
-                
-        done()
+        self.preview_window = Preview(path_length, path_width, path_count, layer_count)
+        self.preview_window.show()
 
     # send pitch control command
     def pc_command(self):
