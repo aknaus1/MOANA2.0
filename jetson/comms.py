@@ -25,7 +25,7 @@ def interface():
     while True:
         # thread.start_new_thread(readBus)
         print("\nHello, welcome to Toucan, the CLI Interface to MOANA\nWhat mode would you like to operate in?")
-        print("\t1. Subsystem debug\n\t2. Sensor Requests\n\t3. Scripted operations\n\t4. Mission planner\n\t5. Manual Input\n\t6. Exit Program")
+        print("\t1. Subsystem debug\n\t2. Sensor Requests\n\t3. Scripted operations\n\t4. Mission planner\n\t5. Manual Input\n\t6. File Request\n\t7. Exit Program")
 
         ui_input = int(input(""))
 
@@ -40,7 +40,7 @@ def interface():
         if(ui_input == 1):
             print("\nEntering debug mode...\n")
             print("\nWhat subsystem do you want to test?")
-            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control")
+            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Go Back")
             cmd_input = int(input(""))
             
             if(cmd_input == 1): 
@@ -129,7 +129,7 @@ def interface():
                 # Build stepper command
                 while 1:
                     print("Building stepper command...\nWhat would you like to do with it?")
-                    print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth\n\t4. Go back")
+                    print("\t1. Set stepper position\n\t2. Set pitch\n\t3. Set depth\n\t4. Stepper Change\n\t5. Go back")
                     cmd_param = int(input(""))
                     if(cmd_param == 1):
                         print("What position would you like to set (-16 to 16)")
@@ -173,6 +173,13 @@ def interface():
                                     break
                                 except Exception as e:
                                     print("Stop Failed: " + str(e))
+                    elif(cmd_param == 4):
+                        print("What change would you like (-32 to 32)")
+                        change_param = input("")
+                        try:
+                            sc.stepperChange(int(change_param))
+                        except Exception as e:
+                            print("Set Stepper Failed: " + str(e))
                     else:
                         break
                 continue
@@ -182,7 +189,7 @@ def interface():
             while 1:
                 print("\nEntering sensor request mode...\n")
                 print("\nWhat sensor would you like to request?")
-                print("\t1. Depth\n\t2. Temperature\n\t3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Exit")
+                print("\t1. Depth\n\t2. Temperature\n\t3. Heading\n\t4. Pitch\n\t5. Roll\n\t6. Go Back")
                 cmd_input = int(input(""))
                 
                 if(cmd_input == 1): 
@@ -223,8 +230,11 @@ def interface():
                     counter = counter + 1
 
             # Ask user to select which file they want to execute
-            print("\nWhich script would you like to execute?")
+            print("\nWhich script would you like to execute? (-1 to go back)")
             script_input = int(input(""))
+
+            if script_input == -1:
+                continue
 
             # Open file at that index
             # TODO: this is temp until I can run on the jetson, find out how to open file index and build path out to open
@@ -260,9 +270,12 @@ def interface():
         # Mission planner mode
         elif(ui_input == 4):
             print("\nEntering mission planner mode...\n")
-            print("What would you like to name this mission?")
+            print("What would you like to name this mission? (-1 to go back)")
             # In python2, need raw input. Otherwise, tries to run string as python code
             name_input = input("")
+
+            if name_input == "-1":
+                continue
 
             cmd_arr = [None] * 8
 
@@ -401,9 +414,13 @@ def interface():
                             cmd_buf[i] = [None]
                         print("Reading raw input. Type any number other than -1 to send to CAN. Every 8 character a CAN message is sent. Type -1 to exit")
                 cmd_input = int(input(""))
+        
+        elif(ui_input == 6):
+            print("Downloading file. Please wait...")
+            sc.downloadFile()
                     
         # Exit
-        elif(ui_input == 6):
+        elif(ui_input == 7):
             print("Have a nice day!")
             exit()
         else:
