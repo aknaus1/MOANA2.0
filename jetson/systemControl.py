@@ -64,20 +64,12 @@ class SystemControl:
         self.stepper_thread = threading.Thread()
         self.dc_runner = threading.Event()
         self.dc_thread = threading.Thread()
-    
-    # fname = file name
-    # lname = log name
-    def init_log(self, fname, lname):
-        handler = logging.FileHandler(fname)        
-        handler.setFormatter(logging.Formatter('%(message)s'))
-        logger = logging.getLogger(lname)
-        logger.setLevel(logging.INFO)
-        logger.addHandler(handler)
-        return logger
+
+        # Global Logger
 
     # fname = file name
     # lname = log name
-    def init_mission_log():
+    def mission_log_init(self):
         time_dt = datetime.datetime.fromtimestamp(time.time())
         strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
         fname = f'logs/mission{strtime}.log'
@@ -111,7 +103,7 @@ class SystemControl:
         bearingOpposite = bearing + 180 if bearing < 180 else bearing - 180
         turnRight = True  # next turn should be right
 
-        logger = self.init_mission_log()
+        logger = self.mission_log_init()
 
         # set water type
         wt = self.FRESH_WATER if waterType == 0 else self.SALT_WATER
@@ -292,17 +284,25 @@ class SystemControl:
         print(f"Set Water Type: {type_str}({type})")
         self.pc.setWaterType(type)
 
+    def dc_log_init(self, time_ts):
+        time_dt = datetime.datetime.fromtimestamp(time_ts) # Convert epoch to datetime
+        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S') # Format datetime as string
+        handler = logging.FileHandler(f'logs/sensor{strtime}.csv') # Create new log file
+        handler.setFormatter(logging.Formatter('%(message)s')) # Set log format
+        logger = logging.getLogger('sensorlog') # Open sensor log
+        logger.setLevel(logging.INFO) # Set min message level
+        logger.addHandler(handler) # Add handler to log
+        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S') # Reformat datetime string
+        logger.info(f"SENSOR LOG {strtime}") # First line of log
+        logger.info("Time,Temperature(C),Depth(m),Heading,Pitch") # Second line of log
+        return logger
+
     # start data collection (interval, time)
     # interval: time between readings
     # time: length to run (default: 0 = run until told to stop)
     def startDataCollection(self, interval=1, t=-1):
-        time_ts = time.time()
-        time_dt = datetime.datetime.fromtimestamp(time_ts)
-        strtime = time_dt.strftime('%Y-%m-%d|%H:%M:%S')
-        logger = self.init_log(f'logs/sensor{strtime}.csv', 'sensorlog')
-        strtime = time_dt.strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"SENSOR LOG {strtime}")
-        logger.info("Time,Temperature(C),Depth(m),Heading,Pitch")
+        time_ts = time.time() # Get current epoch time
+        logger = self.dc_log_init(time_ts)
 
         while self.dc_runner.is_set():
             if t > 0 and time_ts + t <= time.time():
@@ -347,8 +347,11 @@ class SystemControl:
         data.append(8)  # Get roll
 
         self.lock.acquire()
-        self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 8):
+                break
         self.lock.release()
 
         # Convert CAN to roll

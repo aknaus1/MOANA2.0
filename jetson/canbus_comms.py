@@ -43,6 +43,8 @@ class CANBUS_COMMS:
 
     # Read from bus
     def readFromFile(self):
+        print("Implementation Incomplete.  Stopping.")
+        return
         logger = self.init_file_log()
         # if self.requestType == 0:
         #     self.bus_in.write_byte(self.address, 1)
