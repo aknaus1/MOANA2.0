@@ -90,7 +90,7 @@ class PitchControl:
 
     def getPitch(self):
         data = []
-        data.append(3)  # Thrust Board
+        data.append(3)  # Rudder Board
         data.append(3)  # IMU Request
         data.append(1)  # Pitch Request
         while True:
@@ -149,6 +149,25 @@ class PitchControl:
     def depthThread(self, depth, runner):
         while runner.is_set():
             self.setDepth(depth)
+
+    def getIMUData(self):
+        data = []
+        data.append(5)  # Rudder Board
+        data.append(3)  # Sensor Request
+        data.append(6)  # Pitch and Heading request
+
+        self.lock.acquire()
+        self.comms.writeToBus(data) # Write to CAN
+        bus_data = self.comms.readFromBus() # Read from CAN
+        self.lock.release()
+
+        # Convert CAN to pitch
+        sign = -1 if bus_data[2] == 1 else 1
+        pitch = sign * (bus_data[3] + bus_data[4] / 100)
+
+        # Convert CAN to heading
+        heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
+        return pitch, heading
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)
