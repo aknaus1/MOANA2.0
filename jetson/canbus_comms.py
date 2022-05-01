@@ -50,7 +50,7 @@ class CANBUS_COMMS:
         while(1):
             try:
                 time.sleep(1) # needed to give boards time
-                block = self.bus_in.read_i2c_block_data(self.address, 0, 50)
+                block = self.bus_in.read_i2c_block_data(self.address, 0, 32)
                 if block[0] == '\0':
                     logger.info(block[1:])
                     print("Download complete")
