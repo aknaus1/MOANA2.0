@@ -11,13 +11,15 @@ class RudderControl:
 
     cur_heading = 0 # current heading
 
-    def __init__(self, lock = None):
+    def __init__(self, lock = None, comms = None):
         if lock == None:
             self.lock = threading.Lock()
         else:
             self.lock = lock
-
-        self.comms = CANBUS_COMMS()
+        if comms == None:
+            self.comms = CANBUS_COMMS()
+        else:
+            self.comms = comms
 
     def sendAngle(self, angle):
         if angle > 20:

@@ -2,13 +2,15 @@ import threading
 from canbus_comms import CANBUS_COMMS
 
 class ThrustControl:
-    comms = CANBUS_COMMS()
-
-    def __init__(self, lock = None):
+    def __init__(self, lock = None, comms = None):
         if lock == None:
             self.lock = threading.Lock()
         else:
             self.lock = lock
+        if comms == None:
+            self.comms = CANBUS_COMMS()
+        else:
+            self.comms = comms
 
     # set thrust (thrust, time)
     # thrust: range speed 0-100

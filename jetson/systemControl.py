@@ -51,12 +51,12 @@ class SystemControl:
 
     def __init__(self):
         self.lock = threading.Lock()
-        
-        self.pc = PitchControl(self.lock)
-        self.rc = RudderControl(self.lock)
-        self.tc = ThrustControl(self.lock)
-        self.db = DepthBoard(self.lock)
         self.comms = CANBUS_COMMS()
+
+        self.pc = PitchControl(self.lock, self.comms)
+        self.rc = RudderControl(self.lock, self.comms)
+        self.tc = ThrustControl(self.lock, self.comms)
+        self.db = DepthBoard(self.lock, self.comms)
 
         self.rudder_runner = threading.Event()
         self.rudder_thread = threading.Thread()

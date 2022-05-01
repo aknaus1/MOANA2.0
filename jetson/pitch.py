@@ -12,13 +12,16 @@ class PitchControl:
     MAX_ANGLE = 12
     MAX_DEPTH = 30
 
-    def __init__(self, lock = None):
+    def __init__(self, lock = None, comms = None):
         if lock == None:
             self.lock = threading.Lock()
         else:
             self.lock = lock
+        if comms == None:
+            self.comms = CANBUS_COMMS()
+        else:
+            self.comms = comms
 
-        self.comms = CANBUS_COMMS()
         self.db = DepthBoard(lock)
 
         self.cur_pos = 0
