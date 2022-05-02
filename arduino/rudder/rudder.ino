@@ -18,7 +18,7 @@ Servo rudder;
 #define HEADING_KP .4
 
 #define MAX_RUDDER_ANGLE 20
-#define RUDDER_OFFSET 102
+#define RUDDER_OFFSET 80
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
@@ -29,6 +29,9 @@ unsigned long lastSend = 0;
 int type = IDLE;
 int input = 0;
 float heading_kp = HEADING_KP;
+float heading_reading_offset = 0;
+float pitch_reading_offset = 0;
+int rudder_offset = RUDDER_OFFSET;
 
 // CAN message object
 st_cmd_t Msg;
@@ -127,7 +130,7 @@ void loop()
     CANsend(JETSON, sensorRequest);
   }
   
-  if((millis() - lastSend) >= 500)
+  if((millis() - lastSend) >= 500)//every 500 milliseconds send the data logger heading and pitch data
   {
     CANsend(DATA, BOTH);
     lastSend = millis();
@@ -140,8 +143,8 @@ float getHeading()
   bno.getEvent(&event);
   float xpos = event.orientation.x;
   Serial.print("Orientation: ");
-  Serial.println(xpos);
-  return xpos;
+  Serial.println(xpos + heading_reading_offset);
+  return xpos + heading_reading_offset;
 }
 
 float getPitch() // reads pitch from sensor
@@ -150,8 +153,8 @@ float getPitch() // reads pitch from sensor
   bno.getEvent(&event);
   float zpos = event.orientation.z;
   Serial.print("Pitch: ");
-  Serial.println(zpos);
-  return zpos;
+  Serial.println(zpos + pitch_reading_offset);
+  return zpos + pitch_reading_offset;
 }
 
 float getRoll() // reads roll from sensor
@@ -191,6 +194,20 @@ void CANIn()
     sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];//tell board to send a sensor request
   else if(type == 5)
     heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;//set heading kp with laptop
+  else if (type == 8)//heading sensor offset
+  {
+    heading_reading_offset = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] / 100;
+    if(Msg.pt_data[MESSAGE_TYPE+1] == 1)
+      heading_reading_offset = -heading_reading_offset;
+  }
+  else if(type ==9)//pitch sensor offset
+  {
+    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] / 100;
+    if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
+      pitch_reading_offset = - pitch_reading_offset;
+  }
+  else if(type == 10)//rudder offset
+    rudder_offset = Msg.pt_data[MESSAGE_TYPE + 1];
 
 }
 

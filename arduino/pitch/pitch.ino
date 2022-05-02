@@ -43,6 +43,7 @@ float depth_kp = 3;
 float pitch_cmd = 0;
 float depth_cmd = 0;
 float cur_depth = 0;
+float pitch_reading_offset = 0;
 
 float stepsToX = 0; // centimeters
 float distance = 0; // meters
@@ -148,8 +149,8 @@ float getPitch() // reads pitch from sensor
   bno.getEvent(&event);
   float zpos = event.orientation.z;
   Serial.print("Pitch: ");
-  Serial.println(zpos);
-  return zpos;
+  Serial.println(zpos + pitch_reading_offset);
+  return zpos + pitch_reading_offset;
 }
 
 float getHeading()
@@ -336,6 +337,12 @@ void CANin()
     pitch_cmd = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                            // if direction is positive
               ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) // distance = positive of input
               : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));
+  }
+  else if (type == 8)//sensor offset
+  {
+    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] / 100;
+    if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
+      pitch_reading_offset = - pitch_reading_offset;
   }
   clearBuffer(&Buffer[0]);
 }
