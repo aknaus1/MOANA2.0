@@ -40,7 +40,7 @@ def interface():
         if(ui_input == 1):
             print("\nEntering debug mode...\n")
             print("\nWhat subsystem do you want to test?")
-            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Go Back")
+            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Fail Safe\n\t4. Go Back")
             cmd_input = int(input(""))
             
             if(cmd_input == 1): 
@@ -125,6 +125,7 @@ def interface():
                         # Return to main menu
                         break
                 continue
+            
             elif(cmd_input == 3):
                 # Build stepper command
                 while 1:
@@ -135,7 +136,7 @@ def interface():
                         print("What position would you like to set (-16 to 16)")
                         step_param = input("")
                         try:
-                            sc.setStepper(int(step_param))
+                            sc.setStepperPos(int(step_param))
                         except Exception as e:
                             print("Set Stepper Failed: " + str(e))
                     elif(cmd_param == 2):
@@ -151,7 +152,7 @@ def interface():
                             except KeyboardInterrupt:
                                 print("Ctrl-c interrupt")
                                 try:
-                                    sc.setStepper(0)
+                                    sc.setStepperPos(0)
                                     break
                                 except Exception as e:
                                     print("Stop Failed: " + str(e))
@@ -169,7 +170,7 @@ def interface():
                             except KeyboardInterrupt:
                                 print("Ctrl-c interrupt")
                                 try:
-                                    sc.setStepper(0)
+                                    sc.setStepperPos(0)
                                     break
                                 except Exception as e:
                                     print("Stop Failed: " + str(e))
@@ -189,6 +190,21 @@ def interface():
                     else:
                         break
                 continue
+
+            elif(cmd_input == 4):
+                # Build failesafe command
+                while 1:
+                    print("Building failsafe command...\nWhat would you like to do with it?")
+                    print("\t1. Release Mass\n\t2. Set Servo\n\t3. Go back")
+                    cmd_param = int(input(""))
+                    if(cmd_param == 1):
+                        print("Dropping mass...")
+                        sc.customCommand([9,1])
+                    elif(cmd_param == 2):
+                        print("Setting servo...")
+                        sc.customCommand([9,2])
+                    else:
+                        break
                  
         # Sensor Requests
         elif(ui_input == 2):
