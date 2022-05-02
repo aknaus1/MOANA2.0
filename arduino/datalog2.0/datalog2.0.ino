@@ -145,18 +145,18 @@ void CANIn()
 
 void sendJetson()
 {
-    char data[32];
-    //opoenm file
+    char data;
+    //open file
     //read file starting at global current location
     //save current location of file
     //send info
     //close file
     File file_in = SD.open("data.csv", FILE_READ);
-    file_in = file_in.seek(filePosition);
-    file_in.read(data, 32);
+    file_in.seek(filePosition);
+    for(int i = 0; i< 32;i++){
+      data = file_in.read();
+      Wire.write(data);
+    }
     filePosition = file_in.position();
-    file_in.close();
-    Serial.print("Bytes sent: ");
-    Serial.println(Wire.write(data, 32));
-    
+    file_in.close();   
 }

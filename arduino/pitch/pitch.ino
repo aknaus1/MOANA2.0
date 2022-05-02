@@ -35,6 +35,7 @@ void calibrate();
 void CANsend(int ID, int sensor);
 void nudgeStepper();
 float getPitch();
+float getHeading();
 int sensorRequest = 0;
 
 float pitch_kp = 4 / 3;
@@ -80,9 +81,6 @@ void setup()
   Serial.println("Starting up");
   Msg.pt_data = &Buffer[0]; // reference message data to transmit buffer
 
-  // Initialise CAN packet.
-  // All of these will be overwritten by a received packet
-
   Msg.ctrl.ide = MESSAGE_PROTOCOL; // Set CAN protocol (0: CAN 2.0A, 1: CAN 2.0B)
   Msg.id.ext = MESSAGE_ID;         // Set message ID
   Msg.dlc = MESSAGE_LENGTH;        // Data length: 8 bytes
@@ -95,13 +93,11 @@ void setup()
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
-
+ 
   if (!bno.begin())
   {
-    /* There was a problem detecting the BNO055 ... check your connections */
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while (1)
-      ;
+    while (1);
   }
   bno.setExtCrystalUse(true);
 
@@ -112,7 +108,6 @@ void setup()
 
 void loop() // main loop, refreshes every
 {
-  // Serial.println("head of loop");
   CANin();
   //  Serial.print("State:");
   //  Serial.println(type);//type is changed in CANin, it's the second byte of the message and dictates what the board does once it receives a message
@@ -137,8 +132,6 @@ void loop() // main loop, refreshes every
   else if (type == 6) // depth command
   {
     double newPitch = (depth_cmd - cur_depth) * depth_kp + MAINTAIN_DEPTH;
-    Serial.print("New Pitch: ");
-    Serial.println(newPitch);
     double changePos = (newPitch - getPitch()) * pitch_kp;
     changeSliderPosition(changePos);
   }
@@ -157,6 +150,16 @@ float getPitch() // reads pitch from sensor
   Serial.print("Pitch: ");
   Serial.println(zpos);
   return zpos;
+}
+
+float getHeading()
+{
+  sensors_event_t event;
+  bno.getEvent(&event);
+  float xpos = event.orientation.x;
+  Serial.print("Orientation: ");
+  Serial.println(xpos);
+  return xpos;
 }
 
 void nudgeStepper() // moves stepper a little bit in the direction it's been set
@@ -222,7 +225,7 @@ void changeSliderPosition(double change)
       break;
     }
   }
-  sliderDone();
+  type = IDLE;
 }
 
 void calibrate()
@@ -278,7 +281,6 @@ void CANin()
     type = IDLE;
     return;
   }
-  int dir = 0, angle = 0;
   type = Msg.pt_data[MESSAGE_TYPE]; // determines type of message
   if (type == 0)                    // receive depth from depth board, type 0 in main loop will call depth control
   {
@@ -328,11 +330,6 @@ void CANin()
     } while ((Msg.pt_data[0] != DEPTH_PITCH) && (Msg.pt_data[MESSAGE_TYPE] != 0));
 
     cur_depth = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;
-    Serial.print("Depth: ");
-    Serial.println(cur_depth);
-
-    Serial.print("Desired depth: ");
-    Serial.println(depth_cmd);
   }
   else if (type == 7) // pitch command
   {
@@ -345,33 +342,9 @@ void CANin()
 
 void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
 {
-  int whole, fraction;
-  if (testValue < 0.0)
-  {
-    yposArray[0] = 1; // 1 is a negative value
-    testValue = testValue * -1;
-  }
-  else if (testValue > 0.0)
-  {
-    yposArray[0] = 2; // 2 is positive
-  }
-  else if (testValue == 0)
-  {
-    yposArray[0] = 0;
-  }
-  whole = round(testValue);
-  yposArray[1] = whole;
-  fraction = testValue * 100;
-  fraction = fraction - (whole * 100);
-  yposArray[2] = fraction;
-}
-
-void sliderDone()
-{
-  //  Serial.print("Slider done: current Location is ");
-  //  Serial.println(currentLocation);
-  type = IDLE;
-  // CANsend(JETSON, SLIDER);
+  yposArray[0] = testValue >= 0 ? 2 : 1;
+  yposArray[1] = round(floor(abs(testValue)));
+  yposArray[2] = (abs(testValue) - yposArray[1]) * 100;
 }
 
 void CANsend(int ID, int sensor)
@@ -392,17 +365,20 @@ void CANsend(int ID, int sensor)
       Buffer[i] = yposArray[(i + 1) % 3]; // (i+1)%3 = 0 1 2, 0 1 2 when running
     }
   }
-  else {
-    Serial.println("Please pick a valid sensor!");
+  else if(sensor == BOTH)
+  {
+    convert(getPitch());
+    for(int i=0;i<3;i++)
+      Buffer[MESSAGE_TYPE + i+1] = yposArray[i];
+    
+    float head = getHeading();
+    Buffer[MESSAGE_TYPE + 4] = round(floor(head / 10));
+    Buffer[MESSAGE_TYPE + 5] = round(floor(head)) % 10;
+    Buffer[MESSAGE_TYPE + 6] = round((head - floor(head)) * 100);
   }
 
-  // Send command to the CAN port controller
   Msg.cmd = CMD_TX_DATA; // send message
-  // Wait for the command to be accepted by the controller
-  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED)
-    ;
-  // Wait for command to finish executing
-  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED)
-    ;
+  while (can_cmd(&Msg) != CAN_CMD_ACCEPTED);
+  while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
   // clearBuffer(&Buffer[0]);
 }
