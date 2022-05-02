@@ -95,20 +95,20 @@ void setup()
       ;
   }
   bno.setExtCrystalUse(true);
-  rudder.write(RUDDER_OFFSET);
+  rudder.write(rudder_offset);
 }
 
 void setRudder(float angle)
 {
-  angle+=RUDDER_OFFSET;// servo needs a const offset ~140 degrees in order to be lined up properly
+  angle+=rudder_offset;// servo needs a const offset in order to be lined up properly
   Serial.print("Angle before limitation: ");
-  Serial.println(angle - RUDDER_OFFSET);
-  if (abs(angle - RUDDER_OFFSET) <= MAX_RUDDER_ANGLE)
+  Serial.println(angle - rudder_offset);
+  if (abs(angle - rudder_offset) <= MAX_RUDDER_ANGLE)
     rudder.write(angle);
-  else if (angle - RUDDER_OFFSET > MAX_RUDDER_ANGLE)//if new rudder angle would be over the max rudder angle
-    rudder.write(MAX_RUDDER_ANGLE + RUDDER_OFFSET);
+  else if (angle - rudder_offset> MAX_RUDDER_ANGLE)//if new rudder angle would be over the max rudder angle
+    rudder.write(MAX_RUDDER_ANGLE + rudder_offset);
   else
-    rudder.write(-MAX_RUDDER_ANGLE + RUDDER_OFFSET);//if new rudder angle would be over the max rudder angle
+    rudder.write(-MAX_RUDDER_ANGLE + rudder_offset);//if new rudder angle would be over the max rudder angle
 }
 
 void loop()
