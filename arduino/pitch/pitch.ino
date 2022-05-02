@@ -372,6 +372,15 @@ void CANsend(int ID, int sensor)
       Buffer[i] = yposArray[(i + 1) % 3]; // (i+1)%3 = 0 1 2, 0 1 2 when running
     }
   }
+  else if(sensor == PITCH)
+  {
+    float pitch = getPitch();
+    Buffer[MESSAGE_TYPE + 1] = pitch < 0 ? 1 : 2;
+    pitch = abs(pitch);
+    Buffer[MESSAGE_TYPE + 2] = round(floor(pitch));
+    Buffer[MESSAGE_TYPE + 3] = round((pitch - floor(pitch)) * 100);
+    for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
+  }
   else if(sensor == BOTH)
   {
     convert(getPitch());
