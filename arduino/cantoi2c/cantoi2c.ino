@@ -49,7 +49,7 @@ void setup()
 
 void loop() 
 {
-    CANin();
+  CANin();
 }
 
 // This is called when we send a command over I2C to the CAN network
@@ -81,19 +81,6 @@ void CANin()
   
 }
 
-// This is called when we need to send data back to the jetson from the CAN network over I2C
-// Currently dumps all messages sent back to the jetson
-// TODO: Dump whenever receives a CAN message
-void sendData(uint8_t *msg)
-{
-  int i = 0;
-  while(i < 8)
-  {
-    Wire.write(msg[i++]);
-  }
-  Serial.println("End send data");
-}
-
 void sendJetson()
 {
   //Serial.println("Start send Jetson");
@@ -109,90 +96,4 @@ void sendJetson()
   Serial.println("End send Jetson");
 }
 
-void serialPrintData(st_cmd_t *msg){
-  char textBuffer[50] = {0};
-  if (msg->ctrl.ide>0){
-    sprintf(textBuffer,"id %d ",msg->id.ext);
-  }
-  else
-  {
-    sprintf(textBuffer,"id %04x ",msg->id.std);
-  }
-  Serial.print(textBuffer);
- 
-  //  IDE
-  sprintf(textBuffer,"ide %d ",msg->ctrl.ide);
-  Serial.print(textBuffer);
-  //  RTR
-  sprintf(textBuffer,"rtr %d ",msg->ctrl.rtr);
-  Serial.print(textBuffer);
-  //  DLC
-  sprintf(textBuffer,"dlc %d ",msg->dlc);
-  Serial.print(textBuffer);
-  //  Data
-  sprintf(textBuffer,"data ");
-  Serial.print(textBuffer);
- 
-  for (int i =0; i<msg->dlc; i++){
-    sprintf(textBuffer,"%02X ",msg->pt_data[i]);
-    Serial.print(textBuffer);
-  }
-  Serial.print("\r\n");
-}
 
-
-void sendCanData(st_cmd_t *msg){
-  char textBuffer[50] = {0};
-  if (msg->ctrl.ide>0){
-    sprintf(textBuffer,"id %d ",msg->id.ext);
-  }
-  else
-  {
-    sprintf(textBuffer,"id %04x ",msg->id.std);
-  }
-  sendData(textBuffer);
- 
-  //  IDE
-  sprintf(textBuffer,"ide %d ",msg->ctrl.ide);
-  sendData(textBuffer);
-  //  RTR
-  sprintf(textBuffer,"rtr %d ",msg->ctrl.rtr);
-  sendData(textBuffer);
-  //  DLC
-  sprintf(textBuffer,"dlc %d ",msg->dlc);
-  sendData(textBuffer);
-  //  Data
-  sprintf(textBuffer,"data ");
-  sendData(textBuffer);
- 
-  for (int i =0; i<msg->dlc; i++){
-    sprintf(textBuffer,"%02X ",msg->pt_data[i]);
-    sendData(textBuffer);
-  }
-  sendData("\r\n");
-}
-
-// The input is a 3 byte array
-// First byte is sign. 1 is neg, 2 is positive
-// Second byte is rounded whole
-// Third byte is fraction, calc by (val * 100) - (whole * 100)
-// To undo, reverse process
-float three_byte_arr_to_float()
-{
-  int sign;
-  
-  if(conv_arr[0] == 0)
-  {
-    return 0;
-  }
-  else if(conv_arr[0] == 1)
-  {
-    sign = -1;
-  }
-  else if(conv_arr[0] == 2)
-  {
-    sign = 1;
-  }
-  
-  return (conv_arr[1] + (conv_arr[2] / 100)) * sign;
-}

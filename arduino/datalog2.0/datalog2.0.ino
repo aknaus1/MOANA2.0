@@ -127,7 +127,6 @@ void CANIn()
     if (start_time == 0)
     {
       start_time == millis();
-      
     }
     File file_out = SD.open("data.csv", FILE_WRITE);
     // if the file is available, write to it:
