@@ -1,5 +1,10 @@
 // Code for slider with the bang bang control that guides the linear slider to the position based on an angle input into the serial command.
-
+//
+//
+// MAKE FLOW OF CONTROL LOOP DIAGRAM!!!
+//
+//
+//
 #include <ASTCanLib.h>
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
