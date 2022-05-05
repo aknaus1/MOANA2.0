@@ -4,13 +4,6 @@ from canbus_comms import CANBUS_COMMS
 from math import floor
 
 class RudderControl:
-    heading_kp = 1
-    heading_kd = .21
-
-    MAX_RUDDER_ANGLE = 20
-
-    cur_heading = 0 # current heading
-
     def __init__(self, lock = None, comms = None):
         if lock == None:
             self.lock = threading.Lock()
@@ -21,13 +14,13 @@ class RudderControl:
         else:
             self.comms = comms
 
-    def sendAngle(self, angle):
+    # set rudder (angle)
+    # angle: min max +- 20
+    def setRudder(self, angle):
         if angle > 20:
             angle = 20
         elif angle < -20:
             angle = -20
-
-        print(f"Send Angle: {angle}")
 
         data = []
         data.append(3)  # Write rudder ID
@@ -35,59 +28,17 @@ class RudderControl:
         data.append(0 if int(angle) < 0 else 1)
         data.append(abs(int(angle)))  # Write yaw
 
-        self.comms.writeToBus(data) # Write to CAN
-
-    # set rudder (angle)
-    # angle: min max +- 20
-    def setRudder(self, angle):
-        self.lock.acquire() # Get lock
-        print(f"Set Rudder: {angle}")
-        self.sendAngle(angle)
-        self.lock.release() # Release lock
-
-    def getHeading(self):
-        data = []
-        data.append(3)  # Rudder Board
-        data.append(3)  # IMU Request
-        data.append(2)  # Heading Request
-
-        while True:
-            self.comms.writeToBus(data) # Write to CAN
-            bus_data = self.comms.readFromBus() # Read from CAN
-            if (bus_data[0] == 0) and (bus_data[1] == 2):
-                break
-
-        self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
-
-        return self.cur_heading
-
-    def getIMUData(self):
-        data = []
-        data.append(3)  # Rudder Board
-        data.append(3)  # Sensor Request
-        data.append(6)  # Pitch and Heading request
-
         self.lock.acquire()
+        print(f"Set Yaw: {angle}")
         self.comms.writeToBus(data) # Write to CAN
-        bus_data = self.comms.readFromBus() # Read from CAN
         self.lock.release()
 
-        # Convert CAN to pitch
-        sign = -1 if bus_data[2] == 1 else 1
-        pitch = sign * (bus_data[3] + bus_data[4] / 100)
-
-        # Convert CAN to heading
-        heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
-        return pitch, heading
-
     def setHeading(self, heading):
-        b1 = floor(heading/10)
-        b2 = heading%10
         data = []
         data.append(3)  # Write rudder ID
         data.append(1)  # Write heading command
-        data.append(b1) # write heading b1
-        data.append(b2) # write heading b2
+        data.append(floor(heading/10)) # write heading b1
+        data.append(heading%10) # write heading b2
 
         self.lock.acquire()
         print(f"Set Heading: {heading}")
@@ -115,22 +66,110 @@ class RudderControl:
         else:
             self.setHeading(heading)
 
-    # set constant(kpOrkd, kp)
-    # kpOrkd: input is kp(0) or kd(1)
+    def getHeading(self):
+        data = []
+        data.append(3)  # Rudder Board
+        data.append(3)  # IMU Request
+        data.append(2)  # Heading Request
+
+        self.lock.acquire()
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 2):
+                break
+        self.lock.release()
+
+        self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
+
+        return self.cur_heading
+
+    def getPitch(self):
+        data = []
+        data.append(3)  # Stepper Board
+        data.append(3)  # IMU Request
+        data.append(1)  # Pitch Request
+        
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 1) and (bus_data[2] == 1 or bus_data[2] == 2):
+                break
+
+        sign = -1 if bus_data[2] == 1 else 1
+        pitch = sign * (bus_data[3] + bus_data[4] / 100)
+        return pitch
+
+    def getIMUData(self):
+        data = []
+        data.append(3)  # Rudder Board
+        data.append(3)  # Sensor Request
+        data.append(6)  # Pitch and Heading request
+
+        self.lock.acquire()
+        while True:
+            self.comms.writeToBus(data) # Write to CAN
+            bus_data = self.comms.readFromBus() # Read from CAN
+            if (bus_data[0] == 0) and (bus_data[1] == 6):
+                break
+        self.lock.release()
+
+        # Convert CAN to pitch
+        sign = -1 if bus_data[2] == 1 else 1
+        pitch = sign * (bus_data[3] + bus_data[4] / 100)
+
+        # Convert CAN to heading
+        heading = bus_data[5] * 10 + bus_data[6] + bus_data[7] / 100
+        return pitch, heading
+
+    # set heading kp(kpOrkd, kp)
     # kp: constant
-    def setConstant(self, kpOrkd, kp):
-        if kpOrkd == 0:
-            self.heading_kp = kp
-            b1 = floor(kp)
-            b2 = floor((kp - floor(kp))*100)
-            data = []
-            data.append(3)
-            data.append(5)
-            data.append(b1)
-            data.append(b2)
-            self.comms.writeToBus(data)
-        elif kpOrkd == 1:
-            self.heading_kd = kp
-        else:
-            print("Invalid input")
-            return
+    def setHeadingConstant(self, kp):
+        data = []
+        data.append(3)
+        data.append(5)
+        data.append(floor(kp))
+        data.append(floor((kp - floor(kp))*100))
+
+        self.lock.acquire()
+        self.comms.writeToBus(data)
+        self.lock.release()
+
+    # set heading offset(offset)
+    def setHeadingOffset(self, offset):
+        data = []
+        data.append(3)
+        data.append(8)
+        data.append(floor(offset/10))
+        data.append(floor(offset%10))
+        data.append(floor((offset - floor(offset))*100))
+
+        self.lock.acquire()
+        self.comms.writeToBus(data)
+        self.lock.release()
+
+    # set pitch offset(offset)
+    def setPitchOffset(self, offset):
+        data = []
+        data.append(3)  # Write stepper ID
+        data.append(8)  # Write change command
+        data.append(0 if offset < 0 else 1) # write sign
+        data.append(floor(offset))
+        data.append(round((offset - floor(offset))*100))
+
+        self.lock.acquire()
+        print(f"Updating Pitch Offset: {offset}")
+        self.comms.writeToBus(data) # Write to CAN
+        self.lock.release()
+
+    # set rudder offset(offset)
+    def setRudderOffset(self, offset):
+        data = []
+        data.append(3)
+        data.append(8)
+        data.append(offset)
+
+        self.lock.acquire()
+        self.comms.writeToBus(data)
+        self.lock.release()
+
