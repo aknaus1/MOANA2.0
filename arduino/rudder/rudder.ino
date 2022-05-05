@@ -15,7 +15,8 @@ Servo rudder;
 #define MESSAGE_RTR 0      // rtr bit
 #define MESSAGE_TYPE 1
 
-#define HEADING_KP .4
+#define HEADING_KP .15
+#define HEADING_KD .21 
 
 #define MAX_RUDDER_ANGLE 20
 #define RUDDER_OFFSET 80
@@ -114,6 +115,15 @@ void setRudder(float angle)
 void loop()
 {
   CANIn();
+  Serial.print("Rudder offset: ");
+  Serial.println(rudder_offset);
+  Serial.print("Pitch offset: ");
+  Serial.println(pitch_reading_offset);
+  Serial.print("Heading offset: ");
+  Serial.println(heading_reading_offset);
+  Serial.print("heading kp: ");
+  Serial.println(heading_kp);
+  
   if (type == 0) {
     setRudder(input);
   }
@@ -193,21 +203,24 @@ void CANIn()
   else if(type == 3)
     sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];//tell board to send a sensor request
   else if(type == 5)
-    heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;//set heading kp with laptop
+    heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] *.01;//set heading kp with laptop
   else if (type == 8)//heading sensor offset
   {
-    heading_reading_offset = Msg.pt_data[MESSAGE_TYPE + 1] * 10 + Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] / 100;
+    heading_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] * 10 + Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] * .01;
     if(Msg.pt_data[MESSAGE_TYPE+1] == 1)
       heading_reading_offset = -heading_reading_offset;
   }
   else if(type ==9)//pitch sensor offset
   {
-    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] / 100;
+    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
     if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
       pitch_reading_offset = - pitch_reading_offset;
   }
   else if(type == 10)//rudder offset
+  {
+    Serial.println(Msg.pt_data[MESSAGE_TYPE + 1]);
     rudder_offset = Msg.pt_data[MESSAGE_TYPE + 1];
+  }
 
 }
 
@@ -235,7 +248,7 @@ void CANsend(int ID, int sensor)
   else if (sensor == YAW) {
     //Serial.println("Yaw");
     float head = getHeading();
-    Buffer[MESSAGE_TYPE + 1] = round(floor(head / 10));
+    Buffer[MESSAGE_TYPE + 1] = round(floor(head *.1));
     Buffer[MESSAGE_TYPE + 2] = round(floor(head)) % 10;
     Buffer[MESSAGE_TYPE + 3] = round((head - floor(head)) * 100);
     for (int i = MESSAGE_TYPE + 4; i < 8; i++) Buffer[i];
@@ -251,7 +264,7 @@ void CANsend(int ID, int sensor)
 
     //Serial.println("Yaw");
     float head = getHeading();
-    Buffer[MESSAGE_TYPE + 4] = round(floor(head / 10));
+    Buffer[MESSAGE_TYPE + 4] = round(floor(head *.1));
     Buffer[MESSAGE_TYPE + 5] = round(floor(head)) % 10;
     Buffer[MESSAGE_TYPE + 6] = round((head - floor(head)) * 100);
   }
