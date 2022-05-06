@@ -28,17 +28,13 @@ if __name__ == "__main__":
     logdt = init_DT_log(args[0])
     logph = init_PH_log(args[0])
 
-    init_time = -1
-
     with open(f'logs/{args[0]}') as file:
         for line in file:
             linebuff = []
             for char in line.split(sep=','):
                 linebuff.append(int(char))
 
-            if init_time == -1:
-                init_time = linebuff[0]
-            lineout = str(linebuff[0] - init_time)
+            lineout = str(linebuff[0])
             
             if linebuff[1] == 8:
                 # Convert CAN to depth
