@@ -680,7 +680,7 @@ def interface():
         elif(ui_input == 7): # Download Mission File
             print("Downloading file. Please wait...")
             sc.downloadFile()
-                    
+            continue
         else: # Exit
             print("Have a nice day!")
             return
