@@ -167,7 +167,7 @@ class RudderControl:
         data.append(3)
         data.append(10)
         data.append(1 if offset < 0 else 2) # write sign
-        data.append(abs(offset))
+        data.append(int(abs(offset)))
 
         self.comms.lock.acquire()
         self.comms.writeToBus(data)
