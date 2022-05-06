@@ -225,8 +225,7 @@ def failSafeDebug():
 def subsystemDebug():
     while True: # Subsystem debug
         try:
-            print("\nEntering subsystem debug mode...")
-            print("\nWhat subsystem do you want to test?")
+            print("Entering subsystem debug mode...\nWhat subsystem do you want to test?")
             print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Fail Safe\n\t5. Go Back")
             cmd_input = int(input(""))
         except Exception as e:
@@ -250,7 +249,7 @@ def subsystemDebug():
 def rudderConfig():
     while True:
         try:
-            print("Rudder Config\n\tWhat would you like to configure?")
+            print("Rudder Config\nWhat would you like to configure?")
             print("\t1. Heading Constant\n\t2. Heading Offset\n\t3. Pitch Offset\n\t4. Rudder Offset\n\t5. Go Back")
             sel_input = int(input(""))
         except Exception as e:
@@ -294,7 +293,7 @@ def rudderConfig():
 def stepperConfig():
     while True:
         try:
-            print("Stepper Config\n\tWhat would you like to configure?")
+            print("Stepper Config\nWhat would you like to configure?")
             print("\t1. Set Constants\n\t2. Pitch Offset\n\t3. Heading Offset\n\t4. Go Back")
             sel_input = int(input(""))
         except Exception as e:
@@ -332,7 +331,7 @@ def stepperConfig():
 def depthConfig():
     while True:
         try:
-            print("What would you like to configure?")
+            print("Depth Config\nWhat would you like to configure?")
             print("\t1. Set Water Type\n\t2. Go Back")
             sel_input = int(input(""))
         except Exception as e:
@@ -352,8 +351,7 @@ def depthConfig():
 def subsystemConfig():
     while True:
         try:
-            print("\nEntering subsystem debug mode...\n")
-            print("\nWhat subsystem do you want to test?")
+            print("\nEntering subsystem debug mode...\nWhat subsystem do you want to test?")
             print("\t1. Rudder Config\n\t2. Stepper Config\n\t3. Depth Config\n\t4. Go Back")
             cmd_input = int(input(""))
         except Exception as e:
