@@ -177,7 +177,7 @@ class PitchControl:
         data = []
         data.append(5)  # Write stepper ID
         data.append(9)  # Write change command
-        data.append(0 if offset < 0 else 1) # write sign
+        data.append(1 if offset < 0 else 2) # write sign
         offset = abs(offset)
         data.append(floor(offset))
         data.append(round((offset - floor(offset))*100))
