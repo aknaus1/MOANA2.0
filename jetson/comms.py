@@ -34,7 +34,7 @@ def interface():
         if(ui_input == 1): # Subsystem debug
             print("\nEntering subsystem debug mode...\n")
             print("\nWhat subsystem do you want to test?")
-            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Fail Safe\n\t\n\t4. Go Back")
+            print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Fail Safe\n\t\n\t5. Go Back")
             cmd_input = int(input(""))
             
             if(cmd_input == 1): # Building Thruster Command

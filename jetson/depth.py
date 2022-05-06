@@ -2,15 +2,13 @@ import threading
 from canbus_comms import CANBUS_COMMS
 
 class DepthBoard:
-    def __init__(self, lock = None, comms = None):
-        if lock == None:
-            self.lock = threading.Lock()
-        else:
-            self.lock = lock
+    def __init__(self, comms = None):
         if comms == None:
             self.comms = CANBUS_COMMS()
         else:
             self.comms = comms
+
+        self.console = self.comms.console
 
     def getDepth(self): # reads the depth sensor and returns depth in Meters
         data = []
@@ -18,13 +16,13 @@ class DepthBoard:
         data.append(3)  # Sensor Request
         data.append(0)  # Depth Data
 
-        self.lock.acquire()
+        self.comms.lock.acquire()
         while True:
             self.comms.writeToBus(data) # Write to CAN
             bus_data = self.comms.readFromBus() # Read from CAN
             if (bus_data[0] == 0) and (bus_data[1] == 0):
                 break
-        self.lock.release()
+        self.comms.lock.release()
 
         depth = bus_data[2] + bus_data[3]/100
         return depth
@@ -35,13 +33,13 @@ class DepthBoard:
         data.append(3)  # Sensor Request
         data.append(4)  # Get Temp
 
-        self.lock.acquire()
+        self.comms.lock.acquire()
         while True:
             self.comms.writeToBus(data) # Write to CAN
             bus_data = self.comms.readFromBus() # Read from CAN
             if (bus_data[0] == 0) and (bus_data[1] == 4):
                 break
-        self.lock.release()
+        self.comms.lock.release()
 
         # Convert CAN to temp
         sign = -1 if bus_data[2] == 1 else 1
@@ -54,13 +52,13 @@ class DepthBoard:
         data.append(3)  # Sensor Request
         data.append(6)  # Depth Data
 
-        self.lock.acquire()
+        self.comms.lock.acquire()
         while 1:
             self.comms.writeToBus(data)
             bus_data = self.comms.readFromBus()
             if bus_data[0] == 0 and bus_data[1] == 6:
                 break
-        self.lock.release()
+        self.comms.lock.release()
 
         # Convert CAN to depth
         depth = round(bus_data[2] + bus_data[3]/100, 2)
@@ -75,7 +73,7 @@ class DepthBoard:
     # type: freshwater (0), saltwater (1)
     def setWaterType(self, type):
         if type != 0 and type != 1:
-            print("Invalid water type: freshwater (0), saltwater (1)")
+            self.console.error("Invalid water type: freshwater (0), saltwater (1)")
             return
 
         data = []
@@ -84,7 +82,7 @@ class DepthBoard:
         data.append(type) # Water type
 
         type_str = "Fresh Water" if type == 0 else "Salt Water"
-        self.lock.acquire() # Get I2C to CAN lock
-        print(f"Set Water Type: {type_str}({type})")
+        self.comms.lock.acquire() # Get I2C to CAN lock
+        self.console.info(f"Set Water Type: {type_str}({type})")
         self.comms.writeToBus(data) # Write to CAN
-        self.lock.release() # Release I2C to CAN lock
+        self.comms.lock.release() # Release I2C to CAN lock

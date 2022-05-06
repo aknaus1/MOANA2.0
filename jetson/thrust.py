@@ -2,15 +2,13 @@ import threading
 from canbus_comms import CANBUS_COMMS
 
 class ThrustControl:
-    def __init__(self, lock = None, comms = None):
-        if lock == None:
-            self.lock = threading.Lock()
-        else:
-            self.lock = lock
+    def __init__(self, comms = None):
         if comms == None:
             self.comms = CANBUS_COMMS()
         else:
             self.comms = comms
+
+        self.console = self.comms.console
 
     # set thrust (thrust, time)
     # thrust: range speed 0-100
@@ -22,7 +20,7 @@ class ThrustControl:
         elif thrust < 0:
             thrust = 0
 
-        print(f"Send Thrust: {thrust}")
+        self.console.info(f"Send Thrust: {thrust}")
         data = []
         data.append(2)  # Write thruster ID
         data.append(0 if thrust < 0 else 1)
@@ -32,7 +30,7 @@ class ThrustControl:
         self.comms.writeToBus(data)
 
     def setThrust(self, thrust):
-        self.lock.acquire()
-        print(f"Set Thrust: {thrust}")
+        self.comms.lock.acquire()
+        self.console.info(f"Set Thrust: {thrust}")
         self.sendThrust(thrust)
-        self.lock.release()
+        self.comms.lock.release()

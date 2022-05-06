@@ -9,56 +9,24 @@ from thrust import ThrustControl
 from depth import DepthBoard
 from failsafe import FailSafe
 
-def verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
-        res = True
-        try:
-            if int(bearing) < 0 or int(bearing) > 360:
-                print("Invalid bearing: 0 <= bearing <= 360")
-                res = False
-            if int(pathLength) <= 0:
-                print("Invalid path length: len > 0")
-                res = False
-            if int(pathCount) <= 0:
-                print("Invalid path count: count > 0")
-                res = False
-            if int(initialDepth) < 0:
-                print("Invalid initial depth: 0 < depth <= 30")
-                res = False
-            if int(layerCount) <= 0:
-                print("Invalid layer count: count > 0")
-                res = False
-            if int(layerSpacing) <= 0:
-                print("Invalid layer spacing: spacing > 0")
-                res = False
-            max_depth = (int(initialDepth) + int(layerCount) * int(layerSpacing))
-            if max_depth > 30 or max_depth < 0:
-                print("Invalid depth: 0 < initialDepth + layerCount * layerSpacing <= 30")
-                res = False
-            if int(dataParameter) <= 0:
-                print("Invalid data parameter: param > 0")
-                res = False
-            if int(waterType) != 0 and int(waterType) != 1:
-                print("Invalid water type: fresh(0), salt(1)")
-                res = False
-        except Exception:
-            return False
-        else:
-            return res
-
 class SystemControl:
     # SALT v FRESH
     FRESH_WATER = 0
     SALT_WATER = 1
 
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.comms = CANBUS_COMMS()
+    def __init__(self, debug_level=logging.DEBUG):
+        self.console = logging.getLogger('globaldebug')
+        self.console.setLevel(debug_level)
+        self.console.addHandler(logging.StreamHandler())
 
-        self.pc = PitchControl(self.lock, self.comms)
-        self.rc = RudderControl(self.lock, self.comms)
-        self.tc = ThrustControl(self.lock, self.comms)
-        self.db = DepthBoard(self.lock, self.comms)
-        self.fs = FailSafe(self.lock, self.comms)
+        self.lock = threading.Lock()
+        self.comms = CANBUS_COMMS(self.lock, self.console)
+
+        self.pc = PitchControl(self.comms)
+        self.rc = RudderControl(self.comms)
+        self.tc = ThrustControl(self.comms)
+        self.db = DepthBoard(self.comms)
+        self.fs = FailSafe(self.comms)
 
         self.rudder_runner = threading.Event()
         self.rudder_thread = threading.Thread()
@@ -84,6 +52,42 @@ class SystemControl:
         handler.setFormatter(logging.Formatter('%(asctime)s %(message)s', datefmt='%H:%M:%S'))
         return logger
 
+    def verifyMissionParams(self, bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
+        res = True
+        try:
+            if int(bearing) < 0 or int(bearing) > 360:
+                self.console.info("Invalid bearing: 0 <= bearing <= 360")
+                res = False
+            if int(pathLength) <= 0:
+                self.console.info("Invalid path length: len > 0")
+                res = False
+            if int(pathCount) <= 0:
+                self.console.info("Invalid path count: count > 0")
+                res = False
+            if int(initialDepth) < 0:
+                self.console.info("Invalid initial depth: 0 < depth <= 30")
+                res = False
+            if int(layerCount) <= 0:
+                self.console.info("Invalid layer count: count > 0")
+                res = False
+            if int(layerSpacing) <= 0:
+                self.console.info("Invalid layer spacing: spacing > 0")
+                res = False
+            max_depth = (int(initialDepth) + int(layerCount) * int(layerSpacing))
+            if max_depth > 30 or max_depth < 0:
+                self.console.info("Invalid depth: 0 < initialDepth + layerCount * layerSpacing <= 30")
+                res = False
+            if int(dataParameter) <= 0:
+                self.console.info("Invalid data parameter: param > 0")
+                res = False
+            if int(waterType) != 0 and int(waterType) != 1:
+                self.console.info("Invalid water type: fresh(0), salt(1)")
+                res = False
+        except Exception:
+            return False
+        else:
+            return res
+
     # start mission(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType)
     # bearing: initial heading
     # pathLength: length of path, pathCount: number of paths
@@ -91,8 +95,8 @@ class SystemControl:
     # water type: type of water fresh(0) or salt(1)
     # data parameter: interval of sensor readings
     def mission(self, bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter):
-        if not verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
-            print("Mission parameters are invalid")
+        if not self.verifyMissionParams(bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
+            self.console.error("Mission parameters are invalid")
             return
 
         bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter \
@@ -150,8 +154,8 @@ class SystemControl:
         # self.stopDataCollection()
         # logger.info(f"Stop Data Collection")
 
-        print("Should now be at the surface or returning to the surface.")
-        print("If the vehicle is unrecoverable at this point, best of luck!")
+        self.console.info("Should now be at the surface or returning to the surface.")
+        self.console.info("If the vehicle is unrecoverable at this point, best of luck!")
     
     def downloadFile(self):
         self.comms.readFromFile()
@@ -172,7 +176,7 @@ class SystemControl:
         # If expecting a reply
         if re != None:
             bus_data = self.comms.readFromBus()
-            print(f"Response: {bus_data}")
+            self.console.info(f"Response: {bus_data}")
 
         self.lock.release()
 
@@ -277,48 +281,48 @@ class SystemControl:
         self.fs.reset()
 
     def getDepth(self):
-        print("Get Depth...")
+        self.console.info("Get Depth...")
         depth = self.db.getDepth()
-        print(f"Depth: {depth} m")
+        self.console.info(f"Depth: {depth} m")
         return depth
 
     def getTemp(self):
-        print("Get Temp...")
+        self.console.info("Get Temp...")
         temp = self.db.getTemp()
-        print(f"Temperature: {temp} C")
+        self.console.info(f"Temperature: {temp} C")
         return temp
 
     def getTempAndDepth(self):
         temp, depth = self.db.getTempAndDepth()
-        print(f"Depth: {depth} m\tTemperature: {temp} C")
+        self.console.info(f"Depth: {depth} m\tTemperature: {temp} C")
         return temp, depth
 
     def getPitch(self):
-        print("Get Pitch...")
+        self.console.info("Get Pitch...")
         pitch1 = self.rc.getPitch()
         pitch2 = self.pc.getPitch()
-        print(f"Rudder IMU Pitch: {pitch1} degrees")
-        print(f"Stepper IMU Pitch: {pitch2} degrees")
+        self.console.info(f"Rudder IMU Pitch: {pitch1} degrees")
+        self.console.info(f"Stepper IMU Pitch: {pitch2} degrees")
         return pitch1, pitch2
                 
     def getHeading(self):
-        print("Get Heading...")
+        self.console.info("Get Heading...")
         heading1 = self.rc.getHeading()
         heading2 = self.pc.getHeading()
-        print(f"Rudder IMU Heading: {heading1} degrees")
-        print(f"Stepper IMU Heading: {heading2} degrees")
+        self.console.info(f"Rudder IMU Heading: {heading1} degrees")
+        self.console.info(f"Stepper IMU Heading: {heading2} degrees")
         return heading1, heading2
 
     def getIMUData(self):
-        print("Getting IMU Data")
+        self.console.info("Getting IMU Data")
         pitch1, heading1 = self.rc.getIMUData()
         pitch2, heading2 = self.pc.getIMUData()
-        print(f"Rudder IMU Pitch: {pitch1} degrees\tHeading: {heading1} degrees")
-        print(f"Stepper IMU Pitch: {pitch1} degrees\tHeading: {heading1} degrees")
+        self.console.info(f"Rudder IMU Pitch: {pitch1} degrees\tHeading: {heading1} degrees")
+        self.console.info(f"Stepper IMU Pitch: {pitch1} degrees\tHeading: {heading1} degrees")
         return pitch1, heading1, pitch2, heading2
 
     def getRoll(self):
-        print("Get Roll...")
+        self.console.info("Get Roll...")
         data = []
         data.append(3)  # Rudder Board
         data.append(3)  # Sensor Request
@@ -336,7 +340,7 @@ class SystemControl:
         sign = -1 if bus_data[2] == 1 else 1
         roll = sign * (bus_data[3] + bus_data[4] / 100)
 
-        print(f"Roll: {roll} degrees")
+        self.console.info(f"Roll: {roll} degrees")
         return roll
 
     def setHeadingConstant(self, kp):
@@ -387,7 +391,7 @@ class SystemControl:
 
         while self.dc_runner.is_set():
             if t > 0 and time_ts + t <= time.time():
-                print("Time limit reached")
+                self.console.info("Time limit reached")
                 return
             else:
                 # Update sensor values
