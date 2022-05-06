@@ -72,7 +72,7 @@ def rudderDebug():
     while True:
         try:
             print("Building rudder command...\nWhat would you like to do with it?")
-            print("\t1. Set Rudder Angle\n\t2. Set Heading\n\t 3. Turn to Heading\n\t4. Go back")
+            print("\t1. Set Rudder Angle\n\t2. Set Heading\n\t3. Turn to Heading\n\t4. Go back")
             cmd_param = int(input(""))
         except Exception as e:
             print(f"Something went wrong: {e}")
@@ -225,7 +225,7 @@ def failSafeDebug():
 def subsystemDebug():
     while True: # Subsystem debug
         try:
-            print("\nEntering subsystem debug mode...\n")
+            print("\nEntering subsystem debug mode...")
             print("\nWhat subsystem do you want to test?")
             print("\t1. Thruster\n\t2. Rudder Control\n\t3. Stepper Control\n\t4. Fail Safe\n\t5. Go Back")
             cmd_input = int(input(""))
