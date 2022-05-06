@@ -56,12 +56,7 @@ class CANBUS_COMMS:
 
     # Read from bus
     def readFromFile(self):
-        self.console.warning("Implementation Incomplete.  Stopping.")
-        return
         logger = self.init_file()
-        # if self.requestType == 0:
-        #     self.bus_in.write_byte(self.address, 1)
-        #     self.requestType = 1
         while(1):
             try:
                 time.sleep(1) # needed to give boards time
