@@ -1,5 +1,10 @@
 // Code for slider with the bang bang control that guides the linear slider to the position based on an angle input into the serial command.
-
+//
+//
+// MAKE FLOW OF CONTROL LOOP DIAGRAM!!!
+//
+//
+//
 #include <ASTCanLib.h>
 #include <SPI.h>
 #include <Adafruit_Sensor.h>
@@ -38,8 +43,8 @@ float getPitch();
 float getHeading();
 int sensorRequest = 0;
 
-float pitch_kp = 4 / 3;
-float depth_kp = 3;
+float pitch_kp = 1.33;
+float depth_kp = 5;
 float pitch_cmd = 0;
 float depth_cmd = 0;
 float cur_depth = 0;
@@ -113,6 +118,12 @@ void loop() // main loop, refreshes every
   //  Serial.print("State:");
   //  Serial.println(type);//type is changed in CANin, it's the second byte of the message and dictates what the board does once it receives a message
   // switch statements may make more sense here but in testing we found that the boards were not powerful enough to handle it
+  Serial.print("Pitch offset: ");
+  Serial.println(pitch_reading_offset);
+  Serial.print("pitch kp: ");
+  Serial.println(pitch_kp);
+  Serial.print("depth kp: ");
+  Serial.println(depth_kp);
 
   if (type == 1)
   {
@@ -290,14 +301,14 @@ void CANin()
   else if (type == 1) // stepper change
   {
     sliderChange = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                        // if direction is positive
-                 ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100))   // distance = positive of input
-                 : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)); // else distance = negative of input
+                 ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] * .01))   // distance = positive of input
+                 : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] * .01)); // else distance = negative of input
   }
   else if (type == 2) // stepper position
   {
     distance = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                       // if direction is positive
-             ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100))  // distance = positive of input
-             : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));// else distance = negative of input
+             ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] * .01))  // distance = positive of input
+             : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] * .01));// else distance = negative of input
   }
   else if (type == 3) // sensor request
   {
@@ -305,8 +316,8 @@ void CANin()
   }
   else if (type == 5) // kp command
   {
-    pitch_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;
-    depth_kp = Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] / 100;
+    pitch_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] * .01;
+    depth_kp = Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] * .01;
   }
   else if (type == 6) // depth command
   {
@@ -330,17 +341,17 @@ void CANin()
       while (can_get_status(&Msg) == CAN_STATUS_NOT_COMPLETED);
     } while ((Msg.pt_data[0] != DEPTH_PITCH) && (Msg.pt_data[MESSAGE_TYPE] != 0));
 
-    cur_depth = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] / 100;
+    cur_depth = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] * .01;
   }
   else if (type == 7) // pitch command
   {
     pitch_cmd = Msg.pt_data[MESSAGE_TYPE + 1] == 1                                            // if direction is positive
-              ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100)) // distance = positive of input
-              : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] / 100));
+              ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] *.01)) // distance = positive of input
+              : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] * .01));
   }
   else if (type == 8)//sensor offset
   {
-    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] / 100;
+    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
     if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
       pitch_reading_offset = - pitch_reading_offset;
   }

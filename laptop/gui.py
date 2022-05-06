@@ -1,8 +1,15 @@
 from ast import Global
 import sys
+import matplotlib
+from matplotlib import projections
+import numpy as np
+matplotlib.use('Qt5Agg')
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 from PySide6.QtCore import *
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
+from mpl_toolkits import mplot3d
 from guitransmit import MYSSH
 
 # to print to text box on manual command tab, use:
@@ -12,42 +19,22 @@ from guitransmit import MYSSH
 # only change the {...}_label_values array by adding or removing.
 # the fields will be automatically adjusted.
 
-class Preview(QWidget):
-    def __init__(self, path_length, path_width, path_count, layer_count):
+class MplCanvas(FigureCanvasQTAgg):
+    def __init__(self):
+        fig = Figure()
+        self.axes = fig.add_subplot(111, projection='3d')
+        super().__init__(fig)
+
+class Preview(QMainWindow):
+    def __init__(self, x, y, z):
         super().__init__()
-        self.path_length = path_length
-        self.path_width = path_width
-        self.path_count = path_count
-        self.layer_count = layer_count
-
-        self.side_margin = 140
-        self.height_margin = 100
-
-        self.window_width = (self.path_count - 1) * self.path_width + 2 * self.side_margin
-        self.window_height = self.path_length + 2 * self.height_margin
-
-        self.x = []
-        for i in range(self.path_count):
-            self.x.append(self.side_margin + i * self.path_width)
-
-        self.y = [self.height_margin, self.height_margin + self.path_length]
         
-        self.init_ui()
+        sc = MplCanvas()
+        sc.axes.plot(x, y, z)
+        self.setCentralWidget(sc)
 
-    def init_ui(self):
-        self.setGeometry(400, 400, self.window_width, self.window_height)
-        self.setWindowTitle('Preview')
         self.show()
 
-    def paintEvent(self, event):
-        qp = QPainter()
-        qp.begin(self)
-        qp.setPen(QColor(Qt.blue))
-
-        for i, iv in enumerate(self.x):
-            for j, jv in enumerate(self.y):
-                qp.drawEllipse(QPoint(iv, jv), 10, 10)
-        
 class Window(QWidget):
     ssh = MYSSH()
 
@@ -342,11 +329,73 @@ class Window(QWidget):
 
         # parameters
         path_length = int(self.mission_fields[1].text())
-        path_width = 100
+        path_width = 200
         path_count = int(self.mission_fields[2].text())
         layer_count = int(self.mission_fields[4].text())
+        layer_spacing = int(self.mission_fields[5].text())
 
-        self.preview_window = Preview(path_length, path_width, path_count, layer_count)
+        # points used for calculating all arcs and straight component of dive
+        N = 1000
+        
+        path = np.array([[0], [0], [0]])
+        pos = np.array([0, 0, 0])
+
+        ns = 1  # next side for path
+        ld = 1  # layer direction
+        lc = 0  # layer counter
+
+        # generate path in 3d space
+        while lc < layer_count:
+            # dive
+            dive_end = pos + np.array([ns * path_length, ld * path_width, -1 * layer_spacing])
+
+            y_arc_dive = np.linspace(pos[1], dive_end[1], N)
+            x_arc_dive = -ns*path_width*0.5 * np.sqrt(1 - np.square( (2/path_width) * ld*(y_arc_dive-pos[1]) - 1 )) + pos[0]
+
+            pos = np.array([x_arc_dive[-1], y_arc_dive[-1], pos[2]])
+
+            x_str_dive = np.linspace(pos[0], dive_end[0], N)
+            y_str_dive = np.zeros(N) + pos[1]
+
+            x_dive = np.concatenate((x_arc_dive[0:-1], x_str_dive))
+            y_dive = np.concatenate((y_arc_dive[0:-1], y_str_dive))
+            
+            z_dive = np.linspace(pos[2], dive_end[2], 2 * N - 1)
+            r = dive_end[2] - pos[2]
+            z_dive = r * (0.5 * np.sin(np.pi * ((z_dive - pos[2])/r) - 0.5 * np.pi) + 0.5) + pos[2]
+
+            path = np.concatenate((path, [x_dive, y_dive, z_dive]), 1)
+
+            pos = np.array([path[0][-1], path[1][-1], path[2][-1]])
+
+            ns = ns * -1
+            pc = 2
+
+            while pc < path_count:
+
+                # turn
+                npos = pos + np.array([0, ld * path_width, 0])
+                y_arc = np.linspace(pos[1], npos[1], N)
+                x_arc = -ns*path_width*0.5 * np.sqrt(1 - np.square( (2/path_width) * ld*(y_arc-pos[1]) - 1 )) + pos[0]
+                z_arc = np.zeros(N) + pos[2]
+                path = np.concatenate((path, [x_arc, y_arc, z_arc]), 1)
+                pos = npos
+
+                # move forward
+                pos = pos + np.array([ns * path_length, 0, 0])
+                path = np.concatenate((path, np.transpose([pos])), 1)
+
+                ns = ns * -1
+                pc = pc + 1
+
+            ld = ld * -1
+            lc = lc + 1
+
+        x = path[0]
+        y = path[1]
+        z = path[2]
+
+        self.preview_window = Preview(x, y, z)
         self.preview_window.show()
 
     # send pitch control command
