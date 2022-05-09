@@ -100,7 +100,7 @@ class CANBUS_COMMS:
             self.fillBytes(data)
 
         try:
-            time.sleep(1) # Give boards time to send previous message
+            time.sleep(.5) # Give boards time to send previous message
             # Write each byte to I2C to CAN board one at a time
             for byte in data: 
                 byte = int(byte)

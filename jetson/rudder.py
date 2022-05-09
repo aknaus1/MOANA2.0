@@ -130,6 +130,7 @@ class RudderControl:
         data.append(floor((kp - floor(kp))*100))
 
         self.comms.lock.acquire()
+        self.console.info(f"Set Heading Constant: {kp}")
         self.comms.writeToBus(data)
         self.comms.lock.release()
 
@@ -143,6 +144,7 @@ class RudderControl:
         data.append(floor((offset - floor(offset))*100))
 
         self.comms.lock.acquire()
+        self.console.info(f"Updating Heading Offset: {offset}")
         self.comms.writeToBus(data)
         self.comms.lock.release()
 
@@ -170,6 +172,7 @@ class RudderControl:
         data.append(int(abs(offset)))
 
         self.comms.lock.acquire()
+        self.console.info(f"Set Rudder Offset: {offset}")
         self.comms.writeToBus(data)
         self.comms.lock.release()
 
