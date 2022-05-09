@@ -6,6 +6,11 @@ from systemControl import SystemControl
 sc = SystemControl()
 
 def printascii():
+    # __  __  ___    _    _   _    _    ____    ___  
+    # |  \/  |/ _ \  / \  | \ | |  / \  |___ \  / _ \ 
+    # | |\/| | | | |/ _ \ |  \| | / _ \   __) || | | |
+    # | |  | | |_| / ___ \| |\  |/ ___ \ / __/ | |_| |
+    # |_|  |_|\___/_/   \_\_| \_/_/   \_\_____(_)___/ 
     print("#########################################################################################")
     print("#        <><     <><          <><              <><           o <><   o          <><     #")
     print("#       ________________________________       o  o                   <><         <><   #")
@@ -250,7 +255,7 @@ def rudderConfig():
     while True:
         try:
             print("Rudder Config\nWhat would you like to configure?")
-            print("\t1. Heading Constant\n\t2. Heading Offset\n\t3. Pitch Offset\n\t4. Rudder Offset\n\t5. Go Back")
+            print("\t1. Heading Constant\n\t2. Heading Offset\n\t3. Pitch Offset\n\t4. Rudder Offset\n\t5. Zero IMU Pitch/Heading\n\t6. Go Back")
             sel_input = int(input(""))
         except Exception as e:
             print(f"Something went wrong: {e}")
@@ -287,6 +292,9 @@ def rudderConfig():
             except Exception as e:
                 print(f"Something went wrong: {e}")
                 continue
+        elif (sel_input == 5):
+            print("Zeroing IMU Pitch/Heading")
+            sc.zeroIMU(0)
         else:
             return
 
@@ -294,7 +302,7 @@ def stepperConfig():
     while True:
         try:
             print("Stepper Config\nWhat would you like to configure?")
-            print("\t1. Set Constants\n\t2. Pitch Offset\n\t3. Heading Offset\n\t4. Go Back")
+            print("\t1. Set Constants\n\t2. Pitch Offset\n\t3. Heading Offset\n\t4. Zero IMU Pitch/Heading\n\t5. Go Back")
             sel_input = int(input(""))
         except Exception as e:
             print(f"Something went wrong: {e}")
@@ -325,6 +333,9 @@ def stepperConfig():
             except Exception as e:
                 print(f"Something went wrong: {e}")
                 continue
+        elif (sel_input == 4):
+            print("Zeroing IMU Pitch/Heading")
+            sc.zeroIMU(1)
         else:
             return
 

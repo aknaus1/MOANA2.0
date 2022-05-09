@@ -364,6 +364,23 @@ class SystemControl:
         else:
             self.pc.setPitchOffset(offset)
 
+    def zeroIMU(self, sys = 2):
+        if sys == 0:
+            pitch, heading = self.rc.getIMUData()
+            self.setPitchOffset(-1 * pitch, 0)
+            self.setHeadingOffset(-1 * heading, 0)
+        elif sys == 1:
+            pitch, heading = self.pc.getIMUData()
+            self.setPitchOffset(-1 * pitch, 1)
+            self.setHeadingOffset(-1 * heading, 1)
+        else:
+            rc_pitch, rc_heading, pc_pitch, pc_heading = self.getIMUData()
+            self.setPitchOffset(-1 * rc_pitch, 0)
+            self.setHeadingOffset(-1 * rc_heading, 0)
+            self.setPitchOffset(-1 * pc_pitch, 1)
+            self.setHeadingOffset(-1 * pc_heading, 1)
+
+
     # set water type (type)
     # type: freshwater (0), saltwater (1)
     def setWaterType(self, type):

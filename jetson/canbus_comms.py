@@ -58,19 +58,17 @@ class CANBUS_COMMS:
     def readFromFile(self):
         logger = self.init_file()
         while(1):
+            time.sleep(1) # needed to give boards time
             try:
-                time.sleep(1) # needed to give boards time
-                # address, offset, number of bytes
-                block = self.bus_in.read_i2c_block_data(self.address, 0, 32)
-                if block[0] == '\0':
-                    logger.info(block[1:])
+                byte = self.bus_in.read_byte(self.address, 0)
+                logger.info(byte)
+                self.bus_in.write_byte(self.address, byte)
+                if byte == '\0':
                     self.console.info("Download complete")
                     return
-                logger.info(block)
-                logger.info('\n')
-            except Exception as error_message:
-                self.console.error(f"Error reading from bus: {error_message}")
-                return [0,0,0,0,0,0,0,0]
+            except IOError as e:
+                print("Failed to read byte")
+                self.bus_in.write_byte(0)
         
     # Read from bus
     def readFromBus(self):
