@@ -1,6 +1,6 @@
 import paramiko
 import ftplib
-import multiprocessing
+import multiprocessing as mp
 
 def is_number(num):
     try:
@@ -150,8 +150,13 @@ class MYSSH:
         args = str(bearing) + " " + str(pathLength)  + " " + str(pathCount) + " " + str(initialDepth)  + " " 
         args = args + str(layerCount)  + " " +  str(layerSpacing)  + " " +  str(waterType)  + " " +  str(dataParameter)
         command = "python3 guirecieve.py m " + args
-        # self.stopAllProcesses()
-        self.sendCommand(command)
+        
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+        
+        # self.sendCommand(command)
 
     # set thrust (thrust)
     # thrust: range speed 0-100
@@ -160,7 +165,13 @@ class MYSSH:
             print("Thrust is not valid: 0-100")
             return
         command = "python3 guirecieve.py st " + str(thrust) + " " + str(time)
-        self.sendCommand(command)
+
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # set rudder (angle)
     # angle: min max +- 20
@@ -170,11 +181,12 @@ class MYSSH:
             return
         command = "python3 guirecieve.py sr " + str(angle)
 
-        # self.rudder_process.terminate()
-        # self.rudder_process.join()
-        # self.rudder_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
-        # self.rudder_process.start()
-        self.sendCommand(command)
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+        
+        # self.sendCommand(command)
 
     
     # set heading (heading)
@@ -196,17 +208,24 @@ class MYSSH:
                 print("Ignoring kp... must be numeric")
         command = "python3 guirecieve.py sh " + args
 
-        # self.rudder_process.terminate()
-        # self.rudder_process.join()
-        # self.rudder_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
-        # self.rudder_process.start()
-        self.sendCommand(command)
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
 
     # get heading
     def getHeading(self):
         command = "python3 guirecieve.py gh"
-        self.sendCommand(command)
+
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # set pitch (angle)
     # angle: min max +- 12 degrees
@@ -222,11 +241,12 @@ class MYSSH:
                 print("Ignoring kp... must be numeric")
         command = "python3 guirecieve.py sp " + args
 
-        # self.stepper_process.terminate()
-        # self.stepper_process.join()
-        # self.stepper_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
-        # self.stepper_process.start()
-        self.sendCommand(command)
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # set depth (depth)
     # depth: range 0 - 30 m
@@ -247,11 +267,12 @@ class MYSSH:
                 print("Ignoring kpp... must be numeric")
         command = "python3 guirecieve.py sd " + args
         
-        # self.stepper_process.terminate()
-        # self.stepper_process.join()
-        # self.stepper_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
-        # self.stepper_process.start()
-        self.sendCommand(command)
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+        
+        # self.sendCommand(command)
 
     # set stepper (position)
     # position is distance from center, 
@@ -262,21 +283,34 @@ class MYSSH:
             return
         command = "python3 guirecieve.py ss " + str(position)
         
-        # self.stepper_process.terminate()
-        # self.stepper_process.join()
-        # self.stepper_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
-        # self.stepper_process.start()
-        self.sendCommand(command)
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # get pitch
     def getPitch(self):
         command = "python3 guirecieve.py gp"
-        self.sendCommand(command)
+
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # get depth
     def getDepth(self):
         command = "python3 guirecieve.py gd"
-        self.sendCommand(command)
+
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # set water type (type)
     # type: fresh (0), salt(1)
@@ -285,7 +319,13 @@ class MYSSH:
             print("Type is not valid: fresh(0), salt(1)")
             return
         command = "python3 guirecieve.py swt " + str(type)
-        self.sendCommand(command)
+        
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # start data collection (time)
     # time: length to run (default: 0 = run until told to stop)
@@ -298,20 +338,24 @@ class MYSSH:
             args = args + " " + str(time)
         command = "python3 guirecieve.py startdc " + args
 
-        # self.data_process.terminate()
-        # self.data_process.join()
-        # self.data_process = multiprocessing.Process(target=self.sendCommand, args=(command,))
-        # self.data_process.start()
-        self.sendCommand(command)
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
         
     # stop data collection ()
     # stop scientific payload collection
     def stopDataCollection(self):
         command = "python3 guirecieve.py stopdc"
 
-        # self.data_process.terminate()
-        # self.data_process.join()
-        self.sendCommand(command)
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
         
     def customCommand(self, data):
         command = "python3 guirecieve.py cc"
@@ -320,7 +364,13 @@ class MYSSH:
                 print("Invalid byte: " + i)
                 return
             command = command + " " + i
-        self.sendCommand(command)
+        
+        self.p.terminate()
+        self.p.join()
+        self.p = mp.Process(target=self.sendCommand, args=(command,))
+        self.p.start()
+
+        # self.sendCommand(command)
 
     # def stopAllProcesses(self):
     #     self.rudder_process.terminate()
