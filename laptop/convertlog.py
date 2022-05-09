@@ -38,22 +38,22 @@ if __name__ == "__main__":
             
             if linebuff[1] == 8:
                 # Convert CAN to depth
-                depth = linebuff[4] + round(linebuff[5]/100, 2)
+                depth = round(linebuff[4] + linebuff[5]/100, 2)
                 lineout = lineout + f',{depth}'
 
                 # Convert CAN to temp
                 sign = -1 if linebuff[6] == 1 else 1
-                temp = sign * linebuff[7] + round(linebuff[8] / 100, 2)
+                temp = round(sign * (linebuff[7] + linebuff[8] / 100), 2)
                 lineout = lineout + f',{temp}'
                 logdt.info(lineout)
 
             elif linebuff[1] == 3:
                 # Convert CAN to pitch
                 sign = -1 if linebuff[4] == 1 else 1
-                pitch = sign * (linebuff[5] + round(linebuff[6] / 100, 2))
+                pitch = round(sign * (linebuff[5] + linebuff[6] / 100) ,2)
                 lineout = lineout + f',{pitch}'
 
                 # Convert CAN to heading
-                heading = linebuff[7] * 10 + linebuff[8] + round(linebuff[9] / 100, 2)
+                heading = round(linebuff[7] * 10 + linebuff[8] + linebuff[9] / 100, 2)
                 lineout = lineout + f',{heading}'
                 logph.info(lineout)
