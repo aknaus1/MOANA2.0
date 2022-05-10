@@ -4,23 +4,25 @@ from math import floor
 from depth import DepthBoard
 
 class PitchControl:
-    def __init__(self, comms = None):
+    def __init__(self, lock = None, comms = None):
+        if lock == None:
+            self.lock = threading.Lock()
+        else:
+            self.lock = lock
         if comms == None:
             self.comms = CANBUS_COMMS()
         else:
             self.comms = comms
-
-        self.console = self.comms.console
 
     def calibrate(self):
         data = []
         data.append(5)  # Write stepper ID
         data.append(4)  # Write Calibrate Command
 
-        self.comms.lock.acquire()
-        self.console.info("Calibrating...")
+        self.lock.acquire()
+        print("Calibrating...")
         self.comms.writeToBus(data) # Write to CAN
-        self.comms.lock.release()
+        self.lock.release()
 
     def sendChange(self, change):
         if change > 32:
@@ -35,10 +37,10 @@ class PitchControl:
         data.append(floor(abs(change)))
         data.append(round(abs(change - floor(change))*100))
 
-        self.comms.lock.acquire()
-        self.console.info(f"Sending change: {change}")
+        self.lock.acquire()
+        print(f"Sending change: {change}")
         self.comms.writeToBus(data) # Write to CAN
-        self.comms.lock.release()
+        self.lock.release()
 
     # set stepper (position)
     # position is distance from center,
@@ -56,10 +58,10 @@ class PitchControl:
         data.append(floor(abs(position)))  # Write position
         data.append(round(abs(position - floor(position))*100))  # Write position
 
-        self.comms.lock.acquire() # Get lock
-        self.console.info(f"Set Stepper: {position}")
+        self.lock.acquire() # Get lock
+        print(f"Set Stepper: {position}")
         self.comms.writeToBus(data) # Write to CAN
-        self.comms.lock.release() # Release lock
+        self.lock.release() # Release lock
     
     def getHeading(self):
         data = []
@@ -67,13 +69,13 @@ class PitchControl:
         data.append(3)  # IMU Request
         data.append(2)  # Heading Request
 
-        self.comms.lock.acquire()
+        self.lock.acquire()
         while True:
             self.comms.writeToBus(data) # Write to CAN
             bus_data = self.comms.readFromBus() # Read from CAN
             if (bus_data[0] == 0) and (bus_data[1] == 2):
                 break
-        self.comms.lock.release()
+        self.lock.release()
 
         self.cur_heading = bus_data[2] * 10 + bus_data[3] + bus_data[4] / 100
 
@@ -101,13 +103,13 @@ class PitchControl:
         data.append(3)  # Sensor Request
         data.append(6)  # Pitch and Heading request
 
-        self.comms.lock.acquire()
+        self.lock.acquire()
         while True:
             self.comms.writeToBus(data) # Write to CAN
             bus_data = self.comms.readFromBus() # Read from CAN
             if (bus_data[0] == 0) and (bus_data[1] == 6):
                 break
-        self.comms.lock.release()
+        self.lock.release()
 
         # Convert CAN to pitch
         sign = -1 if bus_data[2] == 1 else 1
@@ -126,10 +128,10 @@ class PitchControl:
         data.append(floor(absPitch))  # Write pitch
         data.append(round((absPitch - floor(absPitch))*100))  # Write pitch 2
         
-        self.comms.lock.acquire()
-        self.console.info(f"Set Pitch: {pitch}")
+        self.lock.acquire()
+        print(f"Set Pitch: {pitch}")
         self.comms.writeToBus(data) # Write to CAN
-        self.comms.lock.release()
+        self.lock.release()
 
     def pitchThread(self, pitch, runner):
         while runner.is_set():
@@ -146,10 +148,10 @@ class PitchControl:
         data.append(6)  # Write depth command
         data.append(depth)  # Write depth
 
-        self.comms.lock.acquire()
-        self.console.info(f"Set Depth: {depth}")
+        self.lock.acquire()
+        print(f"Set Depth: {depth}")
         self.comms.writeToBus(data) # Write to CAN
-        self.comms.lock.release()
+        self.lock.release()
 
     def depthThread(self, depth, runner):
         while runner.is_set():
@@ -167,25 +169,25 @@ class PitchControl:
         data.append(floor(abs(kpd)))    # kpd byte 1
         data.append(round(abs(kpd - floor(kpd))*100))    # kpd byte 2
 
-        self.comms.lock.acquire()
-        self.console.info(f"Updating Stepper Kps, kpp: {kpp}, kpd: {kpd}")
+        self.lock.acquire()
+        print(f"Updating Stepper Kps, kpp: {kpp}, kpd: {kpd}")
         self.comms.writeToBus(data) # Write to CAN
-        self.comms.lock.release()
+        self.lock.release()
 
     # set pitch offset(offset)
     def setPitchOffset(self, offset):
         data = []
         data.append(5)  # Write stepper ID
         data.append(9)  # Write change command
-        data.append(1 if offset < 0 else 2) # write sign
-        offset = abs(offset)
+        data.append(0 if offset < 0 else 1) # write sign
+        
         data.append(floor(offset))
         data.append(round((offset - floor(offset))*100))
 
-        self.comms.lock.acquire()
-        self.console.info(f"Updating Pitch Offset: {offset}")
+        self.lock.acquire()
+        print(f"Updating Pitch Offset: {offset}")
         self.comms.writeToBus(data) # Write to CAN
-        self.comms.lock.release()
+        self.lock.release()
 
     # set heading offset(offset)
     def setHeadingOffset(self, offset):
@@ -196,6 +198,6 @@ class PitchControl:
         data.append(floor(offset%10))
         data.append(floor((offset - floor(offset))*100))
 
-        self.comms.lock.acquire()
+        self.lock.acquire()
         self.comms.writeToBus(data)
-        self.comms.lock.release()
+        self.lock.release()

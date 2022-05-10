@@ -117,12 +117,12 @@ void loop()
   CANIn();
   Serial.print("Rudder offset: ");
   Serial.println(rudder_offset);
-  Serial.print("Pitch offset: ");
-  Serial.println(pitch_reading_offset);
-  Serial.print("Heading offset: ");
-  Serial.println(heading_reading_offset);
-  Serial.print("heading kp: ");
-  Serial.println(heading_kp);
+//  Serial.print("Pitch offset: ");
+//  Serial.println(pitch_reading_offset);
+//  Serial.print("Heading offset: ");
+//  Serial.println(heading_reading_offset);
+//  Serial.print("heading kp: ");
+//  Serial.println(heading_kp);
   
   if (type == 0) {
     setRudder(input);
@@ -205,21 +205,28 @@ void CANIn()
   else if(type == 5)
     heading_kp = Msg.pt_data[MESSAGE_TYPE + 1] + Msg.pt_data[MESSAGE_TYPE + 2] *.01;//set heading kp with laptop
   else if (type == 8)//heading sensor offset
-  {
-    heading_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] * 10 + Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] * .01;
+  {   
     if(Msg.pt_data[MESSAGE_TYPE+1] == 1)
-      heading_reading_offset = -heading_reading_offset;
+      heading_reading_offset -= Msg.pt_data[MESSAGE_TYPE + 2] * 10 + Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] * .01;
+    else
+      heading_reading_offset += Msg.pt_data[MESSAGE_TYPE + 2] * 10 + Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] * .01;
+ 
   }
   else if(type ==9)//pitch sensor offset
-  {
-    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
-    if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
-      pitch_reading_offset = - pitch_reading_offset;
+  {  
+   if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
+      pitch_reading_offset -= Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
+   else
+      pitch_reading_offset += Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
+
   }
   else if(type == 10)//rudder offset
   {
     Serial.println(Msg.pt_data[MESSAGE_TYPE + 1]);
-    rudder_offset = Msg.pt_data[MESSAGE_TYPE + 1];
+    if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
+      rudder_offset -= Msg.pt_data[MESSAGE_TYPE + 2];
+    else
+      rudder_offset += Msg.pt_data[MESSAGE_TYPE + 2];
   }
 
 }

@@ -136,6 +136,15 @@ void CANIn()
     file_out.print(dataArr[4],DEC);file_out.print(",");file_out.print(dataArr[5],DEC);file_out.print(",");
     file_out.print(dataArr[5,DEC]);file_out.print(",");file_out.print(dataArr[6],DEC);file_out.print(",");
     file_out.println(dataArr[7],DEC);
+
+    Serial.print(millis() - start_time);Serial.print(",");Serial.print(id,DEC);Serial.print(",");
+    Serial.print(dataArr[0],DEC);Serial.print(",");Serial.print(dataArr[1],DEC);Serial.print(",");
+    Serial.print(dataArr[2],DEC);Serial.print(",");Serial.print(dataArr[3],DEC);Serial.print(",");
+    Serial.print(dataArr[4],DEC);Serial.print(",");Serial.print(dataArr[5],DEC);Serial.print(",");
+    Serial.print(dataArr[5,DEC]);Serial.print(",");Serial.print(dataArr[6],DEC);Serial.print(",");
+    Serial.println(dataArr[7],DEC);
+
+    
     file_out.close();
     Serial.println("Saved");
 
