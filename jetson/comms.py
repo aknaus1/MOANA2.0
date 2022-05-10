@@ -408,79 +408,9 @@ def sensorRequests():
         else:
             return
 
-def scriptedMission():
-    print("\nEntering scripted mission mode...\n")
-    print("Please pick from the current list of missions below: ")
-    
-    # Use the OS library to walk through the list of files in the missions folder and print them out
-    counter = 1
-    # TODO: might have to store files outside the scope of this for loop
-    # TODO: test on jetson to see what code I have to run to get the list of files
-    for dirpath, dirnames, files in os.walk('missions'):
-        for file_name in files:
-            print("\t" + str(counter) + ". " + file_name)
-            counter = counter + 1
-
-    # Ask user to select which file they want to execute
-    print("\nWhich script would you like to execute? (-1 to go back)")
-    script_input = int(input(""))
-
-    if script_input == -1:
-        return
-
-    # Open file at that index
-    with open("missions/" + files[script_input - 1]) as csvfile:
-        screader = csv.reader(csvfile, delimiter=',')
-        line_no = 0
-        for row in screader:
-            if line_no % 2 == 0: # On even rows, send commands
-                with int(row[0]) as sys:
-                    if sys == 1:
-                        # row[1] will only ever be 1
-                        try:
-                            sc.setThrust(int(row[2]))
-                        except Exception as e:
-                            print(f"Failed to set thrust: {e}")
-                    elif sys == 2:
-                        with int(row[1]) as cmd:
-                            if cmd == 1:
-                                sc.setRudder(int(row[2]))
-                            elif cmd == 2:
-                                sc.setHeading(int(row[2]))
-                            elif cmd == 3:
-                                sc.turnToHeading(int(row[2]), int(row[3]))
-                            else:
-                                print("Invalid command format!")
-                                continue
-                    elif sys == 3:
-                        with int(row[1]) as cmd:
-                            if cmd == 1:
-                                sc.setStepper(int(row[2]))
-                            elif cmd == 2:
-                                sc.setPitch(int(row[2]))
-                            elif cmd == 3:
-                                sc.setDepth(int(row[2]))
-                            else:
-                                print("Invalid command format!")
-                                continue
-                    elif sys == 4:
-                        with int(row[1]) as cmd:
-                            if cmd == 1:
-                                sc.dropMass()
-                            elif cmd == 2:
-                                sc.massReset()
-                            else:
-                                print("Invalid command format!")
-                                continue
-            else: # On odd rows, read in the time delay
-                time.sleep(int(row[0]))
-            # Increment line number
-            line_no = line_no + 1 
-    print("Script ended. If the vehicle is unrecoverable at this point, best of luck!")
-
-def missionPlanner():
-    print("\nEntering mission planner mode...\n")
-    print("What would you like to name this mission? (-1 to go back)")
+def makeScript():
+    print("\nEntering script planner mode...\n")
+    print("What would you like to name this script? (-1 to go back)")
     # In python2, need raw input. Otherwise, tries to run string as python code
     name_input = input("")
 
@@ -490,7 +420,7 @@ def missionPlanner():
     cmd_arr = [None] * 8
 
     # TODO: make sure that this works
-    with open("missions/" + str(name_input) + ".csv", mode='w') as csv_file:
+    with open("scripts/" + str(name_input) + ".csv", mode='w') as csv_file:
         csv_writer = csv.writer(csv_file, delimiter = ",")
         while(1):
             print("What subsystem do you want to command?\n\t1. Thruster\n\t2. Rudder\n\t3. Stepper\n\t4. FailSafe\n\t5. Exit")
@@ -628,6 +558,208 @@ def missionPlanner():
             time_del = int(input(""))
             csv_writer.writerow([time_del])
 
+def runScript():
+    print("Please pick from the current list of scripts below: ")
+    
+    # Use the OS library to walk through the list of files in the missions folder and print them out
+    counter = 1
+    # TODO: might have to store files outside the scope of this for loop
+    # TODO: test on jetson to see what code I have to run to get the list of files
+    for dirpath, dirnames, files in os.walk('scripts'):
+        for file_name in files:
+            print("\t" + str(counter) + ". " + file_name)
+            counter = counter + 1
+
+    # Ask user to select which file they want to execute
+    print("\nWhich script would you like to execute? (-1 to go back)")
+    script_input = int(input(""))
+
+    if script_input == -1:
+        return
+
+    # Open file at that index
+    with open("scripts/" + files[script_input - 1]) as csvfile:
+        screader = csv.reader(csvfile, delimiter=',')
+        line_no = 0
+        for row in screader:
+            if line_no % 2 == 0: # On even rows, send commands
+                with int(row[0]) as sys:
+                    if sys == 1:
+                        # row[1] will only ever be 1
+                        try:
+                            sc.setThrust(int(row[2]))
+                        except Exception as e:
+                            print(f"Failed to set thrust: {e}")
+                    elif sys == 2:
+                        with int(row[1]) as cmd:
+                            if cmd == 1:
+                                sc.setRudder(int(row[2]))
+                            elif cmd == 2:
+                                sc.setHeading(int(row[2]))
+                            elif cmd == 3:
+                                sc.turnToHeading(int(row[2]), int(row[3]))
+                            else:
+                                print("Invalid command format!")
+                                continue
+                    elif sys == 3:
+                        with int(row[1]) as cmd:
+                            if cmd == 1:
+                                sc.setStepper(int(row[2]))
+                            elif cmd == 2:
+                                sc.setPitch(int(row[2]))
+                            elif cmd == 3:
+                                sc.setDepth(int(row[2]))
+                            else:
+                                print("Invalid command format!")
+                                continue
+                    elif sys == 4:
+                        with int(row[1]) as cmd:
+                            if cmd == 1:
+                                sc.dropMass()
+                            elif cmd == 2:
+                                sc.massReset()
+                            else:
+                                print("Invalid command format!")
+                                continue
+            else: # On odd rows, read in the time delay
+                time.sleep(int(row[0]))
+            # Increment line number
+            line_no = line_no + 1 
+    print("Script ended. If the vehicle is unrecoverable at this point, best of luck!")
+
+
+def scriptedOperations():
+    while True:
+        try:
+            print("Entering scripted operation mode...\nWhat would you like to do?")
+            print("\t1. Make a script\n\t2. Run a script\n\t3. Go back")
+            cmd_input = int(input(""))
+        except Exception as e:
+            print(f"Something went wrong: {e}")
+            continue
+        if cmd_input == 1:
+            makeScript()
+            continue
+        elif cmd_input == 2:
+            runScript()
+            continue
+        else:
+            return
+
+def makeMission():
+    print("\nEntering mission planner mode...\n")
+    print("What would you like to name this script? (-1 to go back)")
+    # In python2, need raw input. Otherwise, tries to run string as python code
+    name_input = input("")
+
+    if name_input == "-1":
+        return
+
+    with open("missions/" + str(name_input) + ".csv", mode='w') as csv_file:
+        try:
+            csv_writer = csv.writer(csv_file, delimiter = ",")
+            while True:
+                print("What is the initial bearing? (0-360): ", end="")
+                sys_in = int(input(""))
+                if sys_in <= 0 and sys_in <= 360:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid bearing")
+            while True:
+                print("What is the desired path length?: ", end="")
+                sys_in = int(input(""))
+                if sys_in > 0:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid path length, path length > 0")
+            while True:
+                print("What is the desired path count?: ", end="")
+                sys_in = int(input(""))
+                if sys_in > 0:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid path count, path count > 0")
+            while True:
+                print("What is the desired initial depth?: ", end="")
+                sys_in = int(input(""))
+                if sys_in > 0:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid initial depth, initial depth > 0")
+            while True:
+                print("What is the desired layer count?: ", end="")
+                sys_in = int(input(""))
+                if sys_in > 0:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid layer count, layer count > 0")
+            while True:
+                print("What is the desired layer spacing?: ", end="")
+                sys_in = int(input(""))
+                if sys_in > 0:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid layer spacing, layer spacing > 0")
+            while True:
+                print("What is the water type? fresh(0), salt(1): ", end="")
+                sys_in = int(input(""))
+                if sys_in > 0:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid water type, fresh(0), salt(1)")
+            while True:
+                print("What is the data collection rate?: ", end="")
+                sys_in = int(input(""))
+                if sys_in > 0:
+                    csv_writer.writerow(sys_in)
+                    break
+                print("Invalid data collection rate, data collection rate > 0")
+        except Exception as e:
+            print(f"Something went wrong: {e}")
+
+def makeMission():
+    print("Please pick from the current list of missions below: ")
+    
+    # Use the OS library to walk through the list of files in the missions folder and print them out
+    counter = 1
+    for dirpath, dirnames, files in os.walk('missions'):
+        for file_name in files:
+            print("\t" + str(counter) + ". " + file_name)
+            counter = counter + 1
+
+    # Ask user to select which file they want to execute
+    print("\nWhich script would you like to execute? (-1 to go back)")
+    script_input = int(input(""))
+
+    if script_input == -1:
+        return
+
+    # Open file at that index
+    with open("missions/" + files[script_input - 1]) as csvfile:
+        screader = csv.reader(csvfile, delimiter=',')
+        line_no = 0
+        for i, row in enumerate(screader):
+            
+
+
+def missionPlanner():
+    while True:
+        try:
+            print("Entering Mission Manager...\nWhat would you like to do?")
+            print("\t1. Define new mission\n\t2. Run defined mission\n\t3. Go back")
+            cmd_input = int(input(""))
+        except Exception as e:
+            print(f"Something went wrong: {e}")
+            continue
+        if cmd_input == 1:
+            makeMission()
+            continue
+        elif cmd_input == 2:
+            runMission()
+            continue
+        else:
+            return
+
 def rawInput():
     while True:
         try:
@@ -676,7 +808,7 @@ def interface():
             sensorRequests()
             continue
         elif(ui_input == 4): # Scripted Mission Mode
-            scriptedMission()
+            scriptedOperations()
             continue
         elif(ui_input == 5): # Mission planner mode
             missionPlanner()

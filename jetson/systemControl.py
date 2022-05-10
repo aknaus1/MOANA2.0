@@ -14,6 +14,9 @@ class SystemControl:
     FRESH_WATER = 0
     SALT_WATER = 1
 
+    mission_depth = None
+    mission_heading = None
+
     def __init__(self, debug_level=logging.DEBUG):
         self.console = logging.getLogger('globaldebug')
         self.console.setLevel(debug_level)
@@ -99,14 +102,21 @@ class SystemControl:
             self.console.error("Mission parameters are invalid")
             return
 
+        # Cast all params to ints
         bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, waterType, dataParameter \
             = int(bearing), int(pathLength), int(pathCount), int(initialDepth), int(layerCount), int(layerSpacing), int(waterType), int(dataParameter)     
 
-        initDepth = True  # hasnt gone to initial depth
+        # Stop all currently running threads
+        self.stopAllThreads()
+
+        # Define and Initialize boolean variables
+        initDepth = True  # first depth is initial depth
+        turnRight = True  # first turn is right
+
         # get opposite degree of bearing
         bearingOpposite = bearing + 180 if bearing < 180 else bearing - 180
-        turnRight = True  # next turn should be right
 
+        # Start mission log
         logger = self.mission_log_init()
 
         # set water type
@@ -117,6 +127,8 @@ class SystemControl:
         # start data collection
         # self.startDataCollection(dataParameter)
         # logger.info(f"Start Data Collection Interval: {dataParameter}")
+        # DATA COLLECTION IS HANDLED BY DATA LOGGER BOARD
+        # DATA IS SENT TO DATA LOGGER AT THE END OF EVERY CYCLE
 
         # turn thruster to high
         self.setThrust(100)
@@ -128,7 +140,8 @@ class SystemControl:
                 initDepth = False  # has gone to initial depth
             else:
                 currentDepth = currentDepth + layerSpacing
-            self.setDepth(currentDepth)
+            # self.setDepth(currentDepth)
+            self.mission_depth = currentDepth
             logger.info(f"Set Depth: {currentDepth}")
 
             for dummy in range(pathCount):
@@ -136,10 +149,13 @@ class SystemControl:
                 heading = bearing if turnRight else bearingOpposite
                 turnRight = not turnRight
 
-                self.turnToHeading(heading, direction)
+                # self.turnToHeading(heading, direction)
+                self.mission_heading = None
+                self.rc.turn(direction)
+                self.mission_heading = heading
                 logger.info(f"Turn To Heading: {heading}, Direction: {direction}")
 
-                time.sleep(int(pathLength)) # sleep for path length
+                time.sleep(pathLength) # sleep for path length
 
             turnRight = not turnRight  # turn same as last
             bearing, bearingOpposite = bearingOpposite, bearing
@@ -156,6 +172,13 @@ class SystemControl:
 
         self.console.info("Should now be at the surface or returning to the surface.")
         self.console.info("If the vehicle is unrecoverable at this point, best of luck!")
+
+    def missionHelper(self, runner):
+        while runner.is_set():
+            if self.mission_depth != None:
+                self.pc.setDepth(self.mission_depth)
+            if self.mission_heading != None:
+                self.rc.setHeading(self.mission_heading)
     
     def downloadFile(self):
         self.comms.readFromFile()
@@ -379,7 +402,6 @@ class SystemControl:
             self.setHeadingOffset(-1 * rc_heading, 0)
             self.setPitchOffset(-1 * pc_pitch, 1)
             self.setHeadingOffset(-1 * pc_heading, 1)
-
 
     # set water type (type)
     # type: freshwater (0), saltwater (1)

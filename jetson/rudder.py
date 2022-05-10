@@ -47,7 +47,7 @@ class RudderControl:
         while runner.is_set():
             self.setHeading(heading)
 
-    def turnToHeading(self, direction, heading, runner = None): # this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
+    def turn(self, direction):
         if direction == 1:
             self.console.info("Turning Left")
             self.setRudder(20)
@@ -58,6 +58,9 @@ class RudderControl:
             time.sleep(5)
         else:
             self.console.error("Invalid direction")
+
+    def turnToHeading(self, direction, heading, runner = None): # this solution is kind of janky but basically turn function gets the turn started in the direction we want, so that get heading will definitely go the direction intended
+        self.turn(direction)
 
         if runner != None:
             self.headingThread(heading, runner)
