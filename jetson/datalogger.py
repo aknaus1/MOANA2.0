@@ -3,7 +3,7 @@ from canbus_comms import CANBUS_COMMS
 import time
 import datetime
 
-class DepthBoard:
+class DataLogger:
     def __init__(self, lock = None):
         if lock == None:
             self.lock = threading.Lock()
