@@ -28,17 +28,13 @@ if __name__ == "__main__":
     logdt = init_DT_log(args[0])
     logph = init_PH_log(args[0])
 
-    init_time = -1
-
     with open(f'logs/{args[0]}') as file:
         for line in file:
             linebuff = []
             for char in line.split(sep=','):
                 linebuff.append(int(char))
 
-            if init_time == -1:
-                init_time = linebuff[0]
-            lineout = str(linebuff[0] - init_time)
+            lineout = str(linebuff[0])
             
             if linebuff[1] == 8:
                 # Convert CAN to depth
@@ -47,17 +43,17 @@ if __name__ == "__main__":
 
                 # Convert CAN to temp
                 sign = -1 if linebuff[6] == 1 else 1
-                temp = sign * linebuff[7] + linebuff[8] / 100
+                temp = round(sign * (linebuff[7] + linebuff[8] / 100), 2)
                 lineout = lineout + f',{temp}'
                 logdt.info(lineout)
 
             elif linebuff[1] == 3:
                 # Convert CAN to pitch
                 sign = -1 if linebuff[4] == 1 else 1
-                pitch = sign * (linebuff[5] + linebuff[6] / 100)
+                pitch = round(sign * (linebuff[5] + linebuff[6] / 100) ,2)
                 lineout = lineout + f',{pitch}'
 
                 # Convert CAN to heading
-                heading = linebuff[7] * 10 + linebuff[8] + linebuff[9] / 100
+                heading = round(linebuff[7] * 10 + linebuff[8] + linebuff[9] / 100, 2)
                 lineout = lineout + f',{heading}'
                 logph.info(lineout)
