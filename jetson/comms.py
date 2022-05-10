@@ -720,25 +720,26 @@ def makeMission():
 def makeMission():
     print("Please pick from the current list of missions below: ")
     
-    # Use the OS library to walk through the list of files in the missions folder and print them out
-    counter = 1
-    for dirpath, dirnames, files in os.walk('missions'):
-        for file_name in files:
-            print("\t" + str(counter) + ". " + file_name)
-            counter = counter + 1
+    # # Use the OS library to walk through the list of files in the missions folder and print them out
+    # counter = 1
+    # for dirpath, dirnames, files in os.walk('missions'):
+    #     for file_name in files:
+    #         print("\t" + str(counter) + ". " + file_name)
+    #         counter = counter + 1
 
-    # Ask user to select which file they want to execute
-    print("\nWhich script would you like to execute? (-1 to go back)")
-    script_input = int(input(""))
+    # # Ask user to select which file they want to execute
+    # print("\nWhich script would you like to execute? (-1 to go back)")
+    # script_input = int(input(""))
 
-    if script_input == -1:
-        return
+    # if script_input == -1:
+    #     return
 
-    # Open file at that index
-    with open("missions/" + files[script_input - 1]) as csvfile:
-        screader = csv.reader(csvfile, delimiter=',')
-        line_no = 0
-        for i, row in enumerate(screader):
+    # # Open file at that index
+    # with open("missions/" + files[script_input - 1]) as csvfile:
+    #     screader = csv.reader(csvfile, delimiter=',')
+    #     line_no = 0
+    #     for i, row in enumerate(screader):
+    #         pass
             
 
 
