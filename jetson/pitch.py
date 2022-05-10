@@ -178,8 +178,9 @@ class PitchControl:
     def setPitchOffset(self, offset):
         data = []
         data.append(5)  # Write stepper ID
-        data.append(8)  # Write change command
+        data.append(9)  # Write change command
         data.append(0 if offset < 0 else 1) # write sign
+        
         data.append(floor(offset))
         data.append(round((offset - floor(offset))*100))
 
@@ -192,7 +193,7 @@ class PitchControl:
     def setHeadingOffset(self, offset):
         data = []
         data.append(5)
-        data.append(8)
+        data.append(10)
         data.append(floor(offset/10))
         data.append(floor(offset%10))
         data.append(floor((offset - floor(offset))*100))

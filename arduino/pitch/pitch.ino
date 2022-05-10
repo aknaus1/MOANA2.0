@@ -49,6 +49,7 @@ float pitch_cmd = 0;
 float depth_cmd = 0;
 float cur_depth = 0;
 float pitch_reading_offset = 0;
+float heading_reading_offset = 0;
 
 float stepsToX = 0; // centimeters
 float distance = 0; // meters
@@ -99,7 +100,7 @@ void setup()
   // initialize the pushbutton pin as an input:
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
- 
+  calibrate(); // runs calibration
   if (!bno.begin())
   {
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
@@ -109,7 +110,7 @@ void setup()
 
   Serial.println("Set pins");
   Serial.println("Initialized sensors");
-  calibrate(); // runs calibration
+  delay(1000);
 }
 
 void loop() // main loop, refreshes every
@@ -349,11 +350,21 @@ void CANin()
               ? (Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] *.01)) // distance = positive of input
               : -(Msg.pt_data[MESSAGE_TYPE + 2] + (Msg.pt_data[MESSAGE_TYPE + 3] * .01));
   }
-  else if (type == 8)//sensor offset
-  {
-    pitch_reading_offset = Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
+  else if (type == 9)//sensor offset
+  {    
     if(Msg.pt_data[MESSAGE_TYPE + 1] == 1)
-      pitch_reading_offset = - pitch_reading_offset;
+      pitch_reading_offset -= Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
+    else
+      pitch_reading_offset += Msg.pt_data[MESSAGE_TYPE + 2] + Msg.pt_data[MESSAGE_TYPE + 3] * .01;
+
+  }
+  else if (type == 10)
+  {
+    
+    if(Msg.pt_data[MESSAGE_TYPE+1] == 1)
+      heading_reading_offset -= Msg.pt_data[MESSAGE_TYPE + 2] * 10 + Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] * .01;
+    else
+     heading_reading_offset += Msg.pt_data[MESSAGE_TYPE + 2] * 10 + Msg.pt_data[MESSAGE_TYPE + 3] + Msg.pt_data[MESSAGE_TYPE + 4] * .01;
   }
   clearBuffer(&Buffer[0]);
 }
