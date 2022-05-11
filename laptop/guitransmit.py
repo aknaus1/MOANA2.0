@@ -52,7 +52,7 @@ class MYSSH:
 
     JETSON_PATH = ""
 
-    _timeout = 10
+    _timeout = 6
 
     def __init__(self, moana_ip="192.168.137.117", moana_user="moana", moana_pass="root", jetson_path="MOANA2.0/jetson"):        
         # initialize global variables
