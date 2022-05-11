@@ -4,7 +4,7 @@ import multiprocessing as mp
 
 def infinity():
     while 1:
-        pass
+        continue
 
 def is_number(num):
     try:
@@ -83,6 +83,7 @@ class MYSSH:
         # self.ftpConnect()
 
         self.p = mp.Process(target=infinity)
+        self.p.start()
 
     # establish ssh connection, move into working directory, and start python3 shell
     # recursively calls until successful
