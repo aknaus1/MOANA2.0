@@ -18,9 +18,11 @@ class CANBUS_COMMS:
             self.lock = lock
 
         if console == None:
-            self.console = logging.getLogger('globallog')
-            self.console.setLevel(logging.INFO)
-            self.console.addHandler(logging.StreamHandler())
+            self.console = logging.getLogger('globaldebug')
+            self.console.setLevel(logging.DEBUG)
+            streamHandler = logging.StreamHandler()
+            streamHandler.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
+            self.console.addHandler(streamHandler)
         else:
             self.console = console
 
@@ -42,34 +44,26 @@ class CANBUS_COMMS:
         self.logger.info("Time,R/W,B0,B1,B2,B3,B4,B5,B6,B7")
         handler.setFormatter(logging.Formatter('%(asctime)s,%(message)s', datefmt='%H:%M:%S'))
 
-    def init_file(self):
-        time_ts = datetime.datetime.fromtimestamp(time.time())
-        strtime = time_ts.strftime('%Y-%m-%d|%H:%M:%S')
-        handler = logging.FileHandler(f'logs/file{strtime}.csv')        
-        handler.setFormatter(logging.Formatter('%(message)s'))
-        logger = logging.getLogger('filelog')
-        logger.setLevel(logging.INFO)
-        logger.addHandler(handler)
-        strtime = time_ts.strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"FILE LOG {strtime}")
-        return logger
-
     # Read from bus
     def readFromFile(self):
-        logger = self.init_file()
-        while(1):
-            time.sleep(1) # needed to give boards time
-            try:
-                byte = self.bus_in.read_byte(self.address, 0)
-                logger.info(byte)
-                self.bus_in.write_byte(self.address, byte)
-                if byte == '\0':
-                    self.console.info("Download complete")
-                    return
-            except IOError as e:
-                print("Failed to read byte")
-                self.bus_in.write_byte(0)
-        
+        time_ts = datetime.datetime.fromtimestamp(time.time())
+        strtime = time_ts.strftime('%Y-%m-%d|%H:%M:%S')
+        with open(f'logs/file{strtime}.csv') as file:
+            strtime = time_ts.strftime('%Y-%m-%d %H:%M:%S')
+            file.write(f"FILE LOG {strtime}")
+            while(1):
+                time.sleep(1) # needed to give boards time
+                try:
+                    byte = self.bus_in.read_byte(self.address, 0)
+                    file.write(byte)
+                    # self.bus_in.write_byte(self.address, byte)
+                    if byte == '\0':
+                        self.console.info("Download complete")
+                        return
+                except IOError as e:
+                    print("Failed to read byte")
+                    # self.bus_in.write_byte(0)
+            
     # Read from bus
     def readFromBus(self):
         try:

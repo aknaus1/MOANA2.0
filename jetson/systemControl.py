@@ -1,3 +1,4 @@
+from ast import arg
 import time
 import datetime
 import threading
@@ -14,13 +15,18 @@ class SystemControl:
     FRESH_WATER = 0
     SALT_WATER = 1
 
-    mission_depth = None
-    mission_heading = None
+    # mission_depth = None
+    # mission_heading = None
 
     def __init__(self, debug_level=logging.DEBUG):
         self.console = logging.getLogger('globaldebug')
         self.console.setLevel(debug_level)
-        self.console.addHandler(logging.StreamHandler())
+        streamHandler = logging.StreamHandler()
+        streamHandler.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
+        self.console.addHandler(streamHandler)
+        fileHandler = logging.FileHandler('console.log')
+        fileHandler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        self.console.addHandler(fileHandler)
 
         self.lock = threading.Lock()
         self.comms = CANBUS_COMMS(self.lock, self.console)
@@ -58,6 +64,7 @@ class SystemControl:
     def verifyMissionParams(self, bearing, pathLength, pathCount, initialDepth, layerCount, layerSpacing, dataParameter, waterType):
         res = True
         try:
+            max_depth = int(initialDepth) + int(layerCount) * int(layerSpacing)
             if int(bearing) < 0 or int(bearing) > 360:
                 self.console.info("Invalid bearing: 0 <= bearing <= 360")
                 res = False
@@ -76,7 +83,6 @@ class SystemControl:
             if int(layerSpacing) <= 0:
                 self.console.info("Invalid layer spacing: spacing > 0")
                 res = False
-            max_depth = (int(initialDepth) + int(layerCount) * int(layerSpacing))
             if max_depth > 30 or max_depth < 0:
                 self.console.info("Invalid depth: 0 < initialDepth + layerCount * layerSpacing <= 30")
                 res = False
@@ -108,6 +114,13 @@ class SystemControl:
 
         # Stop all currently running threads
         self.stopAllThreads()
+
+        helperRunner = threading.Event()
+        helperThread = threading.Thread(target=self.missionHelper, args=(helperRunner,))
+        self.mission_depth = None
+        self.mission_heading = None
+        helperRunner.set()
+        helperThread.start()
 
         # Define and Initialize boolean variables
         initDepth = True  # first depth is initial depth
@@ -160,19 +173,27 @@ class SystemControl:
             turnRight = not turnRight  # turn same as last
             bearing, bearingOpposite = bearingOpposite, bearing
 
+        self.mission_heading = None
+        self.mission_depth = None
+
         # return to surface
-        self.setDepth(0)
-        logger.info(f"Set Depth: {0}")
+        # self.setDepth(0)
+        self.setStepper(-16)
+        logger.info(f"Set Stepper: -16")
+        # wait till at surface
+        helperRunner.clear()
+        helperThread.join()
+        while(self.getDepth() > 5):
+            time.sleep(5)
+
         # turn off thruster
         self.setThrust(0)
         logger.info(f"Set Thrust: {0}")
-        # stop data collection
-        # self.stopDataCollection()
-        # logger.info(f"Stop Data Collection")
 
         self.console.info("Should now be at the surface or returning to the surface.")
         self.console.info("If the vehicle is unrecoverable at this point, best of luck!")
 
+    # Cycle time ~ 1hz
     def missionHelper(self, runner):
         while runner.is_set():
             if self.mission_depth != None:
@@ -221,6 +242,7 @@ class SystemControl:
 
     # set heading (heading)
     # heading range: 0-360 degrees relative to North
+    # cycle time ~ 2 hz
     def setHeading(self, heading, kp=None, t=None):
         if kp is not None:
             self.rc.setHeadingConstant(kp)
@@ -237,6 +259,7 @@ class SystemControl:
     # heading range: 0-360 degrees relative to North
     # direction: left(1) or right(2)
     # radius: turn radius
+    # cycle time ~ 2 hz
     def turnToHeading(self, heading, direction, t=None):
         if self.rudder_runner.is_set():
             self.rudder_runner.clear()
@@ -271,6 +294,7 @@ class SystemControl:
 
     # set pitch (pitch)
     # pitch: min max +- 12 degrees
+    # cycle time ~ 2 hz
     def setPitch(self, pitch, kp=None, t=None):
         # if kp != None:
         #     self.pc.setConstant(kp, 0)
@@ -285,6 +309,7 @@ class SystemControl:
 
     # set depth (depth)
     # depth: range 0 - 30 m
+    # cycle time ~ 2 hz
     def setDepth(self, depth, kpp=None, kpd=None, t=None):
         if kpp != None and kpd != None:
             self.pc.setConstant(kpp, kpd)
@@ -387,7 +412,9 @@ class SystemControl:
         else:
             self.pc.setPitchOffset(offset)
 
+    # Not supported
     def zeroIMU(self, sys = 2):
+        self.console.warning("Function: zeroIMU is no longer supported")
         if sys == 0:
             pitch, heading = self.rc.getIMUData()
             self.setPitchOffset(-1 * pitch, 0)
