@@ -2,6 +2,10 @@ import paramiko
 import ftplib
 import multiprocessing as mp
 
+def infinity():
+    while 1:
+        pass
+
 def is_number(num):
     try:
         int(num)
@@ -77,6 +81,8 @@ class MYSSH:
         # # init ftp and connect
         # self.ftp = ftplib.FTP(self.MOANA_IP)
         # self.ftpConnect()
+
+        self.p = mp.Process(target=infinity)
 
     # establish ssh connection, move into working directory, and start python3 shell
     # recursively calls until successful

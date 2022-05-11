@@ -20,10 +20,6 @@ import multiprocessing as mp
 # only change the {...}_label_values array by adding or removing.
 # the fields will be automatically adjusted.
 
-def infinity():
-    while 1:
-        pass
-
 class MplCanvas(FigureCanvasQTAgg):
     def __init__(self):
         fig = Figure()
@@ -45,7 +41,6 @@ class Preview(QMainWindow):
 
 class Window(QWidget):
     ssh = MYSSH()
-    ssh.p = mp.Process(target=infinity)
 
     def __init__(self):
         super().__init__()
