@@ -1,6 +1,11 @@
 import paramiko
 import ftplib
 import multiprocessing as mp
+from time import sleep
+
+# def infinity():
+#     while 1:
+#         sleep(8)
 
 def is_number(num):
     try:
@@ -52,7 +57,7 @@ class MYSSH:
 
     JETSON_PATH = ""
 
-    _timeout = 10
+    _timeout = 6
 
     def __init__(self, moana_ip="192.168.137.117", moana_user="moana", moana_pass="root", jetson_path="MOANA2.0/jetson"):        
         # initialize global variables
@@ -77,6 +82,9 @@ class MYSSH:
         # # init ftp and connect
         # self.ftp = ftplib.FTP(self.MOANA_IP)
         # self.ftpConnect()
+
+        # self.p = mp.Process(target=infinity)
+        # self.p.start()
 
     # establish ssh connection, move into working directory, and start python3 shell
     # recursively calls until successful
@@ -150,13 +158,13 @@ class MYSSH:
         args = str(bearing) + " " + str(pathLength)  + " " + str(pathCount) + " " + str(initialDepth)  + " " 
         args = args + str(layerCount)  + " " +  str(layerSpacing)  + " " +  str(waterType)  + " " +  str(dataParameter)
         command = "python3 guirecieve.py m " + args
+
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
         
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
-        
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # set thrust (thrust)
     # thrust: range speed 0-100
@@ -166,12 +174,12 @@ class MYSSH:
             return
         command = "python3 guirecieve.py st " + str(thrust) + " " + str(time)
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # set rudder (angle)
     # angle: min max +- 20
@@ -181,12 +189,12 @@ class MYSSH:
             return
         command = "python3 guirecieve.py sr " + str(angle)
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
         
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     
     # set heading (heading)
@@ -208,24 +216,24 @@ class MYSSH:
                 print("Ignoring kp... must be numeric")
         command = "python3 guirecieve.py sh " + args
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
 
     # get heading
     def getHeading(self):
         command = "python3 guirecieve.py gh"
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # set pitch (angle)
     # angle: min max +- 12 degrees
@@ -241,12 +249,12 @@ class MYSSH:
                 print("Ignoring kp... must be numeric")
         command = "python3 guirecieve.py sp " + args
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # set depth (depth)
     # depth: range 0 - 30 m
@@ -267,12 +275,12 @@ class MYSSH:
                 print("Ignoring kpp... must be numeric")
         command = "python3 guirecieve.py sd " + args
         
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
         
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # set stepper (position)
     # position is distance from center, 
@@ -283,34 +291,34 @@ class MYSSH:
             return
         command = "python3 guirecieve.py ss " + str(position)
         
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # get pitch
     def getPitch(self):
         command = "python3 guirecieve.py gp"
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # get depth
     def getDepth(self):
         command = "python3 guirecieve.py gd"
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # set water type (type)
     # type: fresh (0), salt(1)
@@ -320,12 +328,12 @@ class MYSSH:
             return
         command = "python3 guirecieve.py swt " + str(type)
         
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # start data collection (time)
     # time: length to run (default: 0 = run until told to stop)
@@ -338,24 +346,24 @@ class MYSSH:
             args = args + " " + str(time)
         command = "python3 guirecieve.py startdc " + args
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
         
     # stop data collection ()
     # stop scientific payload collection
     def stopDataCollection(self):
         command = "python3 guirecieve.py stopdc"
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
         
     def customCommand(self, data):
         command = "python3 guirecieve.py cc"
@@ -365,12 +373,12 @@ class MYSSH:
                 return
             command = command + " " + i
         
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # def stopAllProcesses(self):
     #     self.rudder_process.terminate()

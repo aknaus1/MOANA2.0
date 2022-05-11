@@ -11,6 +11,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 from guitransmit import MYSSH
+import multiprocessing as mp
 
 # to print to text box on manual command tab, use:
 # self.command_box.insertPlainText('example string\n')
@@ -28,11 +29,14 @@ class MplCanvas(FigureCanvasQTAgg):
 class Preview(QMainWindow):
     def __init__(self, x, y, z):
         super().__init__()
+
+        self.setWindowTitle('Preview')
         
         sc = MplCanvas()
         sc.axes.plot(x, y, z)
-        self.setCentralWidget(sc)
+        sc.axes.set_ylabel('[meters]')
 
+        self.setCentralWidget(sc)
         self.show()
 
 class Window(QWidget):
@@ -40,6 +44,9 @@ class Window(QWidget):
 
     def __init__(self):
         super().__init__()
+
+        self.setWindowIcon(QIcon('moana_256.png'))
+        self.setWindowTitle('MOANA')
 
         self.line_width = 280
 
@@ -64,9 +71,6 @@ class Window(QWidget):
 
         self.setFixedHeight(600)
         self.setFixedWidth(600)
-
-        self.setWindowIcon(QIcon('moana.png'))
-        self.setWindowTitle('MOANA')
 
     def create_mission_tab(self):
         self._mission_tab = QWidget()
@@ -329,7 +333,7 @@ class Window(QWidget):
 
         # parameters
         path_length = int(self.mission_fields[1].text())
-        path_width = 200
+        path_width = 10 # 9.78
         path_count = int(self.mission_fields[2].text())
         layer_count = int(self.mission_fields[4].text())
         layer_spacing = int(self.mission_fields[5].text())
@@ -346,30 +350,42 @@ class Window(QWidget):
 
         # generate path in 3d space
         while lc < layer_count:
-            # dive
+            # final position after dive
             dive_end = pos + np.array([ns * path_length, ld * path_width, -1 * layer_spacing])
 
+            # arc component of dive
             y_arc_dive = np.linspace(pos[1], dive_end[1], N)
             x_arc_dive = -ns*path_width*0.5 * np.sqrt(1 - np.square( (2/path_width) * ld*(y_arc_dive-pos[1]) - 1 )) + pos[0]
 
+            # calculate position
             pos = np.array([x_arc_dive[-1], y_arc_dive[-1], pos[2]])
 
+            # straight component of dive
             x_str_dive = np.linspace(pos[0], dive_end[0], N)
             y_str_dive = np.zeros(N) + pos[1]
 
+            # add straight component to arc component
             x_dive = np.concatenate((x_arc_dive[0:-1], x_str_dive))
             y_dive = np.concatenate((y_arc_dive[0:-1], y_str_dive))
             
-            z_dive = np.linspace(pos[2], dive_end[2], 2 * N - 1)
+            # calculate z values for dive
+            z_dive_xp = np.linspace(pos[2], dive_end[2], 2 * N - 1)
             r = dive_end[2] - pos[2]
-            z_dive = r * (0.5 * np.sin(np.pi * ((z_dive - pos[2])/r) - 0.5 * np.pi) + 0.5) + pos[2]
+            z_dive_xp = r * (0.5 * np.sin(np.pi * ((z_dive_xp - pos[2])/r) - 0.5 * np.pi) + 0.5) + pos[2]
+            xy_norm = np.linalg.norm((x_dive, y_dive), axis=0)
+            xy_diff = np.concatenate((np.array([0]), np.diff(xy_norm)))
+            z_dive = np.array([np.interp(x, xy_diff, z_dive_xp) for x in xy_diff])
 
+            z_dive = z_dive_xp
+
+            # add dive to path
             path = np.concatenate((path, [x_dive, y_dive, z_dive]), 1)
 
+            # calculate position
             pos = np.array([path[0][-1], path[1][-1], path[2][-1]])
 
-            ns = ns * -1
-            pc = 2
+            ns = ns * -1    # sign for direction of movement [x axis]
+            pc = 2          # counter for number of straight lines on a layer
 
             while pc < path_count:
 
@@ -388,8 +404,8 @@ class Window(QWidget):
                 ns = ns * -1
                 pc = pc + 1
 
-            ld = ld * -1
-            lc = lc + 1
+            ld = ld * -1    # direction of movement of entire layer [y axis]
+            lc = lc + 1     # counter for number of layers
 
         x = path[0]
         y = path[1]
