@@ -127,6 +127,7 @@ class MYSSH:
             print(fullCommand)
             ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand, timeout=self._timeout)
             # stdin = ssh_stdin.readlines()
+            print('I made it')
             stdout = ssh_stdout.readlines()
             stderr = ssh_stderr.readlines()
 
@@ -159,10 +160,11 @@ class MYSSH:
         args = args + str(layerCount)  + " " +  str(layerSpacing)  + " " +  str(waterType)  + " " +  str(dataParameter)
         command = "python3 guirecieve.py m " + args
         
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
         
         # self.sendCommand(command)
 
@@ -249,12 +251,12 @@ class MYSSH:
                 print("Ignoring kp... must be numeric")
         command = "python3 guirecieve.py sp " + args
 
-        self.p.terminate()
-        self.p.join()
-        self.p = mp.Process(target=self.sendCommand, args=(command,))
-        self.p.start()
+        # self.p.terminate()
+        # self.p.join()
+        # self.p = mp.Process(target=self.sendCommand, args=(command,))
+        # self.p.start()
 
-        # self.sendCommand(command)
+        self.sendCommand(command)
 
     # set depth (depth)
     # depth: range 0 - 30 m
