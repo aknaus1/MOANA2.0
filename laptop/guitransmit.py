@@ -1,10 +1,11 @@
 import paramiko
 import ftplib
 import multiprocessing as mp
+from time import sleep
 
 def infinity():
     while 1:
-        continue
+        sleep(8)
 
 def is_number(num):
     try:
