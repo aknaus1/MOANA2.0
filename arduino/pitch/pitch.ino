@@ -57,6 +57,7 @@ float currentLocation = 0;
 float sliderChange = 0; //[inches]
 int yposArray[3];
 
+
 enum sensorSend
 {
   DEPTH,
