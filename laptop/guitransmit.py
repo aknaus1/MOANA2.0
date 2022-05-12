@@ -127,20 +127,20 @@ class MYSSH:
             print(fullCommand)
             ssh_stdin, ssh_stdout, ssh_stderr = self.ssh.exec_command(fullCommand, timeout=self._timeout)
             # stdin = ssh_stdin.readlines()
-            stdout = ssh_stdout.readlines()
-            stderr = ssh_stderr.readlines()
+            # stdout = ssh_stdout.readlines()
+            # stderr = ssh_stderr.readlines()
 
-            # if len(stdin) > 0:
-            #     print("stdin: ")
-            #     print(stdin)
-            if len(stdout) > 0:
-                print("stdout: ")
-                for i in stdout:
-                    print(i)
-            if len(stderr) > 0:
-                print("stderr: ")
-                for i in stderr:
-                    print(i)
+            # # if len(stdin) > 0:
+            # #     print("stdin: ")
+            # #     print(stdin)
+            # if len(stdout) > 0:
+            #     print("stdout: ")
+            #     for i in stdout:
+            #         print(i)
+            # if len(stderr) > 0:
+            #     print("stderr: ")
+            #     for i in stderr:
+            #         print(i)
             print("Command Sent!")
         except Exception as error_message:
             print("Error sending SSH command: " + str(error_message))
