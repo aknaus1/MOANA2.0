@@ -15,11 +15,11 @@ Servo rudder;
 #define MESSAGE_RTR 0      // rtr bit
 #define MESSAGE_TYPE 1
 
-#define HEADING_KP .15
-#define HEADING_KD .21
+#define HEADING_KP 1
+#define HEADING_KD 1
 
 #define MAX_RUDDER_ANGLE 20
-#define RUDDER_OFFSET 80
+#define RUDDER_OFFSET 82
 
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
@@ -137,14 +137,18 @@ void loop()
     float cur_heading = getHeading();
     float error, newAngle;
     if (h + 180 < cur_heading) {    //angle = (h - (cur_heading - 360)) * heading_kp;
-      float error = h - cur_heading;
-      float error_derivative = ((error - 360) - error_prev); // change(error - error_prev)/time(s) (1s for now)
-      newAngle = (error - 360)*heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
+      float error = h - (cur_heading - 360);
+      float error_derivative = ((error) - error_prev); // change(error - error_prev)/time(s) (1s for now)
+      newAngle = (error)*heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
+      // Serial.print("1 newAngle: ");
+      // Serial.println(newAngle);
     }
     else {    //angle = (h - cur_heading) * heading_kp;
       float error = h - cur_heading;
       float error_derivative = (error - error_prev); // change(error - error_prev)/time(s) (1s for now)
       newAngle = (error)*heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
+      // Serial.print("2 newAngle: ");
+      // Serial.println(newAngle);
     }
     error_prev == error;
     setRudder(-newAngle);
