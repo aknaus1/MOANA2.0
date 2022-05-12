@@ -1,4 +1,3 @@
-from ast import Global
 import sys
 import matplotlib
 from matplotlib import projections
@@ -11,7 +10,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 from guitransmit import MYSSH
-import multiprocessing as mp
 
 # to print to text box on manual command tab, use:
 # self.command_box.insertPlainText('example string\n')
@@ -38,6 +36,18 @@ class Preview(QMainWindow):
 
         self.setCentralWidget(sc)
         self.show()
+
+class Worker(QRunnable):
+    def __init__(self, fn, *args, **kwargs):
+        super().__init__()
+
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+
+    @Slot()
+    def run(self):
+        self.fn(*self.args, **self.kwargs)
 
 class Window(QWidget):
     ssh = MYSSH()
@@ -71,6 +81,8 @@ class Window(QWidget):
 
         self.setFixedHeight(600)
         self.setFixedWidth(600)
+
+        # self.threadpool = QThreadPool()
 
     def create_mission_tab(self):
         self._mission_tab = QWidget()
