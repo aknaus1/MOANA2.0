@@ -19,7 +19,8 @@ Servo rudder;
 #define HEADING_KD .21
 
 #define MAX_RUDDER_ANGLE 20
-#define RUDDER_OFFSET 95
+#define RUDDER_OFFSET 80
+
 
 #define BNO055_SAMPLERATE_DELAY_MS 10
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
