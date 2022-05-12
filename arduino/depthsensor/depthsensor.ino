@@ -160,25 +160,12 @@ void CANIn()
 
 void convert(float testValue) // converts a float or double into an array that can be sent over the CAN bus
 {
-  int whole, fraction;
-  if (testValue < 0.0)
-  {
-    yposArray[0] = 1; // 1 is a negative value
-    testValue = testValue * -1;
-  }
-  else if (testValue > 0.0)
-  {
-    yposArray[0] = 2; // 2 is positive
-  }
-  else if (testValue == 0)
-  {
-    yposArray[0] = 0;
-  }
-  whole = floor(round(testValue));
-  yposArray[1] = whole;
-  fraction = (testValue - whole) * 100;
-  yposArray[2] = fraction;
+  yposArray[0] = testValue >= 0 ? 2 : 1;
+  testValue = abs(testValue);
+  yposArray[1] = round(floor(testValue));
+  yposArray[2] = (testValue - yposArray[1]) * 100;
 }
+
 
 void CANsend(int ID, int sensor)
 {

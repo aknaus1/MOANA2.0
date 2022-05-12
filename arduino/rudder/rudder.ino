@@ -137,17 +137,17 @@ void loop()
     float h = input;
     float cur_heading = getHeading();
     float error, newAngle;
-    if (h + 180 < cur_heading) {    //angle = (h - (cur_heading - 360)) * heading_kp;
-      float error = h - (cur_heading - 360);
-      float error_derivative = 1000*((error) - error_prev)/(millis() - millis_prev); // change(error - error_prev)/time(s) (1s for now)
-      newAngle = (error)*heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
+    if (h + 180 < cur_heading) {
+      error = h - (cur_heading - 360);
+      float error_derivative = 1000*((error) - error_prev)/(millis() - millis_prev); // change(error - error_prev)/time(s) 
+      newAngle = (error)*heading_kp + error_derivative * heading_kd; 
       Serial.print("1 newAngle: ");
       Serial.println(newAngle);
     }
-    else {    //angle = (h - cur_heading) * heading_kp;
-      float error = h - cur_heading;
-      float error_derivative = 1000*(error - error_prev)/(millis() - millis_prev); // change(error - error_prev)/time(s) (1s for now)
-      newAngle = (error)*heading_kp + error_derivative * heading_kd; // new angle will now be from 0 - some float angle that should be maxed to 40
+    else {
+      error = h - cur_heading;
+      float error_derivative = 1000*(error - error_prev)/(millis() - millis_prev); // change(error - error_prev)/time(s)
+      newAngle = (error)*heading_kp + error_derivative * heading_kd; 
       Serial.print("2 newAngle: ");
       Serial.println(newAngle);
     }
