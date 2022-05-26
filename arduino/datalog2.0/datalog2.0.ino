@@ -151,7 +151,7 @@ void CANIn()
 }
 
 
-void sendJetson()
+void sendJetson() // UNSURE: never quite got this to work, is supposed to transfer data log file to Jetson
 {
     char data;
     //open file

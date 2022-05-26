@@ -1,9 +1,9 @@
-
-/*
-   CAN port receiver example
-   Receives data on the CAN buss and prints to the serial port
+/*UNSURE: These boards have a weird bug where if you divide a float the float will get rounded down. 
+This means certain calcuations with a divide symbol will result in a 0. 
+This is easily solved by instead changing the division into a multiplication (e.g. /100 = *.01)
+I took care of this in most cases but definitely may have missed that in some conversions. 
+If you're getting unexpected results on any sensor sends (could be any board) be sure to check for this problem.
 */
-
 #include <ASTCanLib.h>
 #include <Servo.h>
 #include <Wire.h>
@@ -34,6 +34,7 @@ int type = IDLE;
 int input = 0;
 int counter = 0;
 int water;
+int requestBoard = 0;
 
 // CAN message object
 st_cmd_t Msg;
@@ -100,7 +101,7 @@ void loop()
 {
   CANIn();
   if (type == 3)
-    CANsend(JETSON, sensorRequest);
+    CANsend(requestBoard, sensorRequest);
   else if (type == 4) {
     if (water == 0)
       depthSensor.setFluidDensity(FRESHWATER); // kg/m^3 (freshwater, 1029 for seawater)
@@ -150,6 +151,7 @@ void CANIn()
 
   if (type == 3)
   {
+    requestBoard = Msg.id.ext;//UNSURE ABOUT THIS, UNTESTED: supposed to be id of board message was received from
     sensorRequest = Msg.pt_data[MESSAGE_TYPE + 1];
   }
   else if (type == 4)
@@ -182,7 +184,7 @@ void CANsend(int ID, int sensor)
     for (int i = 4; i <= 7; i++)
       Buffer[i] = 0;
   }
-  else if (sensor == TEMP)
+  else if (sensor == TEMP) //UNSURE: in testing the data logger was not saving the decimal value of the temperature reading
   {
     convert(getTemp());
     for (int i = 0; i < 6; i++)
